@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "icon_admin",
+      "cwd": "tool/icon_admin",
+      "request": "launch",
+      "type": "dart",
+      "toolArgs": ["-d", "windows"]
+    }
+  ]
+}

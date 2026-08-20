@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100">
+  <defs>
+    <linearGradient id="melonFlesh" x1="20" y1="24" x2="64" y2="86" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff8a80"/>
+      <stop offset="1" stop-color="#e53935"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="40" cy="93" rx="24" ry="4.2" fill="#000" opacity=".2"/>
+  <path d="M12 28l56 8-28 52z" fill="#2e7d32" stroke="#1b5e20" stroke-width="2.2" stroke-linejoin="round"/>
+  <path d="M18 30l46 7-24 44z" fill="#a5d6a7"/>
+  <path d="M22 32l40 6-22 40z" fill="url(#melonFlesh)" stroke="#b71c1c" stroke-width="1.4" stroke-linejoin="round"/>
+  <g fill="#3e2723">
+    <ellipse cx="36" cy="44" rx="2.1" ry="3.4" transform="rotate(-12 36 44)"/>
+    <ellipse cx="46" cy="48" rx="2.1" ry="3.4" transform="rotate(8 46 48)"/>
+    <ellipse cx="40" cy="56" rx="2.1" ry="3.4"/>
+    <ellipse cx="32" cy="54" rx="2" ry="3.2" transform="rotate(-18 32 54)"/>
+    <ellipse cx="48" cy="58" rx="2" ry="3.2" transform="rotate(16 48 58)"/>
+    <ellipse cx="38" cy="66" rx="2" ry="3.2"/>
+  </g>
+</svg>

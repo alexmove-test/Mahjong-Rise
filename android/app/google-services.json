@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "872111737653",
+    "project_id": "mahjong-rise",
+    "storage_bucket": "mahjong-rise.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:872111737653:android:8076b70a6edf1e36131a7c",
+        "android_client_info": {
+          "package_name": "com.mahjong.mahjong"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD16bmVZXRuOlJqTzkUGvCluMXqvLF1rJI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

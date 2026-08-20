@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100">
+  <defs>
+    <linearGradient id="berryBody" x1="22" y1="24" x2="62" y2="90" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff6f7d"/>
+      <stop offset="1" stop-color="#c2185b"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="40" cy="93" rx="22" ry="4" fill="#000" opacity=".2"/>
+  <path d="M40 22c18 2 28 16 28 34 0 18-12 34-28 40C24 90 12 74 12 56c0-18 10-32 28-34z" fill="url(#berryBody)" stroke="#880e4f" stroke-width="2.4" stroke-linejoin="round"/>
+  <g fill="#fff59d" stroke="#f9a825" stroke-width="0.8">
+    <ellipse cx="28" cy="44" rx="2.2" ry="3.2"/>
+    <ellipse cx="40" cy="38" rx="2.2" ry="3.2"/>
+    <ellipse cx="52" cy="46" rx="2.2" ry="3.2"/>
+    <ellipse cx="32" cy="58" rx="2.2" ry="3.2"/>
+    <ellipse cx="46" cy="56" rx="2.2" ry="3.2"/>
+    <ellipse cx="26" cy="70" rx="2.2" ry="3.2"/>
+    <ellipse cx="40" cy="68" rx="2.2" ry="3.2"/>
+    <ellipse cx="52" cy="70" rx="2.2" ry="3.2"/>
+    <ellipse cx="36" cy="80" rx="2.2" ry="3.2"/>
+  </g>
+  <path d="M28 22c8 6 12 6 24 0-4 12-8 16-12 16s-8-4-12-16z" fill="#43a047" stroke="#1b5e20" stroke-width="1.7" stroke-linejoin="round"/>
+  <path d="M40 18v12" fill="none" stroke="#5d4037" stroke-width="2.8" stroke-linecap="round"/>
+</svg>

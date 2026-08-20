@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100">
+  <defs>
+    <linearGradient id="appleBody" x1="18" y1="22" x2="68" y2="88" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ff6b5a"/>
+      <stop offset="1" stop-color="#c62828"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="40" cy="93" rx="24" ry="4.2" fill="#000" opacity=".2"/>
+  <path d="M40 26c8-13 25-10 29 6 5 18 4 39-4 51-6 9-16 14-25 14s-19-5-25-14c-8-12-9-33-4-51 4-16 21-19 29-6z" fill="url(#appleBody)" stroke="#7f1d1d" stroke-width="2.4" stroke-linejoin="round"/>
+  <ellipse cx="27" cy="48" rx="7.5" ry="12" fill="#fff" opacity=".3"/>
+  <path d="M40 28c1-11 7-17 13-19" fill="none" stroke="#5d3a1a" stroke-width="3.4" stroke-linecap="round"/>
+  <path d="M51 13c13 1 17 13 12 19-11-1-17-9-12-19z" fill="#66bb6a" stroke="#2e7d32" stroke-width="1.7" stroke-linejoin="round"/>
+</svg>
