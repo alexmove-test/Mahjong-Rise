@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../debug_agent_log.dart';
 import '../debug_boot_timer.dart';
+import '../l10n/l10n.dart';
 import '../models/levels.dart';
 import '../services/progress_store.dart';
+import '../widgets/language_picker.dart';
 import 'game_screen.dart';
 import 'leaderboard_screen.dart';
 
@@ -125,6 +127,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
   @override
   Widget build(BuildContext context) {
     final store = _store;
+    final l10n = L10n.of(context);
 
     return Scaffold(
       backgroundColor: _fieldGreen,
@@ -157,7 +160,11 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Уровни · ${store?.totalStars ?? 0} ★ · открыто ${store?.maxUnlocked ?? 1}/${Levels.all.length}',
+                        l10n.starsOpen(
+                          store?.totalStars ?? 0,
+                          store?.maxUnlocked ?? 1,
+                          Levels.all.length,
+                        ),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: const Color(0xFF3D6B52).withValues(alpha: 0.9),
@@ -191,10 +198,41 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                                 onPressed: store == null ? null : _continueGame,
                                 icon: const Icon(Icons.play_arrow_rounded),
                                 label: Text(
-                                  'Продолжить · Ур. ${store?.lastPlayedLevel ?? 1}',
+                                  l10n.continueLevel(store?.lastPlayedLevel ?? 1),
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 15,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () => showLanguagePicker(context),
+                                borderRadius: BorderRadius.circular(14),
+                                child: Ink(
+                                  width: 48,
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(14),
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFF6B3E24),
+                                        Color(0xFF3A2012),
+                                      ],
+                                    ),
+                                    border: Border.all(
+                                      color: const Color(
+                                        0xFFD4AF37,
+                                      ).withValues(alpha: 0.75),
+                                      width: 1.4,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.language_rounded,
+                                    color: Color(0xFFE8C96A),
                                   ),
                                 ),
                               ),
@@ -258,6 +296,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                               stars: stars,
                               bestScore: best,
                               completed: store?.isCompleted(level.id) ?? false,
+                              inProgress: store?.hasSnapshotFor(level.id) ?? false,
                               onTap: () => _openLevel(level),
                             );
                           },
@@ -279,6 +318,7 @@ class _LevelCard extends StatelessWidget {
     required this.stars,
     required this.bestScore,
     required this.completed,
+    required this.inProgress,
     required this.onTap,
   });
 
@@ -287,12 +327,14 @@ class _LevelCard extends StatelessWidget {
   final int stars;
   final int bestScore;
   final bool completed;
+  final bool inProgress;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final gold = const Color(0xFFD4AF37);
     final ivory = const Color(0xFFF8F1DE);
+    final l10n = L10n.of(context);
 
     return Material(
       color: Colors.transparent,
@@ -349,7 +391,7 @@ class _LevelCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${level.difficultyLabel} · ${level.styleLabel}',
+                  '${l10n.difficulty(level)} · ${l10n.styleLabel(level)}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -376,11 +418,25 @@ class _LevelCard extends StatelessWidget {
                         ),
                     ],
                   ),
-                  if (completed && bestScore > 0)
+                  if (inProgress)
                     Padding(
                       padding: const EdgeInsets.only(top: 3),
                       child: Text(
-                        'Лучший: $bestScore',
+                        l10n.inProgress,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: gold.withValues(alpha: 0.9),
+                        ),
+                      ),
+                    )
+                  else if (completed && bestScore > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 3),
+                      child: Text(
+                        l10n.bestScore(bestScore),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(

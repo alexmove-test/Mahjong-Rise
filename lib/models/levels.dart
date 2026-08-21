@@ -115,7 +115,7 @@ abstract final class Levels {
           ),
           (
             title: 'Бутон',
-            layout: 'petal',
+            layout: 'ring',
             shuffles: 4,
             hints: 4,
             undos: 4,
@@ -135,7 +135,7 @@ abstract final class Levels {
           ),
           (
             title: 'Поляна',
-            layout: 'bloom',
+            layout: 'lantern',
             shuffles: 4,
             hints: 3,
             undos: 3,
@@ -156,7 +156,7 @@ abstract final class Levels {
           // 6–12: нормально
           (
             title: 'Рощица',
-            layout: 'meadow',
+            layout: 'crest',
             shuffles: 3,
             hints: 3,
             undos: 3,
@@ -176,7 +176,7 @@ abstract final class Levels {
           ),
           (
             title: 'Ручей',
-            layout: 'wave',
+            layout: 'bridge',
             shuffles: 3,
             hints: 3,
             undos: 3,
@@ -196,7 +196,7 @@ abstract final class Levels {
           ),
           (
             title: 'Беседка',
-            layout: 'garden',
+            layout: 'spiral',
             shuffles: 2,
             hints: 2,
             undos: 2,
@@ -216,7 +216,7 @@ abstract final class Levels {
           ),
           (
             title: 'Павлиний веер',
-            layout: 'fan',
+            layout: 'twin',
             shuffles: 2,
             hints: 2,
             undos: 2,
@@ -237,7 +237,7 @@ abstract final class Levels {
           ),
           (
             title: 'Пруд',
-            layout: 'lotus',
+            layout: 'arch',
             shuffles: 3,
             hints: 2,
             undos: 2,
@@ -257,7 +257,7 @@ abstract final class Levels {
           ),
           (
             title: 'Озеро',
-            layout: 'koi',
+            layout: 'cascade',
             shuffles: 2,
             hints: 1,
             undos: 1,
@@ -277,7 +277,7 @@ abstract final class Levels {
           ),
           (
             title: 'Плющ',
-            layout: 'vine',
+            layout: 'compass',
             shuffles: 3,
             hints: 2,
             undos: 2,
@@ -297,7 +297,7 @@ abstract final class Levels {
           ),
           (
             title: 'Фонари',
-            layout: 'festival',
+            layout: 'nest',
             shuffles: 2,
             hints: 1,
             undos: 1,
@@ -318,7 +318,7 @@ abstract final class Levels {
           ),
           (
             title: 'Храм ветров',
-            layout: 'pavilion',
+            layout: 'ribbon',
             shuffles: 1,
             hints: 1,
             undos: 0,
@@ -338,7 +338,7 @@ abstract final class Levels {
           ),
           (
             title: 'Небесный дракон',
-            layout: 'dragon',
+            layout: 'gate',
             shuffles: 0,
             hints: 0,
             undos: 0,

@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/game_snapshot.dart';
 import '../models/levels.dart';
 
 /// Сохранённый прогресс кампании.
@@ -12,6 +15,8 @@ class ProgressStore {
   static const _kLastPlayed = 'progress.lastPlayed';
   static const _kStarsPrefix = 'progress.stars.';
   static const _kBestPrefix = 'progress.best.';
+  static const _kTableCoachDone = 'progress.tableCoachDone';
+  static const _kSnapshot = 'progress.snapshot';
 
   static Future<ProgressStore> open() async {
     final prefs = await SharedPreferences.getInstance();
@@ -41,6 +46,32 @@ class ProgressStore {
   Future<void> markPlayed(int levelId) async {
     final id = levelId.clamp(1, Levels.all.length);
     await _prefs.setInt(_kLastPlayed, id);
+  }
+
+  bool get tableCoachDone => _prefs.getBool(_kTableCoachDone) ?? false;
+
+  Future<void> markTableCoachDone() => _prefs.setBool(_kTableCoachDone, true);
+
+  GameSnapshot? get savedSnapshot {
+    final raw = _prefs.getString(_kSnapshot);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return null;
+      return GameSnapshot.fromJson(Map<String, Object?>.from(decoded));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool hasSnapshotFor(int levelId) => savedSnapshot?.levelId == levelId;
+
+  Future<void> saveSnapshot(GameSnapshot snapshot) async {
+    await _prefs.setString(_kSnapshot, jsonEncode(snapshot.toJson()));
+  }
+
+  Future<void> clearSnapshot() async {
+    await _prefs.remove(_kSnapshot);
   }
 
   int get totalStars {
@@ -84,6 +115,7 @@ class ProgressStore {
     }
 
     await markPlayed(level.id);
+    await clearSnapshot();
 
     return (
       stars: earned > prevStars ? earned : prevStars,

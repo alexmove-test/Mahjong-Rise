@@ -94,7 +94,56 @@ class Board {
         ),
     ];
 
-    return Board(tiles: tiles, layoutName: layoutName);
+    final board = Board(tiles: tiles, layoutName: layoutName);
+    if (!board._dealReverse(symbols, rng)) {
+      for (var i = 0; i < tiles.length; i++) {
+        tiles[i].symbol = symbols[i];
+      }
+      board.shuffleRemaining(random: rng, attempts: 80);
+    }
+    return board;
+  }
+
+  /// Places matching pairs onto currently-free slots, working backwards.
+  /// Guarantees a solution exists; the player can still fill the tray badly.
+  bool _dealReverse(List<String> symbols, Random rng) {
+    final remaining = <String, int>{};
+    for (final symbol in symbols) {
+      remaining[symbol] = (remaining[symbol] ?? 0) + 1;
+    }
+    final live = tiles.map((t) => t.id).toSet();
+
+    while (live.isNotEmpty) {
+      final free = tiles
+          .where((t) => live.contains(t.id) && _isFreeAmong(t, live))
+          .toList()
+        ..shuffle(rng);
+      if (free.length < 2) return false;
+
+      final available = remaining.entries
+          .where((e) => e.value >= 2)
+          .map((e) => e.key)
+          .toList()
+        ..shuffle(rng);
+      if (available.isEmpty) return false;
+
+      final symbol = available.first;
+      free[0].symbol = symbol;
+      free[1].symbol = symbol;
+      remaining[symbol] = remaining[symbol]! - 2;
+      live.remove(free[0].id);
+      live.remove(free[1].id);
+    }
+    return true;
+  }
+
+  bool _isFreeAmong(Tile tile, Set<int> liveIds) {
+    if (!liveIds.contains(tile.id)) return false;
+    for (final other in tiles) {
+      if (!liveIds.contains(other.id) || other.layer <= tile.layer) continue;
+      if (_overlaps(tile, other)) return false;
+    }
+    return true;
   }
 
   /// Vita-стиль: плитка свободна, если её не накрывает слой выше.
@@ -133,8 +182,43 @@ class Board {
     return freeTiles().isNotEmpty;
   }
 
+  /// Есть ход, который не заводит в тупик сразу: пара или свободная кость в лоток.
+  bool hasUsefulMove() {
+    if (freeTiles().isEmpty) return false;
+    if (_hasMatchAmongFree()) return true;
+    return trayLiveCount < trayCapacity;
+  }
+
+  bool _hasMatchAmongFree() {
+    final free = freeTiles();
+    final liveTray = tray.where((t) => !t.removing && !t.flying).toList();
+    for (final boardTile in free) {
+      for (final trayTile in liveTray) {
+        if (TileSymbols.matches(boardTile.symbol, trayTile.symbol)) {
+          return true;
+        }
+      }
+    }
+    for (var i = 0; i < free.length; i++) {
+      for (var j = i + 1; j < free.length; j++) {
+        if (TileSymbols.matches(free[i].symbol, free[j].symbol)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /// Следующий сбор этой кости сразу заполнит лоток без пары.
+  bool wouldFillWithoutPair(Tile tile) {
+    if (trayLiveCount != trayCapacity - 1) return false;
+    if (!isFree(tile)) return false;
+    final live = tray.where((t) => !t.removing && !t.flying).toList();
+    return !live.any((t) => TileSymbols.matches(t.symbol, tile.symbol));
+  }
+
   bool trayHasPair() {
-    final live = tray.where((t) => !t.removing).toList();
+    final live = tray.where((t) => !t.removing && !t.flying).toList();
     for (var i = 0; i < live.length; i++) {
       for (var j = i + 1; j < live.length; j++) {
         if (TileSymbols.matches(live[i].symbol, live[j].symbol)) {
@@ -145,35 +229,17 @@ class Board {
     return false;
   }
 
-  /// Подсказка: свободная плитка на поле + совпадающая в лотке (если есть).
-  ({Tile boardTile, Tile? trayTile})? findHint() {
+  /// Подсказка: пара лоток+поле или две свободные одинаковые на поле.
+  ({Tile boardTile, Tile? pairTile})? findHint() {
     if (trayLiveCount >= trayCapacity && !trayHasPair()) return null;
     final free = freeTiles();
     if (free.isEmpty) return null;
 
-    final liveTray = tray.where((t) => !t.removing).toList();
+    final liveTray = tray.where((t) => !t.removing && !t.flying).toList();
     for (final boardTile in free) {
       for (final trayTile in liveTray) {
         if (TileSymbols.matches(boardTile.symbol, trayTile.symbol)) {
-          return (boardTile: boardTile, trayTile: trayTile);
-        }
-      }
-    }
-
-    return (boardTile: free.first, trayTile: null);
-  }
-
-  /// Магнит: свободная плитка, совпадающая с лотком, иначе часть пары на поле.
-  Tile? findMagnetTarget() {
-    if (trayLiveCount >= trayCapacity && !trayHasPair()) return null;
-    final free = freeTiles();
-    if (free.isEmpty) return null;
-
-    final liveTray = tray.where((t) => !t.removing).toList();
-    for (final trayTile in liveTray) {
-      for (final boardTile in free) {
-        if (TileSymbols.matches(boardTile.symbol, trayTile.symbol)) {
-          return boardTile;
+          return (boardTile: boardTile, pairTile: trayTile);
         }
       }
     }
@@ -181,12 +247,19 @@ class Board {
     for (var i = 0; i < free.length; i++) {
       for (var j = i + 1; j < free.length; j++) {
         if (TileSymbols.matches(free[i].symbol, free[j].symbol)) {
-          return free[i];
+          return (boardTile: free[i], pairTile: free[j]);
         }
       }
     }
 
-    return free.first;
+    return null;
+  }
+
+  /// Магнит: свободная плитка, совпадающая с лотком, иначе часть пары на поле.
+  Tile? findMagnetTarget() {
+    if (trayLiveCount >= trayCapacity && !trayHasPair()) return null;
+    final hint = findHint();
+    return hint?.boardTile;
   }
 
   /// Последняя снятая пара (для анимации / undo).
@@ -221,7 +294,7 @@ class Board {
   bool _clearPairsFromTray() {
     var any = false;
     while (true) {
-      final live = tray.where((t) => !t.removing).toList();
+      final live = tray.where((t) => !t.removing && !t.flying).toList();
       var found = false;
       for (var i = 0; i < live.length; i++) {
         for (var j = i + 1; j < live.length; j++) {
@@ -261,7 +334,16 @@ class Board {
     tile.inTray = false;
     tile.removing = false;
     tile.removed = false;
+    tile.flying = false;
     return true;
+  }
+
+  /// Снять проигрыш: вернуть последнюю собранную плитку на поле.
+  bool reviveFromTray(Tile tile) {
+    if (!isLost) return false;
+    final ok = returnFromTray(tile);
+    if (ok) isLost = false;
+    return ok;
   }
 
   /// Вернуть сматченную пару обратно в лоток (undo матча).
@@ -278,8 +360,19 @@ class Board {
 
   void clearSelection() {}
 
-  void shuffleRemaining({Random? random}) {
+  /// Тасует лица, пока наверху есть полезная пара. `false` — пары нет.
+  bool shuffleRemaining({Random? random, int attempts = 40}) {
+    if (freeTiles().isEmpty) return false;
     final rng = random ?? Random();
+    for (var i = 0; i < attempts; i++) {
+      _shuffleOnce(rng);
+      if (_hasMatchAmongFree()) return true;
+    }
+    _shuffleOnce(rng);
+    return _hasMatchAmongFree();
+  }
+
+  void _shuffleOnce(Random rng) {
     final alive = tiles.where((t) => t.isOnBoard).toList();
     final symbols = alive.map((t) => t.symbol).toList()..shuffle(rng);
     for (var i = 0; i < alive.length; i++) {

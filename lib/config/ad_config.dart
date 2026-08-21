@@ -12,4 +12,15 @@ abstract final class AdConfig {
 
   static String get rewardedUnitId =>
       kDebugMode ? testRewardedUnitId : productionRewardedUnitId;
+
+  /// Flip to `true` after the public Play/App Store release.
+  static const useRealAds = false;
+
+  /// AdMob works on Android/iOS only. Until [useRealAds], always simulate.
+  static bool get simulateAds {
+    if (!useRealAds) return true;
+    if (kIsWeb) return true;
+    return defaultTargetPlatform != TargetPlatform.android &&
+        defaultTargetPlatform != TargetPlatform.iOS;
+  }
 }

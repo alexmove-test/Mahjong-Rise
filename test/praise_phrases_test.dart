@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mahjong/l10n/praise_phrases.dart';
 
@@ -16,82 +18,59 @@ void main() {
   });
 
   group('FastMatchStreak', () {
-    test('stays silent until the third match inside the window', () {
-      final streak = FastMatchStreak();
+    test('stays silent until the second match inside the window', () {
+      final streak = FastMatchStreak(random: Random(1));
       final t0 = DateTime.utc(2026, 8, 19, 0, 0, 0);
 
       expect(streak.registerMatch(now: t0, languageCode: 'en'), isNull);
-      expect(
-        streak.registerMatch(
-          now: t0.add(const Duration(seconds: 1)),
-          languageCode: 'en',
-        ),
-        isNull,
+      final asset = streak.registerMatch(
+        now: t0.add(const Duration(seconds: 1)),
+        languageCode: 'en',
       );
-      expect(
-        streak.registerMatch(
-          now: t0.add(const Duration(seconds: 2)),
-          languageCode: 'en',
-        ),
-        'sfx/praise/en_1.mp3',
-      );
+      expect(asset, isNotNull);
+      expect(asset, startsWith('sfx/praise/en_'));
     });
 
     test('cooldown blocks praise even if the streak continues', () {
-      final streak = FastMatchStreak();
+      final streak = FastMatchStreak(random: Random(1));
       final t0 = DateTime.utc(2026, 8, 19, 0, 0, 0);
 
-      streak.registerMatch(now: t0, languageCode: 'ru');
-      streak.registerMatch(
-        now: t0.add(const Duration(milliseconds: 400)),
-        languageCode: 'ru',
+      expect(streak.registerMatch(now: t0, languageCode: 'ru'), isNull);
+      expect(
+        streak.registerMatch(
+          now: t0.add(const Duration(milliseconds: 400)),
+          languageCode: 'ru',
+        ),
+        isNotNull,
       );
       expect(
         streak.registerMatch(
           now: t0.add(const Duration(milliseconds: 800)),
           languageCode: 'ru',
         ),
-        'sfx/praise/ru_1.mp3',
-      );
-      expect(
-        streak.registerMatch(
-          now: t0.add(const Duration(seconds: 1)),
-          languageCode: 'ru',
-        ),
         isNull,
       );
     });
 
-    test('next burst after cooldown rotates to the next clip', () {
-      final streak = FastMatchStreak();
+    test('next burst after cooldown plays another clip', () {
+      final streak = FastMatchStreak(random: Random(1));
       final t0 = DateTime.utc(2026, 8, 19, 0, 0, 0);
 
       streak.registerMatch(now: t0, languageCode: 'ru');
-      streak.registerMatch(
+      final first = streak.registerMatch(
         now: t0.add(const Duration(seconds: 1)),
         languageCode: 'ru',
       );
-      streak.registerMatch(
-        now: t0.add(const Duration(seconds: 2)),
-        languageCode: 'ru',
-      );
+      expect(first, isNotNull);
 
       final t1 = t0.add(const Duration(seconds: 13));
       expect(streak.registerMatch(now: t1, languageCode: 'ru'), isNull);
-      expect(
-        streak.registerMatch(
-          now: t1.add(const Duration(seconds: 1)),
-          languageCode: 'ru',
-        ),
-        isNull,
+      final second = streak.registerMatch(
+        now: t1.add(const Duration(seconds: 1)),
+        languageCode: 'ru',
       );
-      expect(
-        streak.registerMatch(
-          now: t1.add(const Duration(seconds: 2)),
-          languageCode: 'ru',
-        ),
-        'sfx/praise/ru_2.mp3',
-      );
+      expect(second, isNotNull);
+      expect(second, startsWith('sfx/praise/ru_'));
     });
 
     test('window break starts a new silent burst', () {

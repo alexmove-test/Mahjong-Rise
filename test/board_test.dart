@@ -285,4 +285,73 @@ void main() {
     );
     expect(TileIcons.assetFor('tile-02-05'), 'assets/titles/tile/02/05.svg');
   });
+
+  group('hints magnets and deals', () {
+    test('findHint highlights a free-free pair instead of a random tile', () {
+      final a = Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0);
+      final b = Tile(id: 1, symbol: 'A', layer: 0, x: 4, y: 0);
+      final c = Tile(id: 2, symbol: 'B', layer: 0, x: 8, y: 0);
+      final board = Board(tiles: [a, b, c]);
+      final hint = board.findHint();
+      expect(hint, isNotNull);
+      expect({hint!.boardTile.id, hint.pairTile!.id}, {0, 1});
+    });
+
+    test('findHint returns null when no pair exists', () {
+      final board = Board(
+        tiles: [
+          Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
+          Tile(id: 1, symbol: 'B', layer: 0, x: 4, y: 0),
+        ],
+      );
+      expect(board.findHint(), isNull);
+      expect(board.findMagnetTarget(), isNull);
+    });
+
+    test('magnet prefers a tray match', () {
+      final tray = Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0, inTray: true);
+      final match = Tile(id: 1, symbol: 'A', layer: 0, x: 4, y: 0);
+      final other = Tile(id: 2, symbol: 'B', layer: 0, x: 8, y: 0);
+      final board = Board(tiles: [tray, match, other]);
+      board.tray.add(tray);
+      expect(board.findMagnetTarget()?.id, 1);
+    });
+
+    test('fromLayout starts with a useful match', () {
+      for (final level in Levels.all) {
+        final board = Board.fromLayout(
+          level.layout,
+          random: Random(level.id * 17),
+          style: level.style,
+          pairSize: level.pairSize,
+          uniqueCap: level.uniqueCap,
+          levelId: level.id,
+          guestTypes: level.guestTileTypes,
+        );
+        expect(
+          board.hasUsefulMove(),
+          isTrue,
+          reason: 'level ${level.id} ${level.layout}',
+        );
+        expect(
+          board.findHint(),
+          isNotNull,
+          reason: 'level ${level.id} should have a hintable pair',
+        );
+      }
+    });
+
+    test('shuffleRemaining only succeeds with a real pair', () {
+      final board = Board(
+        tiles: [
+          Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
+          Tile(id: 1, symbol: 'A', layer: 0, x: 4, y: 0),
+          Tile(id: 2, symbol: 'B', layer: 0, x: 8, y: 0),
+          Tile(id: 3, symbol: 'B', layer: 0, x: 12, y: 0),
+        ],
+      );
+      expect(board.shuffleRemaining(random: Random(4)), isTrue);
+      expect(board.findHint(), isNotNull);
+    });
+  });
 }

@@ -39,6 +39,18 @@ void main() {
       'pavilion',
       'dragon',
       'turtle',
+      'ring',
+      'lantern',
+      'crest',
+      'bridge',
+      'spiral',
+      'twin',
+      'arch',
+      'cascade',
+      'compass',
+      'nest',
+      'ribbon',
+      'gate',
     ];
     for (final name in names) {
       final positions = Layouts.byName(name);
@@ -184,7 +196,7 @@ void main() {
     expect(find.byType(GameBoard), findsOneWidget);
     expect(find.byType(TileWidget), findsWidgets);
     expect(find.text('0'), findsWidgets);
-    expect(find.text('Уровень 1'), findsOneWidget);
+    expect(find.text('Level 1'), findsOneWidget);
     expect(find.text('0/16'), findsOneWidget);
     expect(find.text('1x'), findsOneWidget);
   });

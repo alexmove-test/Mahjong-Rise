@@ -9,6 +9,7 @@ class Tile {
     this.removed = false,
     this.removing = false,
     this.inTray = false,
+    this.flying = false,
   });
 
   final int id;
@@ -32,6 +33,9 @@ class Tile {
   /// Лежит в верхнем лотке (снята с поля, но ещё не сматчена).
   bool inTray;
 
+  /// Летит с поля в лоток — ещё не участвует в матче.
+  bool flying;
+
   /// Полностью вышла из игры.
   bool get isCleared => removed || removing;
 
@@ -47,6 +51,7 @@ class Tile {
     removed: removed,
     removing: removing,
     inTray: inTray,
+    flying: flying,
   );
 
   @override

@@ -56,6 +56,20 @@ class Layouts {
       case 'dragon':
       case 'turtle':
         return 4;
+      case 'ring':
+      case 'lantern':
+      case 'crest':
+      case 'bridge':
+      case 'spiral':
+      case 'twin':
+      case 'arch':
+        return 2;
+      case 'cascade':
+      case 'compass':
+      case 'nest':
+      case 'ribbon':
+      case 'gate':
+        return 3;
       default:
         return 2;
     }
@@ -294,6 +308,182 @@ class Layouts {
     return _done(p, 'dragon');
   }
 
+  /// Кольцо (14 + стопки).
+  static List<LayoutPos> ring() {
+    final p = <LayoutPos>[];
+    _row(p, 0, [2, 4, 6, 8]);
+    _row(p, 2, [0, 10]);
+    _row(p, 4, [0, 10]);
+    _row(p, 6, [2, 4, 6, 8]);
+    _row(p, 2, [4, 6], 1);
+    _row(p, 4, [4, 6], 1);
+    return _done(p, 'ring');
+  }
+
+  /// Фонарь (20).
+  static List<LayoutPos> lantern() {
+    final p = <LayoutPos>[];
+    _row(p, 0, [4, 6]);
+    _row(p, 2, [2, 4, 6, 8]);
+    _row(p, 4, [2, 4, 6, 8]);
+    _row(p, 6, [4, 6]);
+    _row(p, 8, [4, 6]);
+    _row(p, 3, [5], 1);
+    _row(p, 5, [5], 1);
+    return _done(p, 'lantern');
+  }
+
+  /// Герб (24).
+  static List<LayoutPos> crest() {
+    final p = <LayoutPos>[];
+    _row(p, 0, [4, 6]);
+    _row(p, 2, [2, 4, 6, 8]);
+    _row(p, 4, [0, 2, 4, 6, 8, 10]);
+    _row(p, 6, [2, 4, 6, 8]);
+    _row(p, 8, [4, 6]);
+    _row(p, 3, [5], 1);
+    _row(p, 5, [4, 6], 1);
+    _row(p, 7, [5], 1);
+    return _done(p, 'crest');
+  }
+
+  /// Мост между двумя берегами (26).
+  static List<LayoutPos> bridge() {
+    final p = <LayoutPos>[];
+    _row(p, 0, [0, 2, 12, 14]);
+    _row(p, 2, [0, 2, 4, 10, 12, 14]);
+    _row(p, 4, [2, 4, 6, 8, 10, 12]);
+    _row(p, 6, [4, 6, 8, 10]);
+    _row(p, 3, [6, 8], 1);
+    _row(p, 1, [1], 1);
+    _row(p, 1, [13], 1);
+    return _done(p, 'bridge');
+  }
+
+  /// Спираль (28).
+  static List<LayoutPos> spiral() {
+    final p = <LayoutPos>[];
+    _row(p, 0, [0, 2, 4, 6, 8]);
+    _row(p, 2, [8, 10]);
+    _row(p, 4, [2, 4, 6, 8, 10]);
+    _row(p, 6, [2]);
+    _row(p, 8, [2, 4, 6, 8]);
+    _row(p, 1, [4], 1);
+    _row(p, 3, [6], 1);
+    _row(p, 5, [4, 8], 1);
+    _row(p, 7, [4], 1);
+    return _done(p, 'spiral');
+  }
+
+  /// Две башни (30).
+  static List<LayoutPos> twin() {
+    final p = <LayoutPos>[];
+    _row(p, 0, [0, 2, 10, 12]);
+    _row(p, 2, [0, 2, 4, 8, 10, 12]);
+    _row(p, 4, [1, 3, 9, 11]);
+    _row(p, 6, [0, 2, 10, 12]);
+    _row(p, 8, [1, 11]);
+    _row(p, 1, [1], 1);
+    _row(p, 1, [11], 1);
+    _row(p, 3, [2], 1);
+    _row(p, 3, [10], 1);
+    _row(p, 5, [1], 1);
+    _row(p, 5, [11], 1);
+    return _done(p, 'twin');
+  }
+
+  /// Арка (32).
+  static List<LayoutPos> arch() {
+    final p = <LayoutPos>[];
+    _row(p, 0, [4, 6, 8]);
+    _row(p, 2, [2, 4, 6, 8, 10]);
+    _row(p, 4, [0, 2, 10, 12]);
+    _row(p, 6, [0, 2, 10, 12]);
+    _row(p, 8, [0, 2, 4, 8, 10, 12]);
+    _row(p, 10, [2, 4, 8, 10]);
+    _row(p, 1, [6], 1);
+    _row(p, 3, [6], 1);
+    _row(p, 7, [3, 9], 1);
+    return _done(p, 'arch');
+  }
+
+  /// Каскад (36).
+  static List<LayoutPos> cascade() {
+    final p = <LayoutPos>[];
+    _row(p, 0, [6, 8]);
+    _row(p, 2, [4, 6, 8, 10]);
+    _row(p, 4, [2, 4, 6, 8, 10, 12]);
+    _row(p, 6, [0, 2, 4, 6, 8, 10, 12, 14]);
+    _row(p, 8, [2, 4, 10, 12]);
+    _row(p, 1, [7], 1);
+    _row(p, 3, [7], 1);
+    _row(p, 5, [5, 9], 1);
+    _row(p, 7, [4, 10], 1);
+    return _done(p, 'cascade');
+  }
+
+  /// Компас (40).
+  static List<LayoutPos> compass() {
+    final p = <LayoutPos>[];
+    _row(p, 0, [6, 8]);
+    _row(p, 2, [4, 6, 8, 10]);
+    _row(p, 4, [0, 2, 4, 6, 8, 10, 12, 14]);
+    _row(p, 6, [4, 6, 8, 10]);
+    _row(p, 8, [6, 8]);
+    _row(p, 1, [7], 1);
+    _row(p, 3, [7], 1);
+    _row(p, 5, [3, 7, 11], 1);
+    _row(p, 7, [7], 1);
+    return _done(p, 'compass');
+  }
+
+  /// Гнездо (44).
+  static List<LayoutPos> nest() {
+    final p = <LayoutPos>[];
+    _row(p, 0, [4, 6, 8, 10]);
+    _row(p, 2, [2, 4, 6, 8, 10, 12]);
+    _row(p, 4, [0, 2, 4, 6, 8, 10, 12, 14]);
+    _row(p, 6, [2, 4, 6, 8, 10, 12]);
+    _row(p, 8, [4, 6, 8, 10]);
+    _row(p, 3, [7], 1);
+    _row(p, 5, [5, 9], 1);
+    _row(p, 7, [7], 1);
+    return _done(p, 'nest');
+  }
+
+  /// Лента (48).
+  static List<LayoutPos> ribbon() {
+    final p = <LayoutPos>[];
+    _row(p, 0, [0, 2, 4, 6]);
+    _row(p, 2, [2, 4, 6, 8, 10]);
+    _row(p, 4, [6, 8, 10, 12, 14]);
+    _row(p, 6, [4, 6, 8, 10, 12]);
+    _row(p, 8, [0, 2, 4, 6, 8]);
+    _row(p, 10, [2, 4, 6]);
+    _row(p, 1, [4], 1);
+    _row(p, 3, [8], 1);
+    _row(p, 5, [10], 1);
+    _row(p, 7, [6], 1);
+    _row(p, 9, [4], 1);
+    return _done(p, 'ribbon');
+  }
+
+  /// Врата (52).
+  static List<LayoutPos> gate() {
+    final p = <LayoutPos>[];
+    _row(p, 0, [2, 4, 6, 8, 10, 12]);
+    _row(p, 2, [0, 2, 12, 14]);
+    _row(p, 4, [0, 2, 12, 14]);
+    _row(p, 6, [0, 2, 4, 10, 12, 14]);
+    _row(p, 8, [0, 2, 4, 6, 8, 10, 12, 14]);
+    _row(p, 10, [2, 4, 6, 8, 10, 12]);
+    _row(p, 1, [7], 1);
+    _row(p, 3, [3, 11], 1);
+    _row(p, 7, [4, 10], 1);
+    _row(p, 9, [7], 1);
+    return _done(p, 'gate');
+  }
+
   static List<LayoutPos> byName(String name) {
     final depth = _maxStackDepth(name);
     final List<LayoutPos> raw = switch (name) {
@@ -309,6 +499,18 @@ class Layouts {
       'festival' || 'temple' => festival(),
       'pavilion' => pavilion(),
       'dragon' || 'turtle' => dragon(),
+      'ring' => ring(),
+      'lantern' => lantern(),
+      'crest' => crest(),
+      'bridge' => bridge(),
+      'spiral' => spiral(),
+      'twin' => twin(),
+      'arch' => arch(),
+      'cascade' => cascade(),
+      'compass' => compass(),
+      'nest' => nest(),
+      'ribbon' => ribbon(),
+      'gate' => gate(),
       _ => bloom(),
     };
     return _finalizeStacks(raw, depth, name);

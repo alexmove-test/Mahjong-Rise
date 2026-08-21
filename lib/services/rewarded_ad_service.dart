@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:flutter/widgets.dart';
 
 import '../config/ad_config.dart';
+import '../widgets/simulated_rewarded_ad.dart';
 import 'ad_bootstrap.dart';
 
 /// Загрузка и показ rewarded-рекламы за буст.
@@ -10,9 +12,10 @@ class RewardedAdService {
   RewardedAd? _ad;
   Future<void>? _loadFuture;
 
-  bool get isReady => _ad != null;
+  bool get isReady => AdBootstrap.simulation || _ad != null;
 
   Future<void> preload() {
+    if (AdBootstrap.simulation) return Future.value();
     if (!AdBootstrap.enabled) return Future.value();
     if (_ad != null) return Future.value();
     return _loadFuture ??= _load();
@@ -45,7 +48,11 @@ class RewardedAdService {
   }
 
   /// Показывает рекламу. Возвращает `true`, если игрок досмотрел до награды.
-  Future<bool> show() async {
+  Future<bool> show({BuildContext? context}) async {
+    if (AdBootstrap.simulation) {
+      if (context == null || !context.mounted) return false;
+      return SimulatedRewardedAd.show(context);
+    }
     if (!AdBootstrap.enabled) return false;
 
     if (_ad == null) {

@@ -1,7 +1,9 @@
+import 'dart:math';
+
 /// Spoken praise for fast consecutive matches. Clips live in `assets/sfx/praise/`.
-const praiseWindow = Duration(seconds: 3);
-const praiseMinMatches = 3;
-const praiseCooldown = Duration(seconds: 10);
+const praiseWindow = Duration(seconds: 4);
+const praiseMinMatches = 2;
+const praiseCooldown = Duration(seconds: 8);
 
 const praiseLanguages = {'en', 'ru'};
 
@@ -39,15 +41,17 @@ class FastMatchStreak {
     this.window = praiseWindow,
     this.minMatches = praiseMinMatches,
     this.cooldown = praiseCooldown,
-  });
+    Random? random,
+  }) : _random = random ?? Random();
 
   final Duration window;
   final int minMatches;
   final Duration cooldown;
+  final Random _random;
   DateTime? _lastMatchAt;
   DateTime? _lastPraiseAt;
   int _count = 0;
-  int _phraseIndex = 0;
+  int? _lastClip;
 
   int get count => _count;
 
@@ -73,9 +77,12 @@ class FastMatchStreak {
       return null;
     }
 
-    final asset = praiseClipAsset(languageCode, _phraseIndex);
-    _phraseIndex = (_phraseIndex + 1) % 4;
+    var index = _random.nextInt(4);
+    if (_lastClip != null && index == _lastClip) {
+      index = (index + 1 + _random.nextInt(3)) % 4;
+    }
+    _lastClip = index;
     _lastPraiseAt = now;
-    return asset;
+    return praiseClipAsset(languageCode, index);
   }
 }

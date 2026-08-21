@@ -8,8 +8,11 @@ import '../app_version.dart';
 import '../config/app_links.dart';
 import '../debug_agent_log.dart';
 import '../debug_boot_timer.dart';
+import '../l10n/l10n.dart';
 import '../l10n/praise_phrases.dart';
 import '../models/board.dart';
+import '../models/first_table_coach.dart';
+import '../models/game_snapshot.dart';
 import '../models/levels.dart';
 import '../models/tile.dart';
 import '../services/ad_bootstrap.dart';
@@ -20,7 +23,10 @@ import '../services/progress_store.dart';
 import '../services/rewarded_ad_service.dart';
 import '../utils/tile_icons.dart';
 import '../widgets/game_board.dart';
+import '../widgets/language_picker.dart';
 import '../widgets/premium_ui.dart';
+import '../widgets/table_coach_banner.dart';
+import '../widgets/tile_flight.dart';
 import '../widgets/tile_symbol_image.dart';
 import '../widgets/tile_widget.dart';
 
@@ -224,34 +230,27 @@ class GameScreen extends StatefulWidget {
   State<GameScreen> createState() => _GameScreenState();
 }
 
-class _UndoEntry {
-  const _UndoEntry.collect({
-    required this.tileId,
+enum _RewardedBoost { shuffle, magnet, hint, undo }
+
+class _TileFlight {
+  _TileFlight({
+    required this.tile,
+    required this.from,
+    required this.to,
+    required this.token,
     required this.scoreBefore,
     required this.comboBefore,
-  }) : kind = _UndoKind.collect,
-       matchedIds = const [];
+  });
 
-  /// Матч после сбора [tileId]: undo возвращает пару в лоток, а [tileId] — на поле.
-  const _UndoEntry.match({
-    required this.tileId,
-    required this.matchedIds,
-    required this.scoreBefore,
-    required this.comboBefore,
-  }) : kind = _UndoKind.match;
-
-  final _UndoKind kind;
-  final int? tileId;
-  final List<int> matchedIds;
+  final Tile tile;
+  final Rect from;
+  final Rect to;
+  final int token;
   final int scoreBefore;
   final int comboBefore;
 }
 
-enum _UndoKind { collect, match }
-
-enum _RewardedBoost { shuffle, magnet, hint, undo }
-
-class _GameScreenState extends State<GameScreen> {
+class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   static const _fieldGreen = _Ui.table;
 
   late Board _board;
@@ -270,18 +269,27 @@ class _GameScreenState extends State<GameScreen> {
   late int _magnetsLeft;
 
   Set<int> _hintedIds = {};
-  final List<_UndoEntry> _undoStack = [];
+  final List<UndoEntry> _undoStack = [];
   final GameSfx _sfx = GameSfx();
   final FastMatchStreak _fastPraise = FastMatchStreak();
   final RewardedAdService _rewardedAds = RewardedAdService();
+  late FirstTableCoach _coach;
   bool _adBusy = false;
+  final Set<int> _flyingIds = {};
+  final List<_TileFlight> _flights = [];
+  final List<GlobalKey> _traySlotKeys = List.generate(
+    Board.trayCapacity,
+    (_) => GlobalKey(),
+  );
+  int _flightGen = 0;
 
   LevelDef get _level => widget.level;
-  bool get _adsAvailable => AdBootstrap.enabled && !_adBusy;
+  bool get _adsAvailable => AdBootstrap.available && !_adBusy;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // #region agent log
     agentDbg(
       location: 'game_screen.dart:initState',
@@ -292,16 +300,37 @@ class _GameScreenState extends State<GameScreen> {
     // #endregion
     _sfx.init();
     unawaited(_rewardedAds.preload());
-    _resetBoard();
+    _coach = FirstTableCoach(
+      active: _level.id == 1 && !widget.progress.tableCoachDone,
+    );
+    final snap = widget.progress.savedSnapshot;
+    if (snap != null && snap.levelId != _level.id) {
+      unawaited(widget.progress.clearSnapshot());
+    }
+    if (snap != null && snap.levelId == _level.id) {
+      _restoreSnapshot(snap);
+    } else {
+      _resetBoard();
+    }
     widget.progress.markPlayed(_level.id);
   }
 
   @override
   void dispose() {
     _hintTimer?.cancel();
+    _persistSnapshot();
+    WidgetsBinding.instance.removeObserver(this);
     _rewardedAds.dispose();
     _sfx.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _persistSnapshot();
+    }
   }
 
   void _resetBoard() {
@@ -327,7 +356,90 @@ class _GameScreenState extends State<GameScreen> {
     _magnetsLeft = _level.hints;
     _hintedIds = {};
     _undoStack.clear();
+    _flyingIds.clear();
+    _flights.clear();
     _fastPraise.reset();
+    _coach = FirstTableCoach(
+      active: _level.id == 1 && !widget.progress.tableCoachDone,
+    );
+    unawaited(widget.progress.clearSnapshot());
+  }
+
+  void _restoreSnapshot(GameSnapshot snap) {
+    _hintTimer?.cancel();
+    _boardGeneration++;
+    _board = Board(
+      tiles: [for (final tile in snap.tiles) tile.toTile()],
+      layoutName: snap.layoutName,
+    );
+    _board.tray.clear();
+    for (final id in snap.trayIds) {
+      final tile = _board.tiles.firstWhere((t) => t.id == id);
+      tile.inTray = true;
+      tile.removed = false;
+      tile.removing = false;
+      _board.tray.add(tile);
+    }
+    _score = snap.score;
+    _combo = snap.combo;
+    _toast = null;
+    _winHandled = false;
+    _loseHandled = false;
+    _scoreSparkTick = 0;
+    _shufflesLeft = snap.shuffles;
+    _hintsLeft = snap.hints;
+    _undosLeft = snap.undos;
+    _magnetsLeft = snap.magnets;
+    _hintedIds = {};
+    _undoStack
+      ..clear()
+      ..addAll(snap.undoStack);
+    _flyingIds.clear();
+    _flights.clear();
+    _fastPraise.reset();
+    final step = TableCoachStep.values.asNameMap()[snap.coachStep];
+    _coach = FirstTableCoach(
+      active: snap.coachActive && !widget.progress.tableCoachDone,
+      step: step ?? TableCoachStep.tapFree,
+    );
+  }
+
+  void _persistSnapshot() {
+    if (!mounted) return;
+    if (_board.isWon || _board.isLost) return;
+    final snapshot = GameSnapshot(
+      levelId: _level.id,
+      layoutName: _board.layoutName,
+      score: _score,
+      combo: _combo,
+      shuffles: _shufflesLeft,
+      hints: _hintsLeft,
+      undos: _undosLeft,
+      magnets: _magnetsLeft,
+      tiles: [for (final tile in _board.tiles) TileSnap.fromTile(tile)],
+      trayIds: [
+        for (final tile in _board.tray)
+          if (!tile.removed) tile.id,
+      ],
+      undoStack: List<UndoEntry>.from(_undoStack),
+      coachStep: _coach.active ? _coach.step.name : null,
+      coachActive: _coach.active,
+    );
+    unawaited(widget.progress.saveSnapshot(snapshot));
+  }
+
+  void _maybeFinishCoach() {
+    if (_coach.finished && !widget.progress.tableCoachDone) {
+      unawaited(widget.progress.markTableCoachDone());
+    }
+  }
+
+  Rect? _traySlotRect(int index) {
+    if (index < 0 || index >= _traySlotKeys.length) return null;
+    final box =
+        _traySlotKeys[index].currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return null;
+    return box.localToGlobal(Offset.zero) & box.size;
   }
 
   void _startNewGame() {
@@ -344,27 +456,72 @@ class _GameScreenState extends State<GameScreen> {
   void _onTileTap(Tile tile, Rect fromRect) {
     _clearHint();
     if (_board.isWon || _board.isLost) return;
+    final l10n = L10n.of(context);
 
     final scoreBefore = _score;
     final comboBefore = _combo;
+    final risky = _board.wouldFillWithoutPair(tile);
+    final destIndex = _board.trayLiveCount;
     final result = _board.pick(tile);
 
     if (result == MatchResult.blocked) {
-      setState(() => _toast = 'Плитка заблокирована');
+      setState(() => _toast = l10n.tileBlocked);
       _sfx.error();
       return;
     }
     if (result == MatchResult.trayFull) {
-      setState(() => _toast = 'Лоток полон');
+      setState(() => _toast = l10n.trayIsFull);
       _sfx.error();
       return;
     }
 
     _sfx.collect();
+    if (risky) {
+      _toast = l10n.riskyFill;
+    }
+    final canFly = fromRect.width > 1 && fromRect.height > 1;
+    final dest =
+        _traySlotRect(destIndex) ??
+        Rect.fromCenter(
+          center: fromRect.center.translate(0, -80),
+          width: GameBoard.traySlotW,
+          height: GameBoard.traySlotH,
+        );
+    if (canFly) {
+      tile.flying = true;
+      setState(() {
+        _flyingIds.add(tile.id);
+        _flights.add(
+          _TileFlight(
+            tile: tile,
+            from: fromRect,
+            to: dest,
+            token: ++_flightGen,
+            scoreBefore: scoreBefore,
+            comboBefore: comboBefore,
+          ),
+        );
+      });
+      return;
+    }
     _applyTrayResolve(
       tileId: tile.id,
       scoreBefore: scoreBefore,
       comboBefore: comboBefore,
+    );
+  }
+
+  void _onFlightArrived(_TileFlight flight) {
+    if (!mounted) return;
+    setState(() {
+      flight.tile.flying = false;
+      _flyingIds.remove(flight.tile.id);
+      _flights.removeWhere((item) => item.token == flight.token);
+    });
+    _applyTrayResolve(
+      tileId: flight.tile.id,
+      scoreBefore: flight.scoreBefore,
+      comboBefore: flight.comboBefore,
     );
   }
 
@@ -373,24 +530,27 @@ class _GameScreenState extends State<GameScreen> {
     required int scoreBefore,
     required int comboBefore,
   }) {
+    final l10n = L10n.of(context);
     final resolve = _board.resolveTray();
     setState(() {
-      _toast = null;
+      _toast = _toast == l10n.riskyFill ? _toast : null;
 
       switch (resolve) {
         case MatchResult.collected:
           _undoStack.add(
-            _UndoEntry.collect(
+            UndoEntry.collect(
               tileId: tileId,
               scoreBefore: scoreBefore,
               comboBefore: comboBefore,
             ),
           );
+          _coach.onCollected();
+          _maybeFinishCoach();
         case MatchResult.matched:
           final matched = List<Tile>.from(_board.lastMatched);
           final pairs = matched.length ~/ 2;
           _undoStack.add(
-            _UndoEntry.match(
+            UndoEntry.match(
               tileId: tileId,
               matchedIds: matched.map((t) => t.id).toList(),
               scoreBefore: scoreBefore,
@@ -400,22 +560,20 @@ class _GameScreenState extends State<GameScreen> {
           _combo += pairs;
           _score += pairs * (100 + (_combo - 1) * 25);
           _scoreSparkTick++;
-          _toast = _board.hasMoves() ? null : 'Нет ходов — перемешайте';
+          _toast = _board.hasMoves() ? null : l10n.noMovesShuffle;
           _sfx.match();
           final praise = _fastPraise.registerMatch(
             now: DateTime.now(),
-            languageCode: WidgetsBinding
-                .instance
-                .platformDispatcher
-                .locale
-                .languageCode,
+            languageCode: l10n.code,
           );
           if (praise != null) _sfx.praise(praise);
+          _coach.onMatched();
+          _maybeFinishCoach();
         case MatchResult.win:
           final matched = List<Tile>.from(_board.lastMatched);
           if (matched.isNotEmpty) {
             _undoStack.add(
-              _UndoEntry.match(
+              UndoEntry.match(
                 tileId: tileId,
                 matchedIds: matched.map((t) => t.id).toList(),
                 scoreBefore: scoreBefore,
@@ -428,9 +586,12 @@ class _GameScreenState extends State<GameScreen> {
           } else {
             _score += 500;
           }
-          _toast = 'Победа!';
+          _toast = l10n.victory;
           _sfx.win();
           _fastPraise.reset();
+          _coach.onWin();
+          _maybeFinishCoach();
+          unawaited(widget.progress.clearSnapshot());
           if (!_winHandled) {
             _winHandled = true;
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -439,7 +600,7 @@ class _GameScreenState extends State<GameScreen> {
           }
         case MatchResult.lose:
           _undoStack.add(
-            _UndoEntry.collect(
+            UndoEntry.collect(
               tileId: tileId,
               scoreBefore: scoreBefore,
               comboBefore: comboBefore,
@@ -449,6 +610,7 @@ class _GameScreenState extends State<GameScreen> {
           _toast = null;
           _sfx.lose();
           _fastPraise.reset();
+          unawaited(widget.progress.clearSnapshot());
           if (!_loseHandled) {
             _loseHandled = true;
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -460,6 +622,9 @@ class _GameScreenState extends State<GameScreen> {
           break;
       }
     });
+    if (resolve == MatchResult.collected || resolve == MatchResult.matched) {
+      _persistSnapshot();
+    }
   }
 
   void _onTileRemoveComplete(Tile tile) {
@@ -471,13 +636,20 @@ class _GameScreenState extends State<GameScreen> {
     if (_board.isWon || _board.isLost || _shufflesLeft <= 0) {
       return;
     }
+    final l10n = L10n.of(context);
     _clearHint();
+    if (_board.freeTiles().isEmpty) {
+      setState(() => _toast = l10n.noFreeTiles);
+      _sfx.error();
+      return;
+    }
     setState(() {
-      _board.shuffleRemaining();
+      final useful = _board.shuffleRemaining();
       _shufflesLeft -= 1;
       _combo = 0;
-      _toast = _board.hasMoves() ? 'Перемешано' : 'Всё ещё нет ходов';
+      _toast = useful ? l10n.shuffled : l10n.stillNoMoves;
     });
+    _persistSnapshot();
     _fastPraise.reset();
     _sfx.tap();
   }
@@ -519,21 +691,23 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Future<void> _watchAdForBoost(_RewardedBoost boost) async {
-    if (_adBusy || !AdBootstrap.enabled) return;
+    if (_adBusy || !AdBootstrap.available) return;
+    final l10n = L10n.of(context);
 
     setState(() {
       _adBusy = true;
-      _toast = 'Загрузка рекламы…';
+      _toast = AdBootstrap.simulation ? null : l10n.loadingAd;
     });
 
     await _rewardedAds.preload();
-    final earned = await _rewardedAds.show();
+    if (!mounted) return;
+    final earned = await _rewardedAds.show(context: context);
     if (!mounted) return;
 
     if (!earned) {
       setState(() {
         _adBusy = false;
-        _toast = 'Реклама недоступна';
+        _toast = AdBootstrap.simulation ? l10n.rewardNotEarned : l10n.adUnavailable;
       });
       return;
     }
@@ -571,7 +745,7 @@ class _GameScreenState extends State<GameScreen> {
     }
     final hint = _board.findHint();
     if (hint == null) {
-      setState(() => _toast = 'Нет полезных ходов');
+      setState(() => _toast = L10n.of(context).noUsefulMoves);
       _sfx.error();
       return;
     }
@@ -580,28 +754,37 @@ class _GameScreenState extends State<GameScreen> {
       _hintsLeft -= 1;
       _hintedIds = {
         hint.boardTile.id,
-        if (hint.trayTile != null) hint.trayTile!.id,
+        if (hint.pairTile != null) hint.pairTile!.id,
       };
       _toast = null;
     });
     _sfx.select();
+    _persistSnapshot();
     _hintTimer = Timer(const Duration(seconds: 2), () {
       if (!mounted) return;
       setState(() => _hintedIds = {});
     });
   }
 
-  void _undo() {
-    if (_board.isWon || _board.isLost) return;
+  void _undo({bool fromLose = false}) {
+    if (_board.isWon) return;
+    if (_board.isLost && !fromLose) return;
     _clearHint();
 
-    if (_undosLeft <= 0 || _undoStack.isEmpty) return;
+    if (_undoStack.isEmpty) return;
+    if (!fromLose && _undosLeft <= 0) return;
     final snap = _undoStack.removeLast();
+    final l10n = L10n.of(context);
     setState(() {
-      if (snap.kind == _UndoKind.collect) {
+      if (snap.kind == UndoKind.collect) {
         final tile = _board.tiles.firstWhere((t) => t.id == snap.tileId);
-        _board.returnFromTray(tile);
+        if (fromLose) {
+          _board.reviveFromTray(tile);
+        } else {
+          _board.returnFromTray(tile);
+        }
       } else {
+        _board.isLost = false;
         final matched = snap.matchedIds
             .map((id) => _board.tiles.firstWhere((t) => t.id == id))
             .toList();
@@ -613,9 +796,10 @@ class _GameScreenState extends State<GameScreen> {
       }
       _score = snap.scoreBefore;
       _combo = snap.comboBefore;
-      _undosLeft -= 1;
-      _toast = 'Ход отменён';
+      if (!fromLose) _undosLeft -= 1;
+      _toast = fromLose ? l10n.continuing : l10n.moveUndone;
     });
+    _persistSnapshot();
     _sfx.tap();
   }
 
@@ -625,24 +809,26 @@ class _GameScreenState extends State<GameScreen> {
     }
     final target = _board.findMagnetTarget();
     if (target == null) {
-      setState(() => _toast = 'Нет подходящих плиток');
+      setState(() => _toast = L10n.of(context).noMatchingTiles);
+      _sfx.error();
+      return;
+    }
+    if (!target.isOnBoard ||
+        !_board.isFree(target) ||
+        _board.trayLiveCount >= Board.trayCapacity) {
+      setState(() => _toast = L10n.of(context).noMatchingTiles);
       _sfx.error();
       return;
     }
     _clearHint();
     setState(() => _magnetsLeft -= 1);
-    _onTileTap(
-      target,
-      Rect.fromCenter(
-        center: Offset.zero,
-        width: GameBoard.traySlotW,
-        height: GameBoard.traySlotH,
-      ),
-    );
+    _onTileTap(target, Rect.zero);
     _sfx.select();
+    _persistSnapshot();
   }
 
   void _showMenu() {
+    final l10n = L10n.of(context);
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: _Ui.woodDeep,
@@ -655,7 +841,7 @@ class _GameScreenState extends State<GameScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.refresh_rounded, color: _Ui.ivory),
-              title: const Text('Заново', style: TextStyle(color: _Ui.ivory)),
+              title: Text(l10n.retry, style: const TextStyle(color: _Ui.ivory)),
               onTap: () {
                 Navigator.pop(ctx);
                 _startNewGame();
@@ -663,9 +849,9 @@ class _GameScreenState extends State<GameScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.map_rounded, color: _Ui.ivory),
-              title: const Text(
-                'К уровням',
-                style: TextStyle(color: _Ui.ivory),
+              title: Text(
+                l10n.courtyard,
+                style: const TextStyle(color: _Ui.ivory),
               ),
               onTap: () {
                 Navigator.pop(ctx);
@@ -673,10 +859,21 @@ class _GameScreenState extends State<GameScreen> {
               },
             ),
             ListTile(
+              leading: const Icon(Icons.language_rounded, color: _Ui.ivory),
+              title: Text(
+                l10n.language,
+                style: const TextStyle(color: _Ui.ivory),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                unawaited(showLanguagePicker(context));
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.privacy_tip_rounded, color: _Ui.ivory),
-              title: const Text(
-                'Политика конфиденциальности',
-                style: TextStyle(color: _Ui.ivory),
+              title: Text(
+                l10n.privacyPolicy,
+                style: const TextStyle(color: _Ui.ivory),
               ),
               onTap: () {
                 Navigator.pop(ctx);
@@ -685,9 +882,9 @@ class _GameScreenState extends State<GameScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.info_rounded, color: _Ui.ivory),
-              title: const Text(
-                'About game',
-                style: TextStyle(color: _Ui.ivory),
+              title: Text(
+                l10n.aboutGame,
+                style: const TextStyle(color: _Ui.ivory),
               ),
               onTap: () {
                 Navigator.pop(ctx);
@@ -701,6 +898,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _showAboutGame() {
+    final l10n = L10n.of(context);
     showDialog<void>(
       context: context,
       builder: (dialogContext) {
@@ -713,10 +911,10 @@ class _GameScreenState extends State<GameScreen> {
               width: 1.6,
             ),
           ),
-          title: const Text(
-            'About game',
+          title: Text(
+            l10n.aboutGame,
             textAlign: TextAlign.center,
-            style: TextStyle(color: _Ui.goldSoft, fontWeight: FontWeight.w800),
+            style: const TextStyle(color: _Ui.goldSoft, fontWeight: FontWeight.w800),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -747,7 +945,7 @@ class _GameScreenState extends State<GameScreen> {
                     height: 1.4,
                   ),
                   children: [
-                    const TextSpan(text: 'Иконки: Uicons от '),
+                    TextSpan(text: l10n.iconsBy),
                     WidgetSpan(
                       alignment: PlaceholderAlignment.baseline,
                       baseline: TextBaseline.alphabetic,
@@ -774,9 +972,9 @@ class _GameScreenState extends State<GameScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text(
-                'Закрыть',
-                style: TextStyle(
+              child: Text(
+                l10n.close,
+                style: const TextStyle(
                   color: _Ui.goldSoft,
                   fontWeight: FontWeight.w700,
                 ),
@@ -792,7 +990,7 @@ class _GameScreenState extends State<GameScreen> {
     final uri = Uri.parse(url);
     final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!opened && mounted) {
-      setState(() => _toast = 'Не удалось открыть ссылку');
+      setState(() => _toast = L10n.of(context).couldNotOpenLink);
     }
   }
 
@@ -856,6 +1054,8 @@ class _GameScreenState extends State<GameScreen> {
 
   Future<void> _onLevelLost() async {
     if (!mounted || !_board.isLost) return;
+    final l10n = L10n.of(context);
+    final canContinue = _adsAvailable && _undoStack.isNotEmpty;
 
     await showDialog<void>(
       context: context,
@@ -870,10 +1070,10 @@ class _GameScreenState extends State<GameScreen> {
               width: 1.6,
             ),
           ),
-          title: const Text(
-            'Лоток полон',
+          title: Text(
+            l10n.trayFullTitle,
             textAlign: TextAlign.center,
-            style: TextStyle(color: _Ui.goldSoft, fontWeight: FontWeight.w800),
+            style: const TextStyle(color: _Ui.goldSoft, fontWeight: FontWeight.w800),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -887,7 +1087,7 @@ class _GameScreenState extends State<GameScreen> {
               ),
               const SizedBox(height: 10),
               Text(
-                'Нет пары для совпадения.',
+                l10n.noPairToMatch,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: _Ui.ivory.withValues(alpha: 0.78),
@@ -896,7 +1096,7 @@ class _GameScreenState extends State<GameScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Счёт: $_score',
+                l10n.scoreLabel(_score),
                 style: const TextStyle(
                   color: _Ui.ivory,
                   fontWeight: FontWeight.w700,
@@ -910,13 +1110,25 @@ class _GameScreenState extends State<GameScreen> {
             TextButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
+                unawaited(widget.progress.clearSnapshot());
                 Navigator.of(context).pop();
               },
-              child: const Text(
-                'К уровням',
-                style: TextStyle(color: _Ui.ivory),
+              child: Text(
+                l10n.courtyard,
+                style: const TextStyle(color: _Ui.ivory),
               ),
             ),
+            if (canContinue)
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  unawaited(_continueFromLose());
+                },
+                child: Text(
+                  l10n.watchToContinue,
+                  style: const TextStyle(color: _Ui.goldSoft),
+                ),
+              ),
             FilledButton(
               style: FilledButton.styleFrom(
                 backgroundColor: _Ui.woodTop,
@@ -926,12 +1138,32 @@ class _GameScreenState extends State<GameScreen> {
                 Navigator.of(dialogContext).pop();
                 _startNewGame();
               },
-              child: const Text('Заново'),
+              child: Text(l10n.retry),
             ),
           ],
         );
       },
     );
+  }
+
+  Future<void> _continueFromLose() async {
+    if (!AdBootstrap.available) return;
+    setState(() => _adBusy = true);
+    final earned = await _rewardedAds.show(context: context);
+    if (!mounted) return;
+    setState(() => _adBusy = false);
+    if (!earned) {
+      setState(() {
+        _toast = AdBootstrap.simulation
+            ? L10n.of(context).rewardNotEarned
+            : L10n.of(context).adUnavailable;
+        _loseHandled = false;
+      });
+      if (_board.isLost) unawaited(_onLevelLost());
+      return;
+    }
+    _loseHandled = false;
+    _undo(fromLose: true);
   }
 
   @override
@@ -943,6 +1175,18 @@ class _GameScreenState extends State<GameScreen> {
         clipBehavior: Clip.none,
         children: [
           const Positioned.fill(child: MahjongScreenBackdrop(dark: true)),
+          for (final flight in _flights)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: TileFlightOverlay(
+                  key: ValueKey('fly-${flight.tile.id}-${flight.token}'),
+                  tile: flight.tile,
+                  from: flight.from,
+                  to: flight.to,
+                  onArrived: () => _onFlightArrived(flight),
+                ),
+              ),
+            ),
           Positioned.fill(
             child: MediaQuery.removePadding(
               context: context,
@@ -964,7 +1208,7 @@ class _GameScreenState extends State<GameScreen> {
                       key: ValueKey(_boardGeneration),
                       introToken: _boardGeneration,
                       board: _board,
-                      hintedIds: _hintedIds,
+                      hintedIds: {..._hintedIds, ..._coach.focusIds(_board)},
                       onTileTap: _onTileTap,
                       onTileRemoveComplete: _onTileRemoveComplete,
                     ),
@@ -993,7 +1237,9 @@ class _GameScreenState extends State<GameScreen> {
                       ),
                       _TileTray(
                         tiles: _board.tray,
-                        hintedIds: _hintedIds,
+                        hintedIds: {..._hintedIds, ..._coach.focusIds(_board)},
+                        flyingIds: _flyingIds,
+                        slotKeys: _traySlotKeys,
                         onRemoveComplete: _onTileRemoveComplete,
                       ),
                       _GoalBar(
@@ -1029,6 +1275,16 @@ class _GameScreenState extends State<GameScreen> {
                     ],
                   ),
                 ),
+                if (_coach.active)
+                  Positioned(
+                    left: 16,
+                    right: 16,
+                    top: _coach.nearTray ? 108 : null,
+                    bottom: _coach.nearTray ? null : 88,
+                    child: TableCoachBanner(
+                      text: L10n.of(context).coachMessage(_coach.step.name),
+                    ),
+                  ),
                 Positioned(
                   left: 0,
                   right: 0,
@@ -1257,6 +1513,7 @@ class _TopBarState extends State<_TopBar> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = L10n.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
       child: SizedBox(
@@ -1265,7 +1522,7 @@ class _TopBarState extends State<_TopBar> with SingleTickerProviderStateMixin {
           children: [
             _RoundIconButton(
               icon: Icons.arrow_back_rounded,
-              tooltip: 'К уровням',
+              tooltip: l10n.courtyard,
               onPressed: widget.onBack,
             ),
             Expanded(
@@ -1274,7 +1531,7 @@ class _TopBarState extends State<_TopBar> with SingleTickerProviderStateMixin {
                 children: [
                   SizedBox(height: 38, child: _scoreWithSpark()),
                   Text(
-                    'Уровень ${widget.levelId}',
+                    l10n.levelN(widget.levelId),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -1293,7 +1550,7 @@ class _TopBarState extends State<_TopBar> with SingleTickerProviderStateMixin {
             ),
             _RoundIconButton(
               icon: Icons.menu_rounded,
-              tooltip: 'Меню',
+              tooltip: L10n.of(context).menu,
               onPressed: widget.onMenu,
             ),
           ],
@@ -1308,11 +1565,15 @@ class _TileTray extends StatefulWidget {
   const _TileTray({
     required this.tiles,
     required this.hintedIds,
+    required this.flyingIds,
+    required this.slotKeys,
     required this.onRemoveComplete,
   });
 
   final List<Tile> tiles;
   final Set<int> hintedIds;
+  final Set<int> flyingIds;
+  final List<GlobalKey> slotKeys;
   final void Function(Tile tile) onRemoveComplete;
 
   @override
@@ -1418,7 +1679,7 @@ class _TileTrayState extends State<_TileTray>
                   children: [
                     for (var i = 0; i < Board.trayCapacity; i++)
                       SizedBox(
-                        key: ValueKey('tray-slot-$i'),
+                        key: widget.slotKeys[i],
                         width: _slotW,
                         height: _slotH,
                         child: _buildTrayTile(i),
@@ -1436,6 +1697,9 @@ class _TileTrayState extends State<_TileTray>
   Widget _buildTrayTile(int index) {
     final tile = _slotTile(index);
     if (tile == null) return const SizedBox.shrink();
+    if (widget.flyingIds.contains(tile.id) && !tile.removing) {
+      return const SizedBox.shrink();
+    }
 
     final isHinted = widget.hintedIds.contains(tile.id);
 
@@ -1444,7 +1708,7 @@ class _TileTrayState extends State<_TileTray>
       tile: tile,
       width: _slotW,
       height: _slotH,
-      isSelected: !tile.removing && !isHinted,
+      isSelected: false,
       isFree: true,
       isHinted: isHinted,
       isRemoving: tile.removing,
@@ -1697,14 +1961,9 @@ class _ActionBar extends StatelessWidget {
   final VoidCallback onHint;
   final VoidCallback onUndo;
 
-  String _boostTooltip(String name, int left) {
-    if (left > 0) return name;
-    if (adsAvailable) return 'Реклама → $name';
-    return 'нет использований';
-  }
-
   @override
   Widget build(BuildContext context) {
+    final l10n = L10n.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
       child: Row(
@@ -1712,21 +1971,33 @@ class _ActionBar extends StatelessWidget {
         children: [
           _ActionButton(
             icon: Icons.shuffle_rounded,
-            tooltip: _boostTooltip('Перемешать', shufflesLeft),
+            tooltip: l10n.boostTooltip(
+              l10n.shuffle,
+              shufflesLeft,
+              adsAvailable: adsAvailable,
+            ),
             badge: shufflesLeft > 0 ? '$shufflesLeft' : '+',
             enabled: enabled && (shufflesLeft > 0 || adsAvailable),
             onPressed: onShuffle,
           ),
           _ActionButton(
             magnet: true,
-            tooltip: _boostTooltip('Магнит', magnetsLeft),
+            tooltip: l10n.boostTooltip(
+              l10n.magnet,
+              magnetsLeft,
+              adsAvailable: adsAvailable,
+            ),
             badge: magnetsLeft > 0 ? '$magnetsLeft' : '+',
             enabled: enabled && (magnetsLeft > 0 || adsAvailable),
             onPressed: onMagnet,
           ),
           _ActionButton(
             icon: Icons.lightbulb_rounded,
-            tooltip: _boostTooltip('Подсказка', hintsLeft),
+            tooltip: l10n.boostTooltip(
+              l10n.hint,
+              hintsLeft,
+              adsAvailable: adsAvailable,
+            ),
             badge: hintsLeft > 0 ? '$hintsLeft' : '+',
             enabled: enabled && (hintsLeft > 0 || adsAvailable),
             onPressed: onHint,
@@ -1734,8 +2005,8 @@ class _ActionBar extends StatelessWidget {
           _ActionButton(
             icon: Icons.undo_rounded,
             tooltip: canUndo
-                ? 'Отмена'
-                : (canUndoViaAd ? 'Реклама → отмена' : 'нет использований'),
+                ? l10n.undo
+                : (canUndoViaAd ? l10n.watchAd(l10n.undo) : l10n.noneLeft),
             badge: undosLeft > 0 ? '$undosLeft' : '+',
             enabled: enabled && (canUndo || canUndoViaAd),
             onPressed: onUndo,
@@ -1887,6 +2158,7 @@ class _WinDialogState extends State<_WinDialog>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = L10n.of(context);
     return AnimatedBuilder(
       animation: _celebrate,
       builder: (context, _) {
@@ -1904,7 +2176,7 @@ class _WinDialogState extends State<_WinDialog>
             ),
           ),
           title: Text(
-            'Уровень ${widget.levelId} пройден!',
+            l10n.levelCleared(widget.levelId),
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: _Ui.goldSoft,
@@ -1950,7 +2222,7 @@ class _WinDialogState extends State<_WinDialog>
                       child: Opacity(
                         opacity: scoreIn.clamp(0.0, 1.0),
                         child: Text(
-                          'Счёт: ${widget.score}',
+                          l10n.scoreLabel(widget.score),
                           style: const TextStyle(
                             color: _Ui.ivory,
                             fontWeight: FontWeight.w700,
@@ -1984,8 +2256,8 @@ class _WinDialogState extends State<_WinDialog>
                                   width: 1.2,
                                 ),
                               ),
-                              child: const Text(
-                                'Новый рекорд!',
+                              child: Text(
+                                l10n.newRecord,
                                 style: TextStyle(
                                   color: _Ui.goldSoft,
                                   fontWeight: FontWeight.w800,
@@ -2002,7 +2274,7 @@ class _WinDialogState extends State<_WinDialog>
                         child: Opacity(
                           opacity: unlockIn,
                           child: Text(
-                            'Открыт уровень ${widget.levelId + 1}',
+                            l10n.unlockedLevel(widget.levelId + 1),
                             style: TextStyle(
                               color: _Ui.goldSoft.withValues(alpha: 0.9),
                               fontWeight: FontWeight.w600,
@@ -2019,7 +2291,7 @@ class _WinDialogState extends State<_WinDialog>
           actions: [
             TextButton(
               onPressed: widget.onMap,
-              child: const Text('Карта', style: TextStyle(color: _Ui.ivory)),
+              child: Text(l10n.map, style: const TextStyle(color: _Ui.ivory)),
             ),
             if (widget.hasNext && widget.nextUnlocked)
               FilledButton(
@@ -2028,7 +2300,7 @@ class _WinDialogState extends State<_WinDialog>
                   foregroundColor: _Ui.goldSoft,
                 ),
                 onPressed: widget.onNext,
-                child: const Text('Дальше'),
+                child: Text(l10n.next),
               )
             else
               FilledButton(
@@ -2037,7 +2309,7 @@ class _WinDialogState extends State<_WinDialog>
                   foregroundColor: _Ui.goldSoft,
                 ),
                 onPressed: widget.onRetry,
-                child: const Text('Ещё раз'),
+                child: Text(l10n.playAgain),
               ),
           ],
         );
