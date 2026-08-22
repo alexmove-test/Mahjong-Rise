@@ -11,6 +11,7 @@ import 'package:mahjong/services/progress_store.dart';
 import 'package:mahjong/utils/layouts.dart';
 import 'package:mahjong/utils/tile_pyramid_position.dart';
 import 'package:mahjong/widgets/game_board.dart';
+import 'package:mahjong/widgets/tile_flight.dart';
 import 'package:mahjong/widgets/tile_painter.dart';
 import 'package:mahjong/widgets/tile_symbol_image.dart';
 import 'package:mahjong/widgets/tile_widget.dart';
@@ -234,14 +235,14 @@ void main() {
       const MaterialApp(home: MahjongScreenBackdrop(dark: true)),
     );
 
-    final felt = tester
-        .widgetList<DecoratedBox>(find.byType(DecoratedBox))
-        .any((box) {
-          final decoration = box.decoration;
-          if (decoration is! BoxDecoration) return false;
-          final image = decoration.image?.image;
-          return image is AssetImage && image.assetName == 'assets/felt.png';
-        });
+    final felt = tester.widgetList<DecoratedBox>(find.byType(DecoratedBox)).any(
+      (box) {
+        final decoration = box.decoration;
+        if (decoration is! BoxDecoration) return false;
+        final image = decoration.image?.image;
+        return image is AssetImage && image.assetName == 'assets/felt.png';
+      },
+    );
     expect(felt, isTrue);
   });
 
@@ -272,9 +273,7 @@ void main() {
   });
 
   testWidgets('GameScreen restores a matching snapshot', (tester) async {
-    SharedPreferences.setMockInitialValues({
-      'progress.tableCoachDone': true,
-    });
+    SharedPreferences.setMockInitialValues({'progress.tableCoachDone': true});
     final progress = await ProgressStore.open();
     await progress.saveSnapshot(
       _boardSnapshot(levelId: 1, score: 777, symbol: 'keep-me'),
@@ -298,9 +297,7 @@ void main() {
   });
 
   testWidgets('Retry clears the in-progress snapshot', (tester) async {
-    SharedPreferences.setMockInitialValues({
-      'progress.tableCoachDone': true,
-    });
+    SharedPreferences.setMockInitialValues({'progress.tableCoachDone': true});
     final progress = await ProgressStore.open();
     await progress.saveSnapshot(_boardSnapshot(levelId: 1, score: 777));
 
@@ -350,15 +347,15 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('777'), findsNothing);
-    expect(progress.savedSnapshot, isNull);
+    expect(progress.hasSnapshotFor(1), isTrue);
+    expect(progress.savedSnapshot?.score, 777);
+    expect(progress.hasSnapshotFor(2), isFalse);
   });
 
   testWidgets('shuffle does not spend a boost when no tiles are free', (
     tester,
   ) async {
-    SharedPreferences.setMockInitialValues({
-      'progress.tableCoachDone': true,
-    });
+    SharedPreferences.setMockInitialValues({'progress.tableCoachDone': true});
     final progress = await ProgressStore.open();
     final tiles = [
       Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0, inTray: true),
@@ -400,9 +397,7 @@ void main() {
   });
 
   testWidgets('hint highlights both tiles of a matching pair', (tester) async {
-    SharedPreferences.setMockInitialValues({
-      'progress.tableCoachDone': true,
-    });
+    SharedPreferences.setMockInitialValues({'progress.tableCoachDone': true});
     final progress = await ProgressStore.open();
     final board = Board(
       tiles: [
@@ -457,9 +452,7 @@ void main() {
   });
 
   testWidgets('magnet clears a matching pair from the board', (tester) async {
-    SharedPreferences.setMockInitialValues({
-      'progress.tableCoachDone': true,
-    });
+    SharedPreferences.setMockInitialValues({'progress.tableCoachDone': true});
     final progress = await ProgressStore.open();
     final board = Board(
       tiles: [
@@ -507,10 +500,66 @@ void main() {
     expect(find.text('100'), findsOneWidget);
   });
 
+  testWidgets('tapping a free tile flies it into the tray', (tester) async {
+    SharedPreferences.setMockInitialValues({'progress.tableCoachDone': true});
+    final progress = await ProgressStore.open();
+    final board = Board(
+      tiles: [
+        Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
+        Tile(id: 1, symbol: 'B', layer: 0, x: 4, y: 0),
+        Tile(id: 2, symbol: 'C', layer: 0, x: 8, y: 0),
+      ],
+      layoutName: 'petal',
+    );
+    await progress.saveSnapshot(
+      GameSnapshot.fromBoard(
+        levelId: 1,
+        board: board,
+        score: 0,
+        combo: 0,
+        shuffles: 1,
+        hints: 1,
+        undos: 1,
+        magnets: 1,
+      ),
+    );
+
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GameScreen(level: Levels.byId(1), progress: progress),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final onBoard = find.byWidgetPredicate(
+      (w) => w is TileWidget && !w.compact && w.tile.id == 0,
+    );
+    expect(onBoard, findsOneWidget);
+    await tester.tap(onBoard);
+    await tester.pump();
+
+    expect(find.byType(TileFlightOverlay), findsOneWidget);
+    expect(onBoard, findsNothing);
+
+    await tester.pump(TileFlightOverlay.duration);
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.byType(TileFlightOverlay), findsNothing);
+    expect(
+      tester
+          .widgetList<TileWidget>(find.byType(TileWidget))
+          .where((w) => w.compact && w.tile.id == 0),
+      isNotEmpty,
+    );
+  });
+
   testWidgets('watching a simulated ad grants a hint', (tester) async {
-    SharedPreferences.setMockInitialValues({
-      'progress.tableCoachDone': true,
-    });
+    SharedPreferences.setMockInitialValues({'progress.tableCoachDone': true});
     final progress = await ProgressStore.open();
     final board = Board(
       tiles: [

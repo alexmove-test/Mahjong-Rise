@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:audioplayers/audioplayers.dart';
 
 import 'haptic_controller.dart';
+import 'sfx_controller.dart';
 
 /// Звуки партии и тактильный отклик.
 ///
@@ -32,6 +35,7 @@ class GameSfx {
     await _voice.setReleaseMode(ReleaseMode.stop);
     await _voice.setPlayerMode(PlayerMode.mediaPlayer);
     await _applyMixContext();
+    SfxGate.onMute = _stopAll;
     _ready = true;
   }
 
@@ -52,20 +56,33 @@ class GameSfx {
 
   Future<void> dispose() async {
     _ready = false;
+    if (SfxGate.onMute == _stopAll) SfxGate.onMute = null;
     for (final player in _pool) {
       await player.dispose();
     }
     await _voice.dispose();
   }
 
+  void _stopAll() {
+    for (final player in _pool) {
+      if (player.state == PlayerState.playing) {
+        unawaited(player.stop());
+      }
+    }
+    if (_voice.state == PlayerState.playing) {
+      unawaited(_voice.stop());
+    }
+  }
+
   Future<void> _play(String asset, {double volume = 0.7}) async {
-    if (!_ready) return;
+    if (!_ready || !SfxGate.enabled) return;
     final player = _idlePlayer();
     final gain = _voicePlaying ? volume * _voiceDuck : volume;
     try {
       if (player.state == PlayerState.playing) {
         await player.stop();
       }
+      if (!SfxGate.enabled) return;
       await player.play(AssetSource(asset), volume: gain);
     } catch (_) {
       // На CI / без аудио-устройства — молча игнорируем.
@@ -135,7 +152,7 @@ class GameSfx {
 
   /// Голос похвалы за быстрые пары. Не обрывает уже идущую реплику и SFX.
   Future<void> praise(String asset) async {
-    if (!_ready) return;
+    if (!_ready || !SfxGate.enabled) return;
     if (_voicePlaying) return;
     try {
       await _voice.play(AssetSource(asset), volume: 0.7);

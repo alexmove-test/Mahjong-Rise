@@ -17,6 +17,8 @@ class ProgressStore {
   static const _kBestPrefix = 'progress.best.';
   static const _kTableCoachDone = 'progress.tableCoachDone';
   static const _kSnapshot = 'progress.snapshot';
+  static const _kSnapshotPrefix = 'progress.snapshot.';
+  static const _kSnapshotActive = 'progress.snapshotActive';
   static const _kDailyDate = 'progress.dailyDate';
   static const _kDailyStreak = 'progress.dailyStreak';
   static const _kBankedHints = 'progress.bankedHints';
@@ -49,8 +51,62 @@ class ProgressStore {
 
   Future<void> markTableCoachDone() => _prefs.setBool(_kTableCoachDone, true);
 
+  /// Незавершённая партия, к которой ведёт «Продолжить».
   GameSnapshot? get savedSnapshot {
-    final raw = _prefs.getString(_kSnapshot);
+    final active = _prefs.getInt(_kSnapshotActive);
+    if (active != null) {
+      final snap = snapshotFor(active);
+      if (snap != null) return snap;
+    }
+    final last = snapshotFor(lastPlayedLevel);
+    if (last != null) return last;
+    final daily = snapshotFor(GameSnapshot.dailyLevelId);
+    if (daily != null) return daily;
+    for (final key in _prefs.getKeys()) {
+      if (!key.startsWith(_kSnapshotPrefix)) continue;
+      final id = int.tryParse(key.substring(_kSnapshotPrefix.length));
+      if (id == null) continue;
+      final snap = snapshotFor(id);
+      if (snap != null) return snap;
+    }
+    return _decode(_prefs.getString(_kSnapshot));
+  }
+
+  bool hasSnapshotFor(int levelId) => snapshotFor(levelId) != null;
+
+  GameSnapshot? snapshotFor(int levelId) {
+    final slotted = _decode(_prefs.getString('$_kSnapshotPrefix$levelId'));
+    if (slotted != null) return slotted;
+    final legacy = _decode(_prefs.getString(_kSnapshot));
+    if (legacy?.levelId == levelId) return legacy;
+    return null;
+  }
+
+  Future<void> saveSnapshot(GameSnapshot snapshot) async {
+    await _prefs.setString(
+      '$_kSnapshotPrefix${snapshot.levelId}',
+      jsonEncode(snapshot.toJson()),
+    );
+    await _prefs.setInt(_kSnapshotActive, snapshot.levelId);
+    await _prefs.remove(_kSnapshot);
+  }
+
+  /// Стереть слот [levelId]; без аргумента — текущий «Продолжить».
+  Future<void> clearSnapshot([int? levelId]) async {
+    final id = levelId ?? savedSnapshot?.levelId;
+    if (id != null) {
+      await _prefs.remove('$_kSnapshotPrefix$id');
+      if (_prefs.getInt(_kSnapshotActive) == id) {
+        await _prefs.remove(_kSnapshotActive);
+      }
+    }
+    final legacy = _decode(_prefs.getString(_kSnapshot));
+    if (legacy != null && (id == null || legacy.levelId == id)) {
+      await _prefs.remove(_kSnapshot);
+    }
+  }
+
+  GameSnapshot? _decode(String? raw) {
     if (raw == null || raw.isEmpty) return null;
     try {
       final decoded = jsonDecode(raw);
@@ -59,16 +115,6 @@ class ProgressStore {
     } catch (_) {
       return null;
     }
-  }
-
-  bool hasSnapshotFor(int levelId) => savedSnapshot?.levelId == levelId;
-
-  Future<void> saveSnapshot(GameSnapshot snapshot) async {
-    await _prefs.setString(_kSnapshot, jsonEncode(snapshot.toJson()));
-  }
-
-  Future<void> clearSnapshot() async {
-    await _prefs.remove(_kSnapshot);
   }
 
   String get lastDailyDate => _prefs.getString(_kDailyDate) ?? '';

@@ -23,6 +23,7 @@ import '../services/haptic_controller.dart';
 import '../services/player_profile_store.dart';
 import '../services/progress_store.dart';
 import '../services/rewarded_ad_service.dart';
+import '../services/sfx_controller.dart';
 import '../services/tutorial_store.dart';
 import '../widgets/app_settings.dart';
 import '../widgets/courtyard/courtyard_progress.dart';
@@ -30,6 +31,7 @@ import '../widgets/courtyard/courtyard_win_overlay.dart';
 import '../widgets/game_board.dart';
 import '../widgets/premium_ui.dart';
 import '../widgets/table_coach_banner.dart';
+import '../widgets/tile_flight.dart';
 import '../widgets/tile_widget.dart';
 import '../widgets/tutorial_coach.dart';
 import '../widgets/tray_full_dialog.dart';
@@ -228,6 +230,24 @@ enum _UndoKind { collect, match }
 
 enum _RewardedBoost { shuffle, magnet, hint, undo }
 
+class _TileFlight {
+  _TileFlight({
+    required this.token,
+    required this.tile,
+    required this.from,
+    required this.to,
+    required this.scoreBefore,
+    required this.comboBefore,
+  });
+
+  final int token;
+  final Tile tile;
+  final Rect from;
+  final Rect to;
+  final int scoreBefore;
+  final int comboBefore;
+}
+
 class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   static const _fieldGreen = _Ui.table;
 
@@ -245,9 +265,20 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   late int _hintsLeft;
   late int _undosLeft;
   late int _magnetsLeft;
+  late int _startShuffles;
+  late int _startHints;
+  late int _startUndos;
+  late int _startMagnets;
 
   Set<int> _hintedIds = {};
   final List<_UndoEntry> _undoStack = [];
+  final GlobalKey _flightLayerKey = GlobalKey();
+  final List<GlobalKey> _traySlotKeys = List<GlobalKey>.generate(
+    Board.trayCapacity,
+    (i) => GlobalKey(debugLabel: 'tray-slot-$i'),
+  );
+  final List<_TileFlight> _flights = [];
+  int _flightSeq = 0;
   final GameSfx _sfx = GameSfx();
   final FastMatchStreak _fastPraise = FastMatchStreak();
   final RewardedAdService _rewardedAds = RewardedAdService();
@@ -282,13 +313,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       active:
           !widget.isDaily && _level.id == 1 && !widget.progress.tableCoachDone,
     );
-    final snap = widget.progress.savedSnapshot;
-    if (snap != null && snap.levelId == _slotId) {
+    final snap = widget.progress.snapshotFor(_slotId);
+    if (snap != null) {
       _restoreBoard(snap);
     } else {
-      if (snap != null) {
-        unawaited(widget.progress.clearSnapshot());
-      }
       _resetBoard(applyBanked: true);
     }
     if (!widget.isDaily) {
@@ -331,11 +359,32 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     _magnetsLeft = snap.magnets;
     _hintedIds = {};
     _undoStack.clear();
+    _flights.clear();
     _fastPraise.reset();
+    _rememberBoostBaseline();
+  }
+
+  void _rememberBoostBaseline() {
+    _startShuffles = _shufflesLeft;
+    _startHints = _hintsLeft;
+    _startUndos = _undosLeft;
+    _startMagnets = _magnetsLeft;
+  }
+
+  bool get _hasProgressToSave {
+    if (_board.isWon || _board.isLost) return false;
+    if (_score != 0 || _combo != 0) return true;
+    if (_board.trayLiveCount > 0) return true;
+    if (_board.tiles.any((tile) => !tile.isOnBoard)) return true;
+    if (_shufflesLeft != _startShuffles) return true;
+    if (_hintsLeft != _startHints) return true;
+    if (_undosLeft != _startUndos) return true;
+    if (_magnetsLeft != _startMagnets) return true;
+    return false;
   }
 
   void _persistSnapshot() {
-    if (_board.isWon || _board.isLost) return;
+    if (!_hasProgressToSave) return;
     unawaited(
       widget.progress.saveSnapshot(
         GameSnapshot.fromBoard(
@@ -352,7 +401,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     );
   }
 
-  Future<void> _clearSnapshot() => widget.progress.clearSnapshot();
+  Future<void> _clearSnapshot() => widget.progress.clearSnapshot(_slotId);
 
   void _resetBoard({bool applyBanked = false}) {
     _hintTimer?.cancel();
@@ -382,8 +431,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     }
     _hintedIds = {};
     _undoStack.clear();
+    _flights.clear();
     _fastPraise.reset();
     _coach.resetIfActive();
+    _rememberBoostBaseline();
   }
 
   Future<void> _startNewGame() async {
@@ -504,11 +555,78 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   void _onTileTap(Tile tile, Rect fromRect) {
     if (_board.isWon || _board.isLost) return;
+    if (tile.flying) return;
+
+    if (!tile.isOnBoard || !_board.isFree(tile)) {
+      setState(() => _toast = L10n.of(context).tileLocked);
+      _sfx.error();
+      return;
+    }
+    if (_board.trayLiveCount + _flights.length >= Board.trayCapacity) {
+      setState(() => _toast = L10n.of(context).trayFull);
+      _sfx.error();
+      return;
+    }
 
     final scoreBefore = _score;
     final comboBefore = _combo;
-    final result = _board.pick(tile);
+    final slotIndex = _board.trayLiveCount + _flights.length;
+    final fromLocal = _rectOnFlightLayer(fromRect);
+    final toGlobal = _globalRectOf(_traySlotKeys[slotIndex]);
+    final toLocal = toGlobal == null ? null : _rectOnFlightLayer(toGlobal);
 
+    _sfx.collect();
+    if (fromLocal == null || toLocal == null || fromRect == Rect.zero) {
+      _commitPick(tile, scoreBefore: scoreBefore, comboBefore: comboBefore);
+      return;
+    }
+
+    tile.flying = true;
+    setState(() {
+      _toast = null;
+      _flights.add(
+        _TileFlight(
+          token: _flightSeq++,
+          tile: tile,
+          from: fromLocal,
+          to: toLocal,
+          scoreBefore: scoreBefore,
+          comboBefore: comboBefore,
+        ),
+      );
+    });
+  }
+
+  Rect? _globalRectOf(GlobalKey key) {
+    final box = key.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize || !box.attached) return null;
+    return box.localToGlobal(Offset.zero) & box.size;
+  }
+
+  Rect? _rectOnFlightLayer(Rect global) {
+    final box =
+        _flightLayerKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize || !box.attached) return null;
+    return box.globalToLocal(global.topLeft) & global.size;
+  }
+
+  void _onFlightArrived(_TileFlight flight) {
+    if (!mounted) return;
+    if (!_flights.remove(flight)) return;
+    _commitPick(
+      flight.tile,
+      scoreBefore: flight.scoreBefore,
+      comboBefore: flight.comboBefore,
+    );
+  }
+
+  void _commitPick(
+    Tile tile, {
+    required int scoreBefore,
+    required int comboBefore,
+  }) {
+    tile.flying = false;
+    final result = _board.pick(tile);
     if (result == MatchResult.blocked) {
       _blockedTap = true;
       setState(() => _toast = L10n.of(context).tileLocked);
@@ -521,19 +639,34 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       _sfx.error();
       return;
     }
-
     _blockedTap = false;
     _hintTimer?.cancel();
     if (_lesson?.step != TutorialStep.collect && _hintedIds.isNotEmpty) {
       _hintedIds = {};
     }
 
-    _sfx.collect();
     _applyTrayResolve(
       tileId: tile.id,
       scoreBefore: scoreBefore,
       comboBefore: comboBefore,
     );
+  }
+
+  void _commitPendingFlights() {
+    if (_flights.isEmpty) return;
+    final pending = List<_TileFlight>.from(_flights);
+    _flights.clear();
+    for (final flight in pending) {
+      if (!mounted || _board.isWon || _board.isLost) {
+        flight.tile.flying = false;
+        continue;
+      }
+      _commitPick(
+        flight.tile,
+        scoreBefore: flight.scoreBefore,
+        comboBefore: flight.comboBefore,
+      );
+    }
   }
 
   void _applyTrayResolve({
@@ -618,6 +751,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           _toast = null;
           _sfx.lose();
           _fastPraise.reset();
+          unawaited(_clearSnapshot());
           if (!_loseHandled) {
             _loseHandled = true;
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -649,6 +783,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   }
 
   void _shuffle() {
+    _commitPendingFlights();
     if (_board.isWon || _board.isLost || _shufflesLeft <= 0) {
       return;
     }
@@ -709,6 +844,14 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   void _onUndoTap() {
     if (_board.isWon || _board.isLost || _adBusy) return;
+    if (_flights.isNotEmpty) {
+      setState(() {
+        final flight = _flights.removeLast();
+        flight.tile.flying = false;
+      });
+      _sfx.tap();
+      return;
+    }
     if (_undosLeft > 0 && _undoStack.isNotEmpty) {
       _undo();
       unawaited(_completeBoostsIfNeeded());
@@ -739,34 +882,30 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       return;
     }
 
+    final l10n = L10n.of(context);
     setState(() {
       _adBusy = false;
-      _toast = null;
       switch (boost) {
         case _RewardedBoost.shuffle:
           _shufflesLeft += 1;
+          _toast = l10n.boostEarned(l10n.shuffle);
         case _RewardedBoost.magnet:
           _magnetsLeft += 1;
+          _toast = l10n.boostEarned(l10n.magnet);
         case _RewardedBoost.hint:
           _hintsLeft += 1;
+          _toast = l10n.boostEarned(l10n.hint);
         case _RewardedBoost.undo:
           _undosLeft += 1;
+          _toast = l10n.boostEarned(l10n.undo);
       }
     });
-
-    switch (boost) {
-      case _RewardedBoost.shuffle:
-        _shuffle();
-      case _RewardedBoost.magnet:
-        _magnet();
-      case _RewardedBoost.hint:
-        _hint();
-      case _RewardedBoost.undo:
-        _undo();
-    }
+    _persistSnapshot();
+    _sfx.select();
   }
 
   void _hint() {
+    _commitPendingFlights();
     if (_board.isWon || _board.isLost || _hintsLeft <= 0) {
       return;
     }
@@ -833,6 +972,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   }
 
   void _magnet() {
+    _commitPendingFlights();
     if (_board.isWon || _board.isLost || _magnetsLeft <= 0) {
       return;
     }
@@ -875,15 +1015,20 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   void _showMenu() {
     final l10n = L10n.of(context);
     final haptic = HapticScope.maybeOf(context);
+    final sfx = SfxScope.maybeOf(context);
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: _Ui.woodDeep,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
       builder: (ctx) => SafeArea(
         child: ListenableBuilder(
-          listenable: Listenable.merge([if (haptic != null) haptic]),
+          listenable: Listenable.merge([
+            if (haptic != null) haptic,
+            if (sfx != null) sfx,
+          ]),
           builder: (_, _) => Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -923,6 +1068,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                   unawaited(_replayTutorial());
                 },
               ),
+              SfxSwitchTile(controller: sfx, l10n: l10n),
               HapticSwitchTile(controller: haptic, l10n: l10n),
               ListTile(
                 leading: const Icon(Icons.language_rounded, color: _Ui.ivory),
@@ -1343,6 +1489,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                           active: _lesson?.anchor == TutorialAnchor.tray,
                           child: _TileTray(
                             tiles: _board.tray,
+                            slotKeys: _traySlotKeys,
                             hintedIds: {
                               ..._hintedIds,
                               ..._coach.focusIds(_board),
@@ -1401,8 +1548,11 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                         hintsLeft: _hintsLeft,
                         undosLeft: _undosLeft,
                         enabled: !_board.isWon && !_board.isLost,
-                        canUndo: _undosLeft > 0 && _undoStack.isNotEmpty,
+                        canUndo:
+                            _flights.isNotEmpty ||
+                            (_undosLeft > 0 && _undoStack.isNotEmpty),
                         canUndoViaAd:
+                            _flights.isEmpty &&
                             _undosLeft <= 0 &&
                             _undoStack.isNotEmpty &&
                             _adsAvailable,
@@ -1427,6 +1577,24 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                     ),
                   ),
               ],
+            ),
+          ),
+          Positioned.fill(
+            key: _flightLayerKey,
+            child: IgnorePointer(
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  for (final flight in _flights)
+                    TileFlightOverlay(
+                      key: ValueKey(flight.token),
+                      tile: flight.tile,
+                      from: flight.from,
+                      to: flight.to,
+                      onArrived: () => _onFlightArrived(flight),
+                    ),
+                ],
+              ),
             ),
           ),
         ],
@@ -1681,11 +1849,13 @@ class _TopBarState extends State<_TopBar> with SingleTickerProviderStateMixin {
 class _TileTray extends StatefulWidget {
   const _TileTray({
     required this.tiles,
+    required this.slotKeys,
     required this.hintedIds,
     required this.onRemoveComplete,
   });
 
   final List<Tile> tiles;
+  final List<GlobalKey> slotKeys;
   final Set<int> hintedIds;
   final void Function(Tile tile) onRemoveComplete;
 
@@ -1792,7 +1962,7 @@ class _TileTrayState extends State<_TileTray>
                   children: [
                     for (var i = 0; i < Board.trayCapacity; i++)
                       SizedBox(
-                        key: ValueKey('tray-slot-$i'),
+                        key: widget.slotKeys[i],
                         width: _slotW,
                         height: _slotH,
                         child: _buildTrayTile(i),
@@ -1818,7 +1988,7 @@ class _TileTrayState extends State<_TileTray>
       tile: tile,
       width: _slotW,
       height: _slotH,
-      isSelected: !tile.removing && !isHinted,
+      isSelected: false,
       isFree: true,
       isHinted: isHinted,
       isRemoving: tile.removing,
@@ -1939,7 +2109,7 @@ class _ActionBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _ActionButton(
-            icon: Icons.shuffle_rounded,
+            shuffle: true,
             tooltip: l10n.boostTooltip(
               l10n.shuffle,
               shufflesLeft,
@@ -1961,7 +2131,7 @@ class _ActionBar extends StatelessWidget {
             onPressed: onMagnet,
           ),
           _ActionButton(
-            icon: Icons.lightbulb_rounded,
+            hint: true,
             tooltip: l10n.boostTooltip(
               l10n.hint,
               hintsLeft,
@@ -1972,7 +2142,7 @@ class _ActionBar extends StatelessWidget {
             onPressed: onHint,
           ),
           _ActionButton(
-            icon: Icons.undo_rounded,
+            undo: true,
             tooltip: canUndo
                 ? l10n.undo
                 : (canUndoViaAd ? l10n.watchAd(l10n.undo) : l10n.noneLeft),
@@ -1990,14 +2160,20 @@ class _ActionButton extends StatelessWidget {
   const _ActionButton({
     this.icon,
     this.magnet = false,
+    this.shuffle = false,
+    this.hint = false,
+    this.undo = false,
     required this.tooltip,
     required this.badge,
     required this.enabled,
     required this.onPressed,
-  }) : assert(magnet || icon != null);
+  }) : assert(magnet || shuffle || hint || undo || icon != null);
 
   final IconData? icon;
   final bool magnet;
+  final bool shuffle;
+  final bool hint;
+  final bool undo;
   final String tooltip;
   final String badge;
   final bool enabled;
@@ -2010,7 +2186,13 @@ class _ActionButton extends StatelessWidget {
         ? _Ui.ivory
         : (exhausted ? Colors.white38 : _Ui.ivory.withValues(alpha: 0.35));
     final glyph = magnet
-        ? MagnetGlyph(size: 26, color: iconColor)
+        ? MagnetGlyph(size: 26, color: iconColor, animate: enabled)
+        : shuffle
+        ? ShuffleGlyph(size: 28, color: iconColor, animate: enabled)
+        : hint
+        ? HintGlyph(size: 28, color: iconColor, animate: enabled)
+        : undo
+        ? UndoGlyph(size: 28, color: iconColor, animate: enabled)
         : FilledGlyph(icon: icon!, size: 28, color: iconColor);
 
     return Stack(

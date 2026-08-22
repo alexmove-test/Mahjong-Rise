@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -454,30 +455,77 @@ class FilledGlyph extends StatelessWidget {
   }
 }
 
-/// Подкова-магнит сплошной заливкой (буст «Магнит»).
-class MagnetGlyph extends StatelessWidget {
+/// Подкова-магнит: силовые линии и опилки, которые тянутся к полюсам.
+class MagnetGlyph extends StatefulWidget {
   const MagnetGlyph({
     super.key,
     this.size = 26,
     this.color = const Color(0xFFF8F1DE),
+    this.animate = true,
   });
 
   final double size;
   final Color color;
+  final bool animate;
+
+  @override
+  State<MagnetGlyph> createState() => _MagnetGlyphState();
+}
+
+class _MagnetGlyphState extends State<MagnetGlyph>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1700),
+    );
+    if (widget.animate) _ctrl.repeat();
+  }
+
+  @override
+  void didUpdateWidget(covariant MagnetGlyph oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.animate && !_ctrl.isAnimating) {
+      _ctrl.repeat();
+    } else if (!widget.animate && _ctrl.isAnimating) {
+      _ctrl
+        ..stop()
+        ..value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size.square(size),
-      painter: _MagnetGlyphPainter(color: color),
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        return CustomPaint(
+          size: Size.square(widget.size),
+          painter: _MagnetGlyphPainter(
+            color: widget.color,
+            t: widget.animate ? _ctrl.value : 0,
+          ),
+        );
+      },
     );
   }
 }
 
 class _MagnetGlyphPainter extends CustomPainter {
-  const _MagnetGlyphPainter({required this.color});
+  const _MagnetGlyphPainter({required this.color, this.t = 0});
 
   final Color color;
+  final double t;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -505,6 +553,21 @@ class _MagnetGlyphPainter extends CustomPainter {
         ..strokeCap = StrokeCap.butt
         ..strokeJoin = StrokeJoin.round,
     );
+
+    if (t > 0) {
+      final glow = 0.14 + 0.16 * (0.5 + 0.5 * math.sin(t * math.pi * 2));
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = color.withValues(alpha: glow)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = stroke * 1.7
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.4),
+      );
+      _paintField(canvas, rect, s);
+      _paintFilings(canvas, rect, s);
+    }
+
     canvas.drawPath(
       path,
       Paint()
@@ -541,9 +604,620 @@ class _MagnetGlyphPainter extends CustomPainter {
     );
   }
 
+  void _paintField(Canvas canvas, Rect rect, double s) {
+    final left = Offset(rect.left, rect.top + s * 0.04);
+    final right = Offset(rect.right, rect.top + s * 0.04);
+    for (var i = 0; i < 3; i++) {
+      final phase = (t + i * 0.28) % 1.0;
+      final alpha = math.sin(phase * math.pi);
+      if (alpha < 0.08) continue;
+      final bulge = 0.20 + i * 0.13 + phase * 0.07;
+      final field = Path()
+        ..moveTo(left.dx, left.dy)
+        ..quadraticBezierTo(
+          s / 2,
+          rect.top + s * bulge,
+          right.dx,
+          right.dy,
+        );
+      canvas.drawPath(
+        field,
+        Paint()
+          ..color = color.withValues(alpha: alpha * 0.62)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.05
+          ..strokeCap = StrokeCap.round,
+      );
+    }
+  }
+
+  void _paintFilings(Canvas canvas, Rect rect, double s) {
+    final mouth = Offset(s / 2, rect.top + s * 0.26);
+    const seeds = <(double, double, double)>[
+      (0.22, 0.02, 0.00),
+      (0.78, 0.06, 0.22),
+      (0.34, 0.38, 0.47),
+      (0.68, 0.34, 0.63),
+      (0.50, 0.00, 0.81),
+    ];
+    for (final seed in seeds) {
+      final phase = (t + seed.$3) % 1.0;
+      final start = Offset(s * seed.$1, s * seed.$2);
+      final p = Offset.lerp(start, mouth, Curves.easeIn.transform(phase))!;
+      final alpha = math.sin(phase * math.pi);
+      if (alpha < 0.06) continue;
+      canvas.drawCircle(
+        p,
+        0.85 + (1 - phase) * 0.55,
+        Paint()..color = color.withValues(alpha: alpha * 0.9),
+      );
+    }
+  }
+
   @override
   bool shouldRepaint(covariant _MagnetGlyphPainter oldDelegate) =>
-      oldDelegate.color != color;
+      oldDelegate.color != color || oldDelegate.t != t;
+}
+
+/// Две стрелки shuffle: плитки меняются местами, стрелки прокручиваются.
+class ShuffleGlyph extends StatefulWidget {
+  const ShuffleGlyph({
+    super.key,
+    this.size = 28,
+    this.color = const Color(0xFFF8F1DE),
+    this.animate = true,
+  });
+
+  final double size;
+  final Color color;
+  final bool animate;
+
+  @override
+  State<ShuffleGlyph> createState() => _ShuffleGlyphState();
+}
+
+class _ShuffleGlyphState extends State<ShuffleGlyph>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    );
+    if (widget.animate) _ctrl.repeat();
+  }
+
+  @override
+  void didUpdateWidget(covariant ShuffleGlyph oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.animate && !_ctrl.isAnimating) {
+      _ctrl.repeat();
+    } else if (!widget.animate && _ctrl.isAnimating) {
+      _ctrl
+        ..stop()
+        ..value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        return CustomPaint(
+          size: Size.square(widget.size),
+          painter: _ShuffleGlyphPainter(
+            color: widget.color,
+            t: widget.animate ? _ctrl.value : 0,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ShuffleGlyphPainter extends CustomPainter {
+  const _ShuffleGlyphPainter({required this.color, this.t = 0});
+
+  final Color color;
+  final double t;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final topY = s * 0.32;
+    final botY = s * 0.68;
+    final top = _arrowPath(s, yStart: topY, yEnd: botY);
+    final bottom = _arrowPath(s, yStart: botY, yEnd: topY);
+
+    final stroke = s * 0.10;
+    final shadow = Paint()
+      ..color = Colors.black.withValues(alpha: 0.42)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(top.shift(Offset(0, s * 0.04)), shadow);
+    canvas.drawPath(bottom.shift(Offset(0, s * 0.04)), shadow);
+
+    if (t > 0) {
+      final glow = 0.12 + 0.14 * (0.5 + 0.5 * math.sin(t * math.pi * 2));
+      final glowPaint = Paint()
+        ..color = color.withValues(alpha: glow)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke * 1.85
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.2);
+      canvas.drawPath(top, glowPaint);
+      canvas.drawPath(bottom, glowPaint);
+    }
+
+    final body = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    canvas.drawPath(top, body);
+    canvas.drawPath(bottom, body);
+    _paintHead(canvas, s, y: botY);
+    _paintHead(canvas, s, y: topY);
+
+    if (t > 0) {
+      _paintFlow(canvas, top, s);
+      _paintFlow(canvas, bottom, s, delay: 0.5);
+      _paintChips(canvas, s);
+    }
+  }
+
+  Path _arrowPath(double s, {required double yStart, required double yEnd}) {
+    return Path()
+      ..moveTo(s * 0.10, yStart)
+      ..lineTo(s * 0.34, yStart)
+      ..lineTo(s * 0.62, yEnd)
+      ..lineTo(s * 0.82, yEnd);
+  }
+
+  void _paintHead(Canvas canvas, double s, {required double y}) {
+    final tip = Offset(s * 0.94, y);
+    final head = Path()
+      ..moveTo(tip.dx, tip.dy)
+      ..lineTo(s * 0.78, y - s * 0.11)
+      ..lineTo(s * 0.78, y + s * 0.11)
+      ..close();
+    canvas.drawPath(
+      head.shift(Offset(0, s * 0.04)),
+      Paint()..color = Colors.black.withValues(alpha: 0.42),
+    );
+    canvas.drawPath(head, Paint()..color = color);
+  }
+
+  void _paintFlow(Canvas canvas, Path path, double s, {double delay = 0}) {
+    final metrics = path.computeMetrics();
+    for (final metric in metrics) {
+      final start = ((t + delay) % 1.0) * metric.length;
+      final end = (start + metric.length * 0.28).clamp(0.0, metric.length);
+      if (end <= start) continue;
+      canvas.drawPath(
+        metric.extractPath(start, end),
+        Paint()
+          ..color = Colors.white.withValues(alpha: 0.72)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = s * 0.045
+          ..strokeCap = StrokeCap.round,
+      );
+    }
+  }
+
+  void _paintChips(Canvas canvas, double s) {
+    final swapT = ((t - 0.08) / 0.42).clamp(0.0, 1.0);
+    final eased = Curves.easeInOutCubic.transform(swapT);
+    final left = Offset(s * 0.22, s * 0.50);
+    final right = Offset(s * 0.72, s * 0.50);
+    final arc = math.sin(eased * math.pi) * s * 0.16;
+    _chip(canvas, s, Offset.lerp(left, right, eased)! + Offset(0, -arc));
+    _chip(canvas, s, Offset.lerp(right, left, eased)! + Offset(0, arc));
+  }
+
+  void _chip(Canvas canvas, double s, Offset center) {
+    final rect = Rect.fromCenter(
+      center: center,
+      width: s * 0.20,
+      height: s * 0.26,
+    );
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(s * 0.04));
+    canvas.drawRRect(
+      rrect.shift(Offset(0, s * 0.03)),
+      Paint()..color = Colors.black.withValues(alpha: 0.35),
+    );
+    canvas.drawRRect(rrect, Paint()..color = color.withValues(alpha: 0.95));
+    canvas.drawCircle(
+      center,
+      s * 0.035,
+      Paint()..color = const Color(0xFF3A2012).withValues(alpha: 0.45),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ShuffleGlyphPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.t != t;
+}
+
+/// Иконка undo: стрелка отматывает ход, плитка едет назад по дуге.
+class UndoGlyph extends StatefulWidget {
+  const UndoGlyph({
+    super.key,
+    this.size = 28,
+    this.color = const Color(0xFFF8F1DE),
+    this.animate = true,
+  });
+
+  final double size;
+  final Color color;
+  final bool animate;
+
+  @override
+  State<UndoGlyph> createState() => _UndoGlyphState();
+}
+
+class _UndoGlyphState extends State<UndoGlyph>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1700),
+    );
+    if (widget.animate) _ctrl.repeat();
+  }
+
+  @override
+  void didUpdateWidget(covariant UndoGlyph oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.animate && !_ctrl.isAnimating) {
+      _ctrl.repeat();
+    } else if (!widget.animate && _ctrl.isAnimating) {
+      _ctrl
+        ..stop()
+        ..value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        return CustomPaint(
+          size: Size.square(widget.size),
+          painter: _UndoGlyphPainter(
+            color: widget.color,
+            t: widget.animate ? _ctrl.value : 0,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _UndoGlyphPainter extends CustomPainter {
+  const _UndoGlyphPainter({required this.color, this.t = 0});
+
+  final Color color;
+  final double t;
+
+  static const _startAngle = 0.32 * math.pi;
+  static const _sweep = -1.22 * math.pi;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final center = Offset(s * 0.56, s * 0.52);
+    final radius = s * 0.30;
+    final oval = Rect.fromCircle(center: center, radius: radius);
+    final path = Path()..addArc(oval, _startAngle, _sweep);
+    final stroke = s * 0.11;
+
+    canvas.drawPath(
+      path.shift(Offset(0, s * 0.04)),
+      Paint()
+        ..color = Colors.black.withValues(alpha: 0.42)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke
+        ..strokeCap = StrokeCap.round,
+    );
+
+    if (t > 0) {
+      final glow = 0.12 + 0.16 * (0.5 + 0.5 * math.sin(t * math.pi * 2));
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = color.withValues(alpha: glow)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = stroke * 1.8
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.2),
+      );
+    }
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke
+        ..strokeCap = StrokeCap.round,
+    );
+    _paintHead(canvas, center, radius, s);
+
+    if (t > 0) {
+      _paintFlow(canvas, path, s);
+      _paintRewindChip(canvas, center, radius, s);
+    }
+  }
+
+  void _paintHead(Canvas canvas, Offset center, double radius, double s) {
+    final endAngle = _startAngle + _sweep;
+    final tip =
+        center + Offset(math.cos(endAngle), math.sin(endAngle)) * radius;
+    final head = Path()
+      ..moveTo(tip.dx - s * 0.10, tip.dy)
+      ..lineTo(tip.dx + s * 0.10, tip.dy - s * 0.13)
+      ..lineTo(tip.dx + s * 0.10, tip.dy + s * 0.13)
+      ..close();
+    canvas.drawPath(
+      head.shift(Offset(0, s * 0.04)),
+      Paint()..color = Colors.black.withValues(alpha: 0.42),
+    );
+    canvas.drawPath(head, Paint()..color = color);
+  }
+
+  void _paintFlow(Canvas canvas, Path path, double s) {
+    for (final metric in path.computeMetrics()) {
+      final head = (1 - t) * metric.length;
+      final tail = (head - metric.length * 0.30).clamp(0.0, metric.length);
+      if (head <= tail + 0.4) continue;
+      canvas.drawPath(
+        metric.extractPath(tail, head),
+        Paint()
+          ..color = Colors.white.withValues(alpha: 0.72)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = s * 0.045
+          ..strokeCap = StrokeCap.round,
+      );
+    }
+  }
+
+  void _paintRewindChip(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    double s,
+  ) {
+    final rewind = Curves.easeInOutCubic.transform(
+      ((t - 0.06) / 0.52).clamp(0.0, 1.0),
+    );
+    final fade = math.sin(rewind * math.pi);
+    if (fade < 0.08) return;
+    final angle = (_startAngle + _sweep) + (-_sweep) * rewind;
+    final p =
+        center + Offset(math.cos(angle), math.sin(angle)) * (radius * 0.92);
+    final rect = Rect.fromCenter(
+      center: p,
+      width: s * 0.20,
+      height: s * 0.26,
+    );
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(s * 0.04));
+    canvas.drawRRect(
+      rrect.shift(Offset(0, s * 0.03)),
+      Paint()..color = Colors.black.withValues(alpha: 0.35 * fade),
+    );
+    canvas.drawRRect(
+      rrect,
+      Paint()..color = color.withValues(alpha: 0.95 * fade),
+    );
+    canvas.drawCircle(
+      p,
+      s * 0.035,
+      Paint()
+        ..color = const Color(0xFF3A2012).withValues(alpha: 0.45 * fade),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _UndoGlyphPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.t != t;
+}
+
+/// Лампочка-подсказка: лучи вспыхивают, внутри пульсирует свет.
+class HintGlyph extends StatefulWidget {
+  const HintGlyph({
+    super.key,
+    this.size = 28,
+    this.color = const Color(0xFFF8F1DE),
+    this.animate = true,
+  });
+
+  final double size;
+  final Color color;
+  final bool animate;
+
+  @override
+  State<HintGlyph> createState() => _HintGlyphState();
+}
+
+class _HintGlyphState extends State<HintGlyph>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    );
+    if (widget.animate) _ctrl.repeat();
+  }
+
+  @override
+  void didUpdateWidget(covariant HintGlyph oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.animate && !_ctrl.isAnimating) {
+      _ctrl.repeat();
+    } else if (!widget.animate && _ctrl.isAnimating) {
+      _ctrl
+        ..stop()
+        ..value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        return CustomPaint(
+          size: Size.square(widget.size),
+          painter: _HintGlyphPainter(
+            color: widget.color,
+            t: widget.animate ? _ctrl.value : 0,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _HintGlyphPainter extends CustomPainter {
+  const _HintGlyphPainter({required this.color, this.t = 0});
+
+  final Color color;
+  final double t;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = size.shortestSide;
+    final bulb = Offset(s * 0.50, s * 0.40);
+    final bulbR = s * 0.26;
+
+    if (t > 0) {
+      _paintRays(canvas, bulb, bulbR, s);
+      final glow = 0.16 + 0.22 * (0.5 + 0.5 * math.sin(t * math.pi * 2));
+      canvas.drawCircle(
+        bulb,
+        bulbR * 1.35,
+        Paint()
+          ..color = color.withValues(alpha: glow)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.2),
+      );
+    }
+
+    _paintBulb(canvas, s, bulb, bulbR);
+  }
+
+  void _paintRays(Canvas canvas, Offset bulb, double bulbR, double s) {
+    const angles = <double>[
+      -math.pi * 0.72,
+      -math.pi * 0.50,
+      -math.pi * 0.28,
+      -math.pi * 0.90,
+      -math.pi * 0.10,
+    ];
+    for (var i = 0; i < angles.length; i++) {
+      final phase = (t + i * 0.17) % 1.0;
+      final pulse = math.sin(phase * math.pi);
+      if (pulse < 0.08) continue;
+      final dir = Offset(math.cos(angles[i]), math.sin(angles[i]));
+      final inner = bulb + dir * (bulbR * 1.18);
+      final outer = bulb + dir * (bulbR * (1.42 + 0.28 * pulse));
+      canvas.drawLine(
+        inner,
+        outer,
+        Paint()
+          ..color = color.withValues(alpha: pulse * 0.88)
+          ..strokeWidth = s * 0.055
+          ..strokeCap = StrokeCap.round,
+      );
+    }
+  }
+
+  void _paintBulb(Canvas canvas, double s, Offset bulb, double bulbR) {
+    final neckTop = bulb.dy + bulbR * 0.62;
+    final neckBot = s * 0.78;
+    final neckW = s * 0.16;
+    final body = Path()
+      ..addOval(Rect.fromCircle(center: bulb, radius: bulbR))
+      ..moveTo(bulb.dx - neckW * 0.42, neckTop)
+      ..lineTo(bulb.dx - neckW * 0.55, neckBot)
+      ..lineTo(bulb.dx + neckW * 0.55, neckBot)
+      ..lineTo(bulb.dx + neckW * 0.42, neckTop)
+      ..close();
+
+    canvas.drawPath(
+      body.shift(Offset(0, s * 0.04)),
+      Paint()..color = Colors.black.withValues(alpha: 0.38),
+    );
+    canvas.drawPath(body, Paint()..color = color);
+
+    if (t > 0) {
+      final inner = 0.20 + 0.28 * (0.5 + 0.5 * math.sin(t * math.pi * 2));
+      canvas.drawCircle(
+        bulb.translate(0, -s * 0.02),
+        bulbR * 0.46,
+        Paint()..color = Colors.white.withValues(alpha: inner),
+      );
+    }
+
+    final baseY = s * 0.82;
+    final base = RRect.fromRectAndRadius(
+      Rect.fromCenter(
+        center: Offset(s * 0.50, baseY),
+        width: s * 0.30,
+        height: s * 0.10,
+      ),
+      Radius.circular(s * 0.03),
+    );
+    canvas.drawRRect(
+      base.shift(Offset(0, s * 0.03)),
+      Paint()..color = Colors.black.withValues(alpha: 0.38),
+    );
+    canvas.drawRRect(base, Paint()..color = color);
+    canvas.drawLine(
+      Offset(s * 0.40, s * 0.88),
+      Offset(s * 0.60, s * 0.88),
+      Paint()
+        ..color = color
+        ..strokeWidth = s * 0.055
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _HintGlyphPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.t != t;
 }
 
 /// Объёмный счётчик / плюсик на кнопке буста.

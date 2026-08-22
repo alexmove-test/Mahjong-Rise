@@ -14,6 +14,8 @@ import 'services/firebase_bootstrap.dart';
 import 'services/haptic_controller.dart';
 import 'services/haptic_store.dart';
 import 'services/locale_store.dart';
+import 'services/sfx_controller.dart';
+import 'services/sfx_store.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -87,6 +89,7 @@ class MahjongApp extends StatefulWidget {
 class _MahjongAppState extends State<MahjongApp> with WidgetsBindingObserver {
   late final LocaleController _controller;
   late final HapticController _haptic;
+  late final SfxController _sfx;
 
   @override
   void initState() {
@@ -97,6 +100,7 @@ class _MahjongAppState extends State<MahjongApp> with WidgetsBindingObserver {
       deviceLocale: WidgetsBinding.instance.platformDispatcher.locale,
     );
     _haptic = HapticController(HapticStore.memory());
+    _sfx = SfxController(SfxStore.memory());
     _controller.addListener(_onLocale);
     unawaited(_hydratePrefs());
   }
@@ -104,9 +108,11 @@ class _MahjongAppState extends State<MahjongApp> with WidgetsBindingObserver {
   Future<void> _hydratePrefs() async {
     final localeStore = await LocaleStore.open();
     final hapticStore = await HapticStore.open();
+    final sfxStore = await SfxStore.open();
     if (!mounted) return;
     _controller.attachStore(localeStore);
     _haptic.attachStore(hapticStore);
+    _sfx.attachStore(sfxStore);
   }
 
   void _onLocale() {
@@ -126,6 +132,7 @@ class _MahjongAppState extends State<MahjongApp> with WidgetsBindingObserver {
     _controller.removeListener(_onLocale);
     _controller.dispose();
     _haptic.dispose();
+    _sfx.dispose();
     super.dispose();
   }
 
@@ -135,26 +142,29 @@ class _MahjongAppState extends State<MahjongApp> with WidgetsBindingObserver {
       controller: _controller,
       child: HapticScope(
         controller: _haptic,
-        child: MaterialApp(
-          title: 'Mahjong Rise',
-          locale: _controller.locale,
-          supportedLocales: const [Locale('en'), Locale('ru')],
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          localeResolutionCallback: (_, _) => _controller.locale,
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFF2F6B4F),
-              brightness: Brightness.dark,
+        child: SfxScope(
+          controller: _sfx,
+          child: MaterialApp(
+            title: 'Mahjong Rise',
+            locale: _controller.locale,
+            supportedLocales: const [Locale('en'), Locale('ru')],
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            localeResolutionCallback: (_, _) => _controller.locale,
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFF2F6B4F),
+                brightness: Brightness.dark,
+              ),
+              useMaterial3: true,
+              fontFamily: 'Segoe UI',
             ),
-            useMaterial3: true,
-            fontFamily: 'Segoe UI',
+            home: const LevelSelectScreen(),
           ),
-          home: const LevelSelectScreen(),
         ),
       ),
     );

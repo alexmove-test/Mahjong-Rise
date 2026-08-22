@@ -108,7 +108,7 @@ class _CourtyardSceneState extends State<CourtyardScene>
           final snapshot = _snapshot;
           final fade = snapshot.artFade;
           final breath = widget.idle
-              ? 1.0 + 0.03 * (0.5 - 0.5 * math.cos(_idle.value * 2 * math.pi))
+              ? 1.0 + 0.01 * (0.5 - 0.5 * math.cos(_idle.value * 2 * math.pi))
               : 1.0;
           final kenBurns = widget.animate
               ? 1.0 + _growZoom * Curves.easeOutCubic.transform(_grow.value)
