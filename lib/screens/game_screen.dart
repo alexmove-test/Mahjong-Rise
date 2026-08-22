@@ -12,15 +12,18 @@ import '../l10n/praise_phrases.dart';
 import '../models/board.dart';
 import '../models/levels.dart';
 import '../models/tile.dart';
+import '../models/tutorial_step.dart';
 import '../services/ad_bootstrap.dart';
 import '../services/game_sfx.dart';
 import '../services/firebase_leaderboard_repository.dart';
 import '../services/player_profile_store.dart';
 import '../services/progress_store.dart';
 import '../services/rewarded_ad_service.dart';
+import '../services/tutorial_store.dart';
 import '../utils/tile_icons.dart';
 import '../widgets/game_board.dart';
 import '../widgets/premium_ui.dart';
+import '../widgets/tutorial_coach.dart';
 import '../widgets/tile_symbol_image.dart';
 import '../widgets/tile_widget.dart';
 
@@ -276,6 +279,12 @@ class _GameScreenState extends State<GameScreen> {
   final RewardedAdService _rewardedAds = RewardedAdService();
   bool _adBusy = false;
 
+  TutorialStore? _tutorial;
+  TutorialLesson? _lesson;
+  bool _blockedTap = false;
+  final LayerLink _trayLink = LayerLink();
+  final LayerLink _actionsLink = LayerLink();
+
   LevelDef get _level => widget.level;
   bool get _adsAvailable => AdBootstrap.enabled && !_adBusy;
 
@@ -294,6 +303,7 @@ class _GameScreenState extends State<GameScreen> {
     unawaited(_rewardedAds.preload());
     _resetBoard();
     widget.progress.markPlayed(_level.id);
+    unawaited(_initTutorial());
   }
 
   @override
@@ -332,17 +342,116 @@ class _GameScreenState extends State<GameScreen> {
 
   void _startNewGame() {
     _resetBoard();
+    _blockedTap = false;
+    _syncTutorial();
     if (mounted) setState(() {});
+  }
+
+  Future<void> _initTutorial() async {
+    _tutorial = await TutorialStore.open();
+    if (!mounted) return;
+    _syncTutorial();
+  }
+
+  void _syncTutorial() {
+    final store = _tutorial;
+    if (store == null || !mounted) return;
+    final next = TutorialGuide.current(
+      levelId: _level.id,
+      progress: store.snapshot,
+      level1Completed: widget.progress.isCompleted(1),
+      trayEmpty: _board.trayLiveCount == 0,
+      blockedTap: _blockedTap,
+    );
+    final wasCollect = _lesson?.step == TutorialStep.collect;
+    setState(() {
+      _lesson = next;
+      if (next?.step == TutorialStep.collect) {
+        _hintTimer?.cancel();
+        _hintedIds = _tutorialHintIds();
+      } else if (wasCollect) {
+        _hintedIds = {};
+      }
+    });
+  }
+
+  Future<void> _skipTutorial() async {
+    final store = _tutorial;
+    if (store == null) return;
+    await store.skipAll();
+    _blockedTap = false;
+    if (mounted) _syncTutorial();
+  }
+
+  Future<void> _replayTutorial() async {
+    final store = _tutorial ?? await TutorialStore.open();
+    _tutorial = store;
+    await store.reset();
+    _blockedTap = false;
+    if (mounted) _syncTutorial();
+  }
+
+  Future<void> _acknowledgeTutorialStep() async {
+    final store = _tutorial;
+    final step = _lesson?.step;
+    if (store == null || step == null) return;
+    if (step != TutorialStep.layers && step != TutorialStep.boosts) {
+      return;
+    }
+    await store.complete(step);
+    _blockedTap = false;
+    if (mounted) _syncTutorial();
+  }
+
+  Future<void> _completeBoostsIfNeeded() async {
+    final store = _tutorial;
+    if (store == null || _lesson?.step != TutorialStep.boosts) return;
+    await store.complete(TutorialStep.boosts);
+    if (mounted) _syncTutorial();
+  }
+
+  Future<void> _onTutorialAfterMove(MatchResult resolve) async {
+    final store = _tutorial;
+    if (store == null) return;
+    final current = _lesson?.step;
+    if (current == null) return;
+
+    if (!store.isDone(TutorialStep.collect)) {
+      await store.complete(TutorialStep.collect);
+    }
+    if (current == TutorialStep.layers && !store.isDone(TutorialStep.layers)) {
+      await store.complete(TutorialStep.layers);
+    }
+    if (resolve == MatchResult.matched || resolve == MatchResult.win) {
+      if (!store.isDone(TutorialStep.match)) {
+        await store.complete(TutorialStep.match);
+      }
+    }
+    if (current == TutorialStep.boosts) {
+      await store.complete(TutorialStep.boosts);
+    }
+    if (!mounted) return;
+    _syncTutorial();
+  }
+
+  Set<int> _tutorialHintIds() {
+    final hint = _board.findHint();
+    if (hint == null) return {};
+    final trayTile = hint.trayTile;
+    return {hint.boardTile.id, if (trayTile != null) trayTile.id};
   }
 
   void _clearHint() {
     _hintTimer?.cancel();
+    if (_lesson?.step == TutorialStep.collect) {
+      setState(() => _hintedIds = _tutorialHintIds());
+      return;
+    }
     if (_hintedIds.isEmpty) return;
     setState(() => _hintedIds = {});
   }
 
   void _onTileTap(Tile tile, Rect fromRect) {
-    _clearHint();
     if (_board.isWon || _board.isLost) return;
 
     final scoreBefore = _score;
@@ -350,14 +459,22 @@ class _GameScreenState extends State<GameScreen> {
     final result = _board.pick(tile);
 
     if (result == MatchResult.blocked) {
+      _blockedTap = true;
       setState(() => _toast = 'Плитка заблокирована');
       _sfx.error();
+      _syncTutorial();
       return;
     }
     if (result == MatchResult.trayFull) {
       setState(() => _toast = 'Лоток полон');
       _sfx.error();
       return;
+    }
+
+    _blockedTap = false;
+    _hintTimer?.cancel();
+    if (_lesson?.step != TutorialStep.collect && _hintedIds.isNotEmpty) {
+      _hintedIds = {};
     }
 
     _sfx.collect();
@@ -460,6 +577,7 @@ class _GameScreenState extends State<GameScreen> {
           break;
       }
     });
+    unawaited(_onTutorialAfterMove(resolve));
   }
 
   void _onTileRemoveComplete(Tile tile) {
@@ -471,21 +589,28 @@ class _GameScreenState extends State<GameScreen> {
     if (_board.isWon || _board.isLost || _shufflesLeft <= 0) {
       return;
     }
-    _clearHint();
+    _hintTimer?.cancel();
     setState(() {
       _board.shuffleRemaining();
       _shufflesLeft -= 1;
       _combo = 0;
       _toast = _board.hasMoves() ? 'Перемешано' : 'Всё ещё нет ходов';
+      if (_lesson?.step != TutorialStep.collect) {
+        _hintedIds = {};
+      }
     });
     _fastPraise.reset();
     _sfx.tap();
+    if (_lesson?.step == TutorialStep.collect) {
+      _syncTutorial();
+    }
   }
 
   void _onShuffleTap() {
     if (_board.isWon || _board.isLost || _adBusy) return;
     if (_shufflesLeft > 0) {
       _shuffle();
+      unawaited(_completeBoostsIfNeeded());
     } else if (_adsAvailable) {
       unawaited(_watchAdForBoost(_RewardedBoost.shuffle));
     }
@@ -495,6 +620,7 @@ class _GameScreenState extends State<GameScreen> {
     if (_board.isWon || _board.isLost || _adBusy) return;
     if (_hintsLeft > 0) {
       _hint();
+      unawaited(_completeBoostsIfNeeded());
     } else if (_adsAvailable) {
       unawaited(_watchAdForBoost(_RewardedBoost.hint));
     }
@@ -504,6 +630,7 @@ class _GameScreenState extends State<GameScreen> {
     if (_board.isWon || _board.isLost || _adBusy) return;
     if (_magnetsLeft > 0) {
       _magnet();
+      unawaited(_completeBoostsIfNeeded());
     } else if (_adsAvailable) {
       unawaited(_watchAdForBoost(_RewardedBoost.magnet));
     }
@@ -513,6 +640,7 @@ class _GameScreenState extends State<GameScreen> {
     if (_board.isWon || _board.isLost || _adBusy) return;
     if (_undosLeft > 0 && _undoStack.isNotEmpty) {
       _undo();
+      unawaited(_completeBoostsIfNeeded());
     } else if (_adsAvailable && _undosLeft <= 0 && _undoStack.isNotEmpty) {
       unawaited(_watchAdForBoost(_RewardedBoost.undo));
     }
@@ -587,6 +715,10 @@ class _GameScreenState extends State<GameScreen> {
     _sfx.select();
     _hintTimer = Timer(const Duration(seconds: 2), () {
       if (!mounted) return;
+      if (_lesson?.step == TutorialStep.collect) {
+        setState(() => _hintedIds = _tutorialHintIds());
+        return;
+      }
       setState(() => _hintedIds = {});
     });
   }
@@ -670,6 +802,20 @@ class _GameScreenState extends State<GameScreen> {
               onTap: () {
                 Navigator.pop(ctx);
                 Navigator.of(context).maybePop();
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.help_outline_rounded,
+                color: _Ui.ivory,
+              ),
+              title: const Text(
+                'Как играть',
+                style: TextStyle(color: _Ui.ivory),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                unawaited(_replayTutorial());
               },
             ),
             ListTile(
@@ -991,10 +1137,16 @@ class _GameScreenState extends State<GameScreen> {
                         onBack: () => Navigator.of(context).maybePop(),
                         onMenu: _showMenu,
                       ),
-                      _TileTray(
-                        tiles: _board.tray,
-                        hintedIds: _hintedIds,
-                        onRemoveComplete: _onTileRemoveComplete,
+                      CompositedTransformTarget(
+                        link: _trayLink,
+                        child: TutorialSpotlight(
+                          active: _lesson?.anchor == TutorialAnchor.tray,
+                          child: _TileTray(
+                            tiles: _board.tray,
+                            hintedIds: _hintedIds,
+                            onRemoveComplete: _onTileRemoveComplete,
+                          ),
+                        ),
                       ),
                       _GoalBar(
                         removed: _board.tiles.where((t) => t.removed).length,
@@ -1033,24 +1185,41 @@ class _GameScreenState extends State<GameScreen> {
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  child: _ActionBar(
-                    shufflesLeft: _shufflesLeft,
-                    magnetsLeft: _magnetsLeft,
-                    hintsLeft: _hintsLeft,
-                    undosLeft: _undosLeft,
-                    enabled: !_board.isWon && !_board.isLost,
-                    canUndo: _undosLeft > 0 && _undoStack.isNotEmpty,
-                    canUndoViaAd:
-                        _undosLeft <= 0 &&
-                        _undoStack.isNotEmpty &&
-                        _adsAvailable,
-                    adsAvailable: _adsAvailable,
-                    onShuffle: _onShuffleTap,
-                    onMagnet: _onMagnetTap,
-                    onHint: _onHintTap,
-                    onUndo: _onUndoTap,
+                  child: CompositedTransformTarget(
+                    link: _actionsLink,
+                    child: TutorialSpotlight(
+                      active: _lesson?.anchor == TutorialAnchor.actions,
+                      child: _ActionBar(
+                        shufflesLeft: _shufflesLeft,
+                        magnetsLeft: _magnetsLeft,
+                        hintsLeft: _hintsLeft,
+                        undosLeft: _undosLeft,
+                        enabled: !_board.isWon && !_board.isLost,
+                        canUndo: _undosLeft > 0 && _undoStack.isNotEmpty,
+                        canUndoViaAd:
+                            _undosLeft <= 0 &&
+                            _undoStack.isNotEmpty &&
+                            _adsAvailable,
+                        adsAvailable: _adsAvailable,
+                        onShuffle: _onShuffleTap,
+                        onMagnet: _onMagnetTap,
+                        onHint: _onHintTap,
+                        onUndo: _onUndoTap,
+                      ),
+                    ),
                   ),
                 ),
+                if (_lesson != null)
+                  Positioned.fill(
+                    child: TutorialCoach(
+                      lesson: _lesson!,
+                      trayLink: _trayLink,
+                      actionsLink: _actionsLink,
+                      onSkip: () => unawaited(_skipTutorial()),
+                      onAcknowledge: () =>
+                          unawaited(_acknowledgeTutorialStep()),
+                    ),
+                  ),
               ],
             ),
           ),
