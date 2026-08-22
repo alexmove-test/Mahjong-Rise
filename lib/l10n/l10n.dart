@@ -37,6 +37,7 @@ class L10n {
       pick('$unlocked/$total open', 'открыто $unlocked/$total');
 
   String get courtyard => pick('Courtyard', 'Во двор');
+  String get howToPlay => pick('How to play', 'Как играть');
   String get retry => pick('Retry', 'Заново');
   String get playAgain => pick('Play again', 'Ещё раз');
   String get next => pick('Next', 'Дальше');
