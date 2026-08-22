@@ -521,11 +521,8 @@ class _GameScreenState extends State<GameScreen> {
           _sfx.match();
           final praise = _fastPraise.registerMatch(
             now: DateTime.now(),
-            languageCode: WidgetsBinding
-                .instance
-                .platformDispatcher
-                .locale
-                .languageCode,
+            languageCode:
+                WidgetsBinding.instance.platformDispatcher.locale.languageCode,
           );
           if (praise != null) _sfx.praise(praise);
         case MatchResult.win:
@@ -805,10 +802,7 @@ class _GameScreenState extends State<GameScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(
-                Icons.help_outline_rounded,
-                color: _Ui.ivory,
-              ),
+              leading: const Icon(Icons.help_outline_rounded, color: _Ui.ivory),
               title: const Text(
                 'Как играть',
                 style: TextStyle(color: _Ui.ivory),

@@ -252,10 +252,7 @@ class _TailPainter extends CustomPainter {
         ..lineTo(size.width / 2, size.height)
         ..close();
     }
-    canvas.drawPath(
-      path,
-      Paint()..color = EmbossedDecoration.woodTop,
-    );
+    canvas.drawPath(path, Paint()..color = EmbossedDecoration.woodTop);
     canvas.drawPath(
       path,
       Paint()
