@@ -256,24 +256,44 @@ class CourtyardArtFade {
     required this.blend,
   });
 
-  static const plateSteps = <double>[0, 4, 8, 12, 16, 20, 24];
+  static const plateSteps = <double>[
+    0,
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24,
+  ];
 
   static const assets = <String>[
     'assets/courtyard/courtyard_00_field.jpg',
+    'assets/courtyard/courtyard_00b_trail.jpg',
     'assets/courtyard/courtyard_01_path.jpg',
+    'assets/courtyard/courtyard_01b_gate.jpg',
     'assets/courtyard/courtyard_02_foundation.jpg',
+    'assets/courtyard/courtyard_02b_walls_rise.jpg',
     'assets/courtyard/courtyard_03_walls.jpg',
+    'assets/courtyard/courtyard_03b_roof_rise.jpg',
     'assets/courtyard/courtyard_04_roof.jpg',
+    'assets/courtyard/courtyard_04b_windows_rise.jpg',
     'assets/courtyard/courtyard_05_windows.jpg',
+    'assets/courtyard/courtyard_05b_garden.jpg',
     'assets/courtyard/courtyard_06_complete.jpg',
   ];
 
   static const lifeAsset = 'assets/courtyard/courtyard_07_life.jpg';
 
-  /// Индекс нижней пластины (0–6).
+  /// Индекс нижней пластины (0–12).
   final int fromIndex;
 
-  /// Индекс верхней пластины (0–6).
+  /// Индекс верхней пластины (0–12).
   final int toIndex;
 
   /// 0 = только [fromIndex], 1 = только [toIndex].

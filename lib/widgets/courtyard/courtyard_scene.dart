@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 
 import 'courtyard_progress.dart';
 
-/// Живой двор: на хабе статичен (с лёгким idle), после победы — рост ~2 с.
+/// Живой двор: на хабе статичен (с лёгким idle), после победы — рост ~2.4 с
+/// с лёгким Ken Burns к дому.
 class CourtyardScene extends StatefulWidget {
   const CourtyardScene({
     super.key,
@@ -19,7 +20,7 @@ class CourtyardScene extends StatefulWidget {
   final bool animate;
   final bool idle;
 
-  static const growDuration = Duration(milliseconds: 2000);
+  static const growDuration = Duration(milliseconds: 2400);
 
   @override
   State<CourtyardScene> createState() => _CourtyardSceneState();
@@ -31,6 +32,7 @@ class _CourtyardSceneState extends State<CourtyardScene>
   late final AnimationController _grow;
 
   static const _artAlign = Alignment(0, -0.28);
+  static const _growZoom = 0.05;
 
   @override
   void initState() {
@@ -108,11 +110,14 @@ class _CourtyardSceneState extends State<CourtyardScene>
           final breath = widget.idle
               ? 1.0 + 0.03 * (0.5 - 0.5 * math.cos(_idle.value * 2 * math.pi))
               : 1.0;
+          final kenBurns = widget.animate
+              ? 1.0 + _growZoom * Curves.easeOutCubic.transform(_grow.value)
+              : 1.0;
           final life = snapshot.lifeArt;
 
           return ClipRect(
             child: Transform.scale(
-              scale: breath,
+              scale: breath * kenBurns,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -139,11 +144,7 @@ class _CourtyardSceneState extends State<CourtyardScene>
 
 /// Рамка дерева/золота вокруг двора на главном экране.
 class CourtyardFrame extends StatelessWidget {
-  const CourtyardFrame({
-    super.key,
-    required this.height,
-    required this.child,
-  });
+  const CourtyardFrame({super.key, required this.height, required this.child});
 
   final double height;
   final Widget child;
@@ -165,10 +166,7 @@ class CourtyardFrame extends StatelessWidget {
               offset: const Offset(0, 4),
               blurRadius: 10,
             ),
-            BoxShadow(
-              color: _woodTop.withValues(alpha: 0.18),
-              blurRadius: 18,
-            ),
+            BoxShadow(color: _woodTop.withValues(alpha: 0.18), blurRadius: 18),
           ],
         ),
         child: ClipRRect(

@@ -66,10 +66,7 @@ void main() {
     test('win uses a stage line when crossing a band', () {
       final from = CourtyardSnapshot.fromStep(step: 4, totalStars: 6);
       final to = CourtyardSnapshot.fromStep(step: 5, totalStars: 8);
-      expect(
-        pathPhraseForWin(from: from, to: to),
-        'The fence holds the plot.',
-      );
+      expect(pathPhraseForWin(from: from, to: to), 'The fence holds the plot.');
     });
 
     test('more stars without a new step only warm the house', () {
@@ -85,29 +82,48 @@ void main() {
 
   group('CourtyardArtFade', () {
     test('maps campaign steps onto neighboring plates', () {
+      expect(
+        CourtyardArtFade.assets.length,
+        CourtyardArtFade.plateSteps.length,
+      );
+      expect(CourtyardArtFade.plateSteps, [
+        0,
+        2,
+        4,
+        6,
+        8,
+        10,
+        12,
+        14,
+        16,
+        18,
+        20,
+        22,
+        24,
+      ]);
       final empty = CourtyardArtFade.fromStep(0);
       expect(empty.fromIndex, 0);
       expect(empty.toIndex, 0);
       expect(empty.blend, 0);
 
-      final path = CourtyardArtFade.fromStep(2);
+      final path = CourtyardArtFade.fromStep(1);
       expect(path.fromIndex, 0);
       expect(path.toIndex, 1);
       expect(path.blend, closeTo(0.5, 0.001));
 
       final walls = CourtyardArtFade.fromStep(12);
-      expect(walls.fromIndex, 2);
-      expect(walls.toIndex, 3);
+      expect(walls.fromIndex, 5);
+      expect(walls.toIndex, 6);
       expect(walls.blend, closeTo(1.0, 0.001));
 
-      final roof = CourtyardArtFade.fromStep(14);
-      expect(roof.fromIndex, 3);
-      expect(roof.toIndex, 4);
+      final roof = CourtyardArtFade.fromStep(13);
+      expect(roof.fromIndex, 6);
+      expect(roof.toIndex, 7);
       expect(roof.blend, closeTo(0.5, 0.001));
 
       final done = CourtyardArtFade.fromStep(24);
-      expect(done.fromIndex, 5);
-      expect(done.toIndex, 6);
+      expect(done.fromIndex, 11);
+      expect(done.toIndex, 12);
       expect(done.blend, closeTo(1.0, 0.001));
     });
 
