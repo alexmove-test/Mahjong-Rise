@@ -3,12 +3,17 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'debug_agent_log.dart';
 import 'debug_boot_timer.dart';
+import 'l10n/locale_controller.dart';
 import 'screens/level_select_screen.dart';
 import 'services/ad_bootstrap.dart';
 import 'services/firebase_bootstrap.dart';
+import 'services/haptic_controller.dart';
+import 'services/haptic_store.dart';
+import 'services/locale_store.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -72,23 +77,86 @@ Future<void> _initServices() async {
   // #endregion
 }
 
-class MahjongApp extends StatelessWidget {
+class MahjongApp extends StatefulWidget {
   const MahjongApp({super.key});
 
   @override
+  State<MahjongApp> createState() => _MahjongAppState();
+}
+
+class _MahjongAppState extends State<MahjongApp> with WidgetsBindingObserver {
+  late final LocaleController _controller;
+  late final HapticController _haptic;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _controller = LocaleController(
+      LocaleStore.memory(),
+      deviceLocale: WidgetsBinding.instance.platformDispatcher.locale,
+    );
+    _haptic = HapticController(HapticStore.memory());
+    _controller.addListener(_onLocale);
+    unawaited(_hydratePrefs());
+  }
+
+  Future<void> _hydratePrefs() async {
+    final localeStore = await LocaleStore.open();
+    final hapticStore = await HapticStore.open();
+    if (!mounted) return;
+    _controller.attachStore(localeStore);
+    _haptic.attachStore(hapticStore);
+  }
+
+  void _onLocale() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void didChangeLocales(List<Locale>? locales) {
+    final next =
+        locales?.first ?? WidgetsBinding.instance.platformDispatcher.locale;
+    _controller.updateDeviceLocale(next);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _controller.removeListener(_onLocale);
+    _controller.dispose();
+    _haptic.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Mahjong Rise',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2F6B4F),
-          brightness: Brightness.dark,
+    return LocaleScope(
+      controller: _controller,
+      child: HapticScope(
+        controller: _haptic,
+        child: MaterialApp(
+          title: 'Mahjong Rise',
+          locale: _controller.locale,
+          supportedLocales: const [Locale('en'), Locale('ru')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          localeResolutionCallback: (_, _) => _controller.locale,
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF2F6B4F),
+              brightness: Brightness.dark,
+            ),
+            useMaterial3: true,
+            fontFamily: 'Segoe UI',
+          ),
+          home: const LevelSelectScreen(),
         ),
-        useMaterial3: true,
-        fontFamily: 'Segoe UI',
       ),
-      home: const LevelSelectScreen(),
     );
   }
 }

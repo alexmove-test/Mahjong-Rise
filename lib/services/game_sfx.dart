@@ -1,7 +1,8 @@
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/services.dart';
 
-/// Звуки партии; haptic — только match / win / lose.
+import 'haptic_controller.dart';
+
+/// Звуки партии и тактильный отклик.
 ///
 /// SFX идут через пул плееров, чтобы стук в лоток и нахождение пары
 /// не глушили друг друга при быстрых тапах.
@@ -10,7 +11,10 @@ class GameSfx {
 
   static const _poolSize = 8;
 
-  final List<AudioPlayer> _pool = List.generate(_poolSize, (_) => AudioPlayer());
+  final List<AudioPlayer> _pool = List.generate(
+    _poolSize,
+    (_) => AudioPlayer(),
+  );
   final AudioPlayer _voice = AudioPlayer();
   bool _ready = false;
   int _next = 0;
@@ -60,8 +64,9 @@ class GameSfx {
     return player;
   }
 
-  /// Плитка ушла в лоток (без haptic). Чередует стук и bucket.
+  /// Плитка ушла в лоток.
   Future<void> collect() async {
+    HapticGate.light();
     final useBucket = _collectIndex.isOdd;
     _collectIndex += 1;
     if (useBucket) {
@@ -73,33 +78,36 @@ class GameSfx {
 
   /// Пара снята из лотка.
   Future<void> match() async {
-    HapticFeedback.mediumImpact();
+    HapticGate.medium();
     await _play('sfx/match.wav', volume: 0.78);
   }
 
   /// Лоток полон — проигрыш.
   Future<void> lose() async {
-    HapticFeedback.heavyImpact();
+    HapticGate.heavy();
     await _play('sfx/lose.wav', volume: 0.72);
   }
 
   Future<void> win() async {
-    HapticFeedback.heavyImpact();
+    HapticGate.heavy();
     await _play('sfx/win.wav', volume: 0.85);
   }
 
   /// Ошибка UI: блок, лоток полон при тапе, нет ходов для подсказки.
   Future<void> error() async {
+    HapticGate.error();
     await _play('sfx/error.wav', volume: 0.6);
   }
 
   /// Кнопки: shuffle, undo.
   Future<void> tap() async {
+    HapticGate.selection();
     await _play('sfx/tap.wav', volume: 0.45);
   }
 
   /// Подсказка.
   Future<void> select() async {
+    HapticGate.selection();
     await _play('sfx/select.wav', volume: 0.55);
   }
 

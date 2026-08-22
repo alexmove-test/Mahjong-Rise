@@ -4,7 +4,7 @@
 
 1. Откройте [Firebase Console](https://console.firebase.google.com/).
 2. Создайте проект (например, `mahjong-rise`).
-3. Добавьте приложение **Android** с package name: `com.mahjong.mahjong` (отображаемое имя: **Mahjong Rise**).
+3. Добавьте приложение **Android** с package name: `com.rise.mahjong` (отображаемое имя: **Mahjong Rise**).
 4. Скачайте `google-services.json` и положите в:
 
 ```

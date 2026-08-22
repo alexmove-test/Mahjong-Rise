@@ -12,4 +12,11 @@ abstract final class AdConfig {
 
   static String get rewardedUnitId =>
       kDebugMode ? testRewardedUnitId : productionRewardedUnitId;
+
+  /// Имитация ролика: debug, web и desktop. Release Android/iOS — AdMob.
+  static bool get simulateAds {
+    if (kDebugMode || kIsWeb) return true;
+    return defaultTargetPlatform != TargetPlatform.android &&
+        defaultTargetPlatform != TargetPlatform.iOS;
+  }
 }

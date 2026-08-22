@@ -139,6 +139,27 @@ void main() {
       expect(board.trayHasPair(), isFalse);
     });
 
+    test('reviveFromTray undoes a full tray and clears lose', () {
+      final board = Board(
+        tiles: [
+          Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
+          Tile(id: 1, symbol: 'B', layer: 0, x: 4, y: 0),
+          Tile(id: 2, symbol: 'C', layer: 0, x: 8, y: 0),
+          Tile(id: 3, symbol: 'D', layer: 0, x: 12, y: 0),
+        ],
+      );
+      for (final tile in board.tiles) {
+        tile.inTray = true;
+        board.tray.add(tile);
+      }
+      expect(board.resolveTray(), MatchResult.lose);
+
+      expect(board.reviveFromTray(board.tiles[3]), isTrue);
+      expect(board.isLost, isFalse);
+      expect(board.tray, hasLength(3));
+      expect(board.tiles[3].isOnBoard, isTrue);
+    });
+
     test('collected when tray has space and no pair', () {
       final board = Board(
         tiles: [
@@ -191,8 +212,199 @@ void main() {
     });
   });
 
+  group('findHint', () {
+    test('returns both free tiles of a matching pair', () {
+      final board = Board(
+        tiles: [
+          Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
+          Tile(id: 1, symbol: 'A', layer: 0, x: 4, y: 0),
+          Tile(id: 2, symbol: 'B', layer: 0, x: 8, y: 0),
+        ],
+      );
+
+      final hint = board.findHint();
+      expect(hint, isNotNull);
+      expect({hint!.boardTile.id, hint.match.id}, {0, 1});
+      expect(hint.boardTile.symbol, 'A');
+      expect(hint.match.symbol, 'A');
+    });
+
+    test('returns a free tile that matches the tray', () {
+      final tray = Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0, inTray: true);
+      final board = Board(
+        tiles: [
+          tray,
+          Tile(id: 1, symbol: 'A', layer: 0, x: 4, y: 0),
+          Tile(id: 2, symbol: 'B', layer: 0, x: 8, y: 0),
+        ],
+      );
+      board.tray.add(tray);
+
+      final hint = board.findHint();
+      expect(hint, isNotNull);
+      expect(hint!.boardTile.id, 1);
+      expect(hint.match.id, 0);
+    });
+
+    test('is null when free tiles do not form a pair', () {
+      final board = Board(
+        tiles: [
+          Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
+          Tile(id: 1, symbol: 'B', layer: 0, x: 4, y: 0),
+        ],
+      );
+      expect(board.findHint(), isNull);
+    });
+  });
+
+  group('findMagnetPair', () {
+    test('pulls both free tiles of a matching pair', () {
+      final board = Board(
+        tiles: [
+          Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
+          Tile(id: 1, symbol: 'A', layer: 0, x: 4, y: 0),
+          Tile(id: 2, symbol: 'B', layer: 0, x: 8, y: 0),
+        ],
+      );
+
+      final pair = board.findMagnetPair();
+      expect(pair, isNotNull);
+      expect({pair!.boardTile.id, pair.match.id}, {0, 1});
+    });
+
+    test('pulls a free tile that matches the tray', () {
+      final tray = Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0, inTray: true);
+      final board = Board(
+        tiles: [
+          tray,
+          Tile(id: 1, symbol: 'A', layer: 0, x: 4, y: 0),
+          Tile(id: 2, symbol: 'B', layer: 0, x: 8, y: 0),
+        ],
+      );
+      board.tray.add(tray);
+
+      final pair = board.findMagnetPair();
+      expect(pair, isNotNull);
+      expect(pair!.boardTile.id, 1);
+      expect(pair.match.id, 0);
+    });
+
+    test('does not fill the last tray slot with a board pair', () {
+      final board = Board(
+        tiles: [
+          Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0, inTray: true),
+          Tile(id: 1, symbol: 'B', layer: 0, x: 4, y: 0, inTray: true),
+          Tile(id: 2, symbol: 'C', layer: 0, x: 8, y: 0, inTray: true),
+          Tile(id: 3, symbol: 'D', layer: 0, x: 12, y: 0),
+          Tile(id: 4, symbol: 'D', layer: 0, x: 16, y: 0),
+        ],
+      );
+      board.tray.addAll(board.tiles.take(3));
+
+      expect(board.trayLiveCount, 3);
+      expect(board.findMagnetPair(), isNull);
+    });
+  });
+
+  group('useful moves and shuffle', () {
+    test('hasUsefulMove when two free tiles are a pair', () {
+      final board = Board(
+        tiles: [
+          Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
+          Tile(id: 1, symbol: 'A', layer: 0, x: 4, y: 0),
+        ],
+      );
+      expect(board.hasUsefulMove(), isTrue);
+    });
+
+    test('hasUsefulMove when a free tile matches the tray', () {
+      final tray = Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0, inTray: true);
+      final board = Board(
+        tiles: [
+          tray,
+          Tile(id: 1, symbol: 'A', layer: 0, x: 4, y: 0),
+          Tile(id: 2, symbol: 'B', layer: 0, x: 8, y: 0),
+        ],
+      );
+      board.tray.add(tray);
+      expect(board.hasUsefulMove(), isTrue);
+    });
+
+    test('hasUsefulMove is false when free tiles do not form a pair', () {
+      final board = Board(
+        tiles: [
+          Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
+          Tile(id: 1, symbol: 'B', layer: 0, x: 4, y: 0),
+        ],
+      );
+      expect(board.hasUsefulMove(), isFalse);
+    });
+
+    test('hasUsefulMove is false when nothing on the board is free', () {
+      final board = Board(
+        tiles: [
+          Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0, inTray: true),
+          Tile(id: 1, symbol: 'B', layer: 0, x: 4, y: 0, inTray: true),
+        ],
+      );
+      board.tray.addAll(board.tiles);
+      expect(board.freeTiles(), isEmpty);
+      expect(board.hasUsefulMove(), isFalse);
+    });
+
+    test('shuffleRemaining does not touch a board with no free tiles', () {
+      final board = Board(
+        tiles: [
+          Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0, inTray: true),
+          Tile(id: 1, symbol: 'B', layer: 0, x: 4, y: 0, inTray: true),
+        ],
+      );
+      board.tray.addAll(board.tiles);
+      expect(board.shuffleRemaining(random: Random(1)), isFalse);
+      expect(board.tiles.map((t) => t.symbol), ['A', 'B']);
+    });
+
+    test('retry shuffle finds a top pair when one shuffle may not', () {
+      Board stacked() => Board(
+        tiles: [
+          Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
+          Tile(id: 1, symbol: 'B', layer: 0, x: 4, y: 0),
+          Tile(id: 2, symbol: 'A', layer: 1, x: 0, y: 0),
+          Tile(id: 3, symbol: 'B', layer: 1, x: 4, y: 0),
+        ],
+      );
+
+      bool topPair(Board board) {
+        final free = board.freeTiles();
+        for (var i = 0; i < free.length; i++) {
+          for (var j = i + 1; j < free.length; j++) {
+            if (free[i].symbol == free[j].symbol) return true;
+          }
+        }
+        return false;
+      }
+
+      var foundMismatch = false;
+      for (var seed = 0; seed < 80; seed++) {
+        final once = stacked();
+        once.shuffleRemaining(random: Random(seed), attempts: 0);
+        if (topPair(once)) continue;
+        foundMismatch = true;
+        final retried = stacked();
+        expect(retried.shuffleRemaining(random: Random(seed)), isTrue);
+        expect(topPair(retried), isTrue);
+        break;
+      }
+      expect(
+        foundMismatch,
+        isTrue,
+        reason: 'need a seed where one shuffle misses',
+      );
+    });
+  });
+
   group('level layouts smoke', () {
-    for (final level in Levels.all) {
+    for (final level in Levels.all.take(Levels.storyLength)) {
       test('level ${level.id} (${level.layout}) has even tile count', () {
         final board = Board.fromLayout(
           level.layout,
@@ -213,6 +425,46 @@ void main() {
         );
       });
     }
+
+    test('campaign repeats the story layouts across hundreds of cards', () {
+      expect(Levels.all, hasLength(Levels.campaignLength));
+      expect(Levels.campaignLength, 240);
+      final first = Levels.byId(1);
+      final repeat = Levels.byId(1 + Levels.storyLength);
+      expect(repeat.layout, first.layout);
+      expect(repeat.title, first.title);
+      expect(repeat.storyId, first.storyId);
+      expect(repeat.id, 25);
+    });
+
+    test('first story level has no guest tile types', () {
+      expect(Levels.byId(1).guestTileTypes, 0);
+      expect(Levels.byId(25).guestTileTypes, 0);
+      expect(Levels.byId(2).guestTileTypes, 2);
+    });
+
+    test('campaign is split into named plots of 24', () {
+      expect(Levels.cycleCount, 10);
+      expect(Levels.cycleOf(1), 0);
+      expect(Levels.cycleOf(24), 0);
+      expect(Levels.cycleOf(25), 1);
+      expect(Levels.localId(25), 1);
+      expect(Levels.cycleStartId(1), 25);
+      expect(Levels.cycleEndId(0), 24);
+      expect(Levels.cycleLevels(0), hasLength(24));
+      expect(Levels.cycleLevels(0).first.title, 'Sprout');
+      expect(Levels.plotLabel(0), 'Plot 1');
+      expect(Levels.plotLabel(1), 'Plot 2');
+    });
+
+    test('daily table picks a story layout for the local calendar day', () {
+      final first = Levels.dailyFor(DateTime(2024, 1, 1));
+      final next = Levels.dailyFor(DateTime(2024, 1, 2));
+      expect(first.title, 'Today');
+      expect(first.id, 1);
+      expect(next.id, 2);
+      expect(Levels.dailyFor(DateTime(2024, 1, 25)).id, first.id);
+    });
   });
 
   group('vita layouts', () {
@@ -285,4 +537,85 @@ void main() {
     );
     expect(TileIcons.assetFor('tile-02-05'), 'assets/titles/tile/02/05.svg');
   });
+
+  test('hard levels start with a visible pair and stay playable', () {
+    for (var id = 13; id <= Levels.storyLength; id++) {
+      final level = Levels.byId(id);
+      for (final seed in [1, 7, 13, 42]) {
+        final board = Board.fromLayout(
+          level.layout,
+          random: Random(seed * 100 + id),
+          style: level.style,
+          pairSize: level.pairSize,
+          uniqueCap: level.uniqueCap,
+          levelId: level.id,
+          guestTypes: level.guestTileTypes,
+        );
+        expect(
+          board.freeTiles(),
+          isNotEmpty,
+          reason: 'level $id seed $seed has no free tiles',
+        );
+        expect(
+          board.hasUsefulMove(),
+          isTrue,
+          reason: 'level $id seed $seed has no visible pair',
+        );
+      }
+    }
+  });
+
+  test('lotus deal can be cleared by matching visible pairs', () {
+    final level = Levels.byId(13);
+    final board = Board.fromLayout(
+      level.layout,
+      random: Random(13),
+      style: level.style,
+      pairSize: level.pairSize,
+      uniqueCap: level.uniqueCap,
+      levelId: level.id,
+      guestTypes: level.guestTileTypes,
+    );
+
+    expect(_clearByVisiblePairs(board), isTrue);
+    expect(board.isWon, isTrue);
+  });
+}
+
+bool _clearByVisiblePairs(Board board) {
+  for (var step = 0; step < 400; step++) {
+    if (board.isWon) return true;
+    if (!board.hasUsefulMove()) return false;
+
+    final free = board.freeTiles();
+    Tile? pick;
+    for (final trayTile in board.tray.where((t) => !t.removing)) {
+      for (final tile in free) {
+        if (tile.symbol == trayTile.symbol) {
+          pick = tile;
+          break;
+        }
+      }
+      if (pick != null) break;
+    }
+    if (pick == null) {
+      for (var i = 0; i < free.length; i++) {
+        for (var j = i + 1; j < free.length; j++) {
+          if (free[i].symbol == free[j].symbol) {
+            pick = free[i];
+            break;
+          }
+        }
+        if (pick != null) break;
+      }
+    }
+    if (pick == null) return false;
+
+    board.pick(pick);
+    board.resolveTray();
+    for (final tile in board.tiles.where((t) => t.removing).toList()) {
+      board.finishRemoval(tile);
+    }
+  }
+  return board.isWon;
 }

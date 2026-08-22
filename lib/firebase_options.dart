@@ -25,7 +25,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyD16bmVZXRuOlJqTzkUGvCluMXqvLF1rJI',
-    appId: '1:872111737653:android:8076b70a6edf1e36131a7c',
+    appId: '1:872111737653:android:1276c370bf0d05bf131a7c',
     messagingSenderId: '872111737653',
     projectId: 'mahjong-rise',
     storageBucket: 'mahjong-rise.firebasestorage.app',
@@ -37,7 +37,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: 'REPLACE_ME',
     projectId: placeholderProjectId,
     storageBucket: 'REPLACE_ME',
-    iosBundleId: 'com.mahjong.mahjong',
+    iosBundleId: 'com.rise.mahjong',
   );
 
   static bool get isConfigured {

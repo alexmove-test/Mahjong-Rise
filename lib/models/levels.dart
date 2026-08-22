@@ -40,41 +40,47 @@ class LevelDef {
     return 0;
   }
 
+  /// Номер в первой сюжетной двадцатичетырёх (раскладка, сложность, тема).
+  int get storyId => ((id - 1) % Levels.storyLength) + 1;
+
   String get difficultyLabel {
-    if (id <= 5) return 'Легко';
-    if (id <= 12) return 'Нормально';
-    if (id <= 20) return 'Сложно';
-    return 'Эксперт';
+    final n = storyId;
+    if (n <= 5) return 'Easy';
+    if (n <= 12) return 'Normal';
+    if (n <= 20) return 'Hard';
+    return 'Expert';
   }
 
   String get styleLabel {
     switch (style) {
       case 'fruit':
-        return 'Фрукты';
+        return 'Fruit';
       case 'nature':
-        return 'Природа';
+        return 'Nature';
       case 'court':
-        return 'Двор';
+        return 'Court';
       case 'myth':
-        return 'Миф';
+        return 'Myth';
       case 'classic':
-        return 'Классика';
+        return 'Classic';
       case 'shape':
-        return 'Фигуры';
+        return 'Shapes';
       case 'number':
-        return 'Цифры';
+        return 'Numbers';
       case 'mixed':
-        return 'Микс';
+        return 'Mix';
       default:
-        return 'Микс';
+        return 'Mix';
     }
   }
 
   /// Сколько типов плиток из других тем добавить в колоду уровня.
   int get guestTileTypes {
     if (style == null || style == 'mixed') return 0;
-    if (id <= 8) return 2;
-    if (id <= 16) return 3;
+    final n = storyId;
+    if (n <= 1) return 0;
+    if (n <= 8) return 2;
+    if (n <= 16) return 3;
     return 4;
   }
 }
@@ -83,10 +89,60 @@ class LevelDef {
 abstract final class Levels {
   Levels._();
 
+  /// Уникальные раскладки сюжета; дальше кампания повторяет их циклами.
+  static const storyLength = 24;
+
+  /// Сотни карточек: 10 циклов первой двадцатичетырёх.
+  static const campaignLength = 240;
+
   static final List<LevelDef> all = List.unmodifiable(_build());
 
-  static LevelDef byId(int id) =>
-      all.firstWhere((l) => l.id == id, orElse: () => all.first);
+  /// Сколько домов/участков в кампании.
+  static const cycleCount = campaignLength ~/ storyLength;
+
+  static LevelDef byId(int id) {
+    final i = id - 1;
+    if (i < 0 || i >= all.length) return all.first;
+    return all[i];
+  }
+
+  /// 0-based номер участка для уровня.
+  static int cycleOf(int id) =>
+      ((id - 1) ~/ storyLength).clamp(0, cycleCount - 1);
+
+  /// 1–24 внутри участка.
+  static int localId(int id) => ((id - 1) % storyLength) + 1;
+
+  static int cycleStartId(int cycle) => cycle * storyLength + 1;
+
+  static int cycleEndId(int cycle) => (cycle + 1) * storyLength;
+
+  static List<LevelDef> cycleLevels(int cycle) {
+    final c = cycle.clamp(0, cycleCount - 1);
+    return all.sublist(c * storyLength, (c + 1) * storyLength);
+  }
+
+  static String plotLabel(int cycle) => 'Plot ${cycle + 1}';
+
+  /// Ежедневный стол: сюжетная раскладка по календарному дню, без прогресса кампании.
+  static LevelDef dailyFor(DateTime date) {
+    final day = DateTime(date.year, date.month, date.day);
+    final index =
+        day.difference(DateTime(2024, 1, 1)).inDays.abs() % storyLength;
+    final base = byId(index + 1);
+    return LevelDef(
+      id: base.id,
+      title: 'Today',
+      layout: base.layout,
+      shuffles: base.shuffles,
+      hints: base.hints,
+      undos: base.undos,
+      style: base.style,
+      pairSize: base.pairSize,
+      uniqueCap: base.uniqueCap,
+      starsThresholds: base.starsThresholds,
+    );
+  }
 
   static List<LevelDef> _build() {
     const specs =
@@ -104,7 +160,7 @@ abstract final class Levels {
         >[
           // 1–5: обучение, маленькие плоские поля
           (
-            title: 'Росток',
+            title: 'Sprout',
             layout: 'petal',
             shuffles: 5,
             hints: 5,
@@ -114,7 +170,7 @@ abstract final class Levels {
             stars: (200, 350, 500),
           ),
           (
-            title: 'Бутон',
+            title: 'Bud',
             layout: 'petal',
             shuffles: 4,
             hints: 4,
@@ -124,7 +180,7 @@ abstract final class Levels {
             stars: (220, 380, 520),
           ),
           (
-            title: 'Цветение',
+            title: 'Bloom',
             layout: 'bloom',
             shuffles: 4,
             hints: 4,
@@ -134,7 +190,7 @@ abstract final class Levels {
             stars: (280, 450, 650),
           ),
           (
-            title: 'Поляна',
+            title: 'Glade',
             layout: 'bloom',
             shuffles: 4,
             hints: 3,
@@ -144,7 +200,7 @@ abstract final class Levels {
             stars: (300, 480, 700),
           ),
           (
-            title: 'Лужайка',
+            title: 'Lawn',
             layout: 'meadow',
             shuffles: 4,
             hints: 3,
@@ -155,7 +211,7 @@ abstract final class Levels {
           ),
           // 6–12: нормально
           (
-            title: 'Рощица',
+            title: 'Grove',
             layout: 'meadow',
             shuffles: 3,
             hints: 3,
@@ -165,7 +221,7 @@ abstract final class Levels {
             stars: (380, 600, 850),
           ),
           (
-            title: 'Волна',
+            title: 'Wave',
             layout: 'wave',
             shuffles: 3,
             hints: 2,
@@ -175,7 +231,7 @@ abstract final class Levels {
             stars: (400, 650, 900),
           ),
           (
-            title: 'Ручей',
+            title: 'Stream',
             layout: 'wave',
             shuffles: 3,
             hints: 3,
@@ -185,7 +241,7 @@ abstract final class Levels {
             stars: (450, 700, 1000),
           ),
           (
-            title: 'Сад',
+            title: 'Garden',
             layout: 'garden',
             shuffles: 3,
             hints: 2,
@@ -195,7 +251,7 @@ abstract final class Levels {
             stars: (480, 750, 1050),
           ),
           (
-            title: 'Беседка',
+            title: 'Gazebo',
             layout: 'garden',
             shuffles: 2,
             hints: 2,
@@ -205,7 +261,7 @@ abstract final class Levels {
             stars: (500, 800, 1100),
           ),
           (
-            title: 'Веер',
+            title: 'Fan',
             layout: 'fan',
             shuffles: 3,
             hints: 2,
@@ -215,7 +271,7 @@ abstract final class Levels {
             stars: (550, 850, 1200),
           ),
           (
-            title: 'Павлиний веер',
+            title: 'Peacock Fan',
             layout: 'fan',
             shuffles: 2,
             hints: 2,
@@ -226,7 +282,7 @@ abstract final class Levels {
           ),
           // 13–20: сложно
           (
-            title: 'Лотос',
+            title: 'Lotus',
             layout: 'lotus',
             shuffles: 2,
             hints: 1,
@@ -236,7 +292,7 @@ abstract final class Levels {
             stars: (650, 950, 1400),
           ),
           (
-            title: 'Пруд',
+            title: 'Pond',
             layout: 'lotus',
             shuffles: 3,
             hints: 2,
@@ -246,7 +302,7 @@ abstract final class Levels {
             stars: (700, 1050, 1500),
           ),
           (
-            title: 'Карпы',
+            title: 'Carp',
             layout: 'koi',
             shuffles: 2,
             hints: 2,
@@ -256,7 +312,7 @@ abstract final class Levels {
             stars: (750, 1100, 1600),
           ),
           (
-            title: 'Озеро',
+            title: 'Lake',
             layout: 'koi',
             shuffles: 2,
             hints: 1,
@@ -266,7 +322,7 @@ abstract final class Levels {
             stars: (800, 1200, 1700),
           ),
           (
-            title: 'Лоза',
+            title: 'Vine',
             layout: 'vine',
             shuffles: 1,
             hints: 1,
@@ -276,7 +332,7 @@ abstract final class Levels {
             stars: (850, 1250, 1800),
           ),
           (
-            title: 'Плющ',
+            title: 'Ivy',
             layout: 'vine',
             shuffles: 3,
             hints: 2,
@@ -286,7 +342,7 @@ abstract final class Levels {
             stars: (900, 1400, 2000),
           ),
           (
-            title: 'Праздник',
+            title: 'Festival',
             layout: 'festival',
             shuffles: 2,
             hints: 2,
@@ -296,7 +352,7 @@ abstract final class Levels {
             stars: (1000, 1500, 2200),
           ),
           (
-            title: 'Фонари',
+            title: 'Lanterns',
             layout: 'festival',
             shuffles: 2,
             hints: 1,
@@ -307,7 +363,7 @@ abstract final class Levels {
           ),
           // 21–24: эксперт
           (
-            title: 'Павильон',
+            title: 'Pavilion',
             layout: 'pavilion',
             shuffles: 1,
             hints: 1,
@@ -317,7 +373,7 @@ abstract final class Levels {
             stars: (1200, 1800, 2600),
           ),
           (
-            title: 'Храм ветров',
+            title: 'Wind Temple',
             layout: 'pavilion',
             shuffles: 1,
             hints: 1,
@@ -327,7 +383,7 @@ abstract final class Levels {
             stars: (1300, 1900, 2800),
           ),
           (
-            title: 'Дракон',
+            title: 'Dragon',
             layout: 'dragon',
             shuffles: 1,
             hints: 0,
@@ -337,7 +393,7 @@ abstract final class Levels {
             stars: (1400, 2000, 3000),
           ),
           (
-            title: 'Небесный дракон',
+            title: 'Sky Dragon',
             layout: 'dragon',
             shuffles: 0,
             hints: 0,
@@ -348,19 +404,21 @@ abstract final class Levels {
           ),
         ];
 
+    assert(specs.length == storyLength);
+
     return [
-      for (var i = 0; i < specs.length; i++)
+      for (var i = 0; i < campaignLength; i++)
         LevelDef(
           id: i + 1,
-          title: specs[i].title,
-          layout: specs[i].layout,
-          shuffles: specs[i].shuffles,
-          hints: specs[i].hints,
-          undos: specs[i].undos,
-          style: _styleFor(i + 1),
-          pairSize: specs[i].pairSize,
-          uniqueCap: specs[i].uniqueCap,
-          starsThresholds: specs[i].stars,
+          title: specs[i % specs.length].title,
+          layout: specs[i % specs.length].layout,
+          shuffles: specs[i % specs.length].shuffles,
+          hints: specs[i % specs.length].hints,
+          undos: specs[i % specs.length].undos,
+          style: _styleFor((i % storyLength) + 1),
+          pairSize: specs[i % specs.length].pairSize,
+          uniqueCap: specs[i % specs.length].uniqueCap,
+          starsThresholds: specs[i % specs.length].stars,
         ),
     ];
   }

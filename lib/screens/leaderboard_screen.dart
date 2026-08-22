@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n.dart';
 import '../models/leaderboard_entry.dart';
 import '../services/firebase_bootstrap.dart';
 import '../services/firebase_leaderboard_repository.dart';
@@ -71,7 +72,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         _rank = LeaderboardService.rankOf(fallback);
         _loading = false;
         _online = false;
-        _error = 'Не удалось загрузить онлайн-рейтинг';
+        _error = L10n.of(context).loadRankingFailed;
       });
     }
   }
@@ -90,8 +91,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             borderRadius: BorderRadius.circular(18),
             side: BorderSide(color: _gold.withValues(alpha: 0.7), width: 1.4),
           ),
-          title: const Text(
-            'Ваше имя',
+          title: Text(
+            L10n.of(context).yourName,
             style: TextStyle(color: _goldSoft, fontWeight: FontWeight.w800),
           ),
           content: TextField(
@@ -100,7 +101,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             autofocus: true,
             style: const TextStyle(color: _ivory),
             decoration: InputDecoration(
-              hintText: 'Игрок',
+              hintText: L10n.of(context).player,
               hintStyle: TextStyle(color: _ivory.withValues(alpha: 0.45)),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -115,7 +116,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Отмена', style: TextStyle(color: _ivory)),
+              child: Text(L10n.of(context).cancel, style: const TextStyle(color: _ivory)),
             ),
             FilledButton(
               style: FilledButton.styleFrom(
@@ -123,7 +124,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                 foregroundColor: _goldSoft,
               ),
               onPressed: () => Navigator.of(context).pop(controller.text),
-              child: const Text('Сохранить'),
+              child: Text(L10n.of(context).save),
             ),
           ],
         );
@@ -169,16 +170,16 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                         child: Row(
                           children: [
                             IconButton(
-                              tooltip: 'Назад',
+                              tooltip: L10n.of(context).back,
                               onPressed: () => Navigator.of(context).pop(),
                               icon: const Icon(
                                 Icons.arrow_back_rounded,
                                 color: Color(0xFF1E5A3A),
                               ),
                             ),
-                            const Expanded(
+                            Expanded(
                               child: Text(
-                                'Общий рейтинг',
+                                L10n.of(context).leaderboard,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 22,
@@ -188,7 +189,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                               ),
                             ),
                             IconButton(
-                              tooltip: 'Обновить',
+                              tooltip: L10n.of(context).refresh,
                               onPressed: _loading ? null : _load,
                               icon: const Icon(
                                 Icons.refresh_rounded,
@@ -196,7 +197,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                               ),
                             ),
                             IconButton(
-                              tooltip: 'Изменить имя',
+                              tooltip: L10n.of(context).changeName,
                               onPressed: _editName,
                               icon: const Icon(
                                 Icons.edit_rounded,
@@ -230,9 +231,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                           child: Text(
                             _online
-                                ? 'Онлайн-рейтинг Firebase · топ ${FirebaseLeaderboardRepository.fetchLimit}'
+                                ? L10n.of(context).onlineRanking(
+                                    FirebaseLeaderboardRepository.fetchLimit,
+                                  )
                                 : FirebaseBootstrap.initError ??
-                                      'Офлайн-режим: показан только ваш результат.',
+                                      L10n.of(context).offlineRanking,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 12,
@@ -256,7 +259,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                           child: Text(
-                            'Рейтинг: звёзды × 100 000 + лучшие счёта + прогресс кампании.',
+                            L10n.of(context).rankingFormula,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 12,
@@ -342,7 +345,7 @@ class _CurrentPlayerCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    entry.name,
+                    L10n.of(context).displayName(entry.name),
                     style: const TextStyle(
                       color: Color(0xFFE8C96A),
                       fontWeight: FontWeight.w800,
@@ -351,7 +354,10 @@ class _CurrentPlayerCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${entry.totalStars} ★ · ур. ${entry.levelsUnlocked}',
+                    L10n.of(context).starsLevel(
+                      entry.totalStars,
+                      entry.levelsUnlocked,
+                    ),
                     style: TextStyle(
                       color: const Color(0xFFF8F1DE).withValues(alpha: 0.78),
                       fontWeight: FontWeight.w600,
@@ -380,7 +386,7 @@ class _CurrentPlayerCard extends StatelessWidget {
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: const Text('Имя'),
+                  child: Text(L10n.of(context).name),
                 ),
               ],
             ),
@@ -430,7 +436,7 @@ class _LeaderboardRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    entry.name,
+                    L10n.of(context).displayName(entry.name),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -442,7 +448,10 @@ class _LeaderboardRow extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${entry.totalStars} ★ · ур. ${entry.levelsUnlocked}',
+                    L10n.of(context).starsLevel(
+                      entry.totalStars,
+                      entry.levelsUnlocked,
+                    ),
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,

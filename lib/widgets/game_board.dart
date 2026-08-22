@@ -10,7 +10,7 @@ import '../models/tile.dart';
 import '../utils/tile_pyramid_position.dart';
 import 'tile_widget.dart';
 
-/// Поле: раскладка вписывается в весь экран. Pinch — только увеличить.
+/// Поле: исходная раскладка вписывается в экран и не масштабируется по ходу игры.
 class GameBoard extends StatefulWidget {
   const GameBoard({
     super.key,
@@ -189,8 +189,6 @@ class _GameBoardState extends State<GameBoard> {
     final maxY = ys.reduce(math.max);
     final maxLayer = layers.reduce(math.max);
 
-    final onBoard = board.tiles.where((t) => t.isOnBoard).toList();
-    final sample = onBoard.isEmpty ? board.tiles : onBoard;
     final ref = _metricsAt(
       tileW: _refTileW,
       minX: minX,
@@ -199,7 +197,8 @@ class _GameBoardState extends State<GameBoard> {
       maxY: maxY,
       maxLayer: maxLayer,
     );
-    final bounds = _visualBounds(ref, sample);
+    // Всегда по полной раскладке: иначе поле зумится, когда плиток становится меньше.
+    final bounds = _visualBounds(ref, board.tiles);
     final usableW = math.max(constraints.maxWidth, 1.0);
     final usableH = math.max(constraints.maxHeight, 1.0);
     final fit = math.min(
@@ -232,7 +231,7 @@ class _GameBoardState extends State<GameBoard> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final metrics = _computeMetrics(constraints, widget.board);
-        final bounds = _visualBounds(metrics, visible);
+        final bounds = _visualBounds(metrics, widget.board.tiles);
         // #region agent log
         if (_layoutLogs < 2) {
           _layoutLogs++;

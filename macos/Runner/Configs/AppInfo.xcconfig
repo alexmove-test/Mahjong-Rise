@@ -8,7 +8,7 @@
 PRODUCT_NAME = Mahjong Rise
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.mahjong.mahjong
+PRODUCT_BUNDLE_IDENTIFIER = com.rise.mahjong
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 com.mahjong. All rights reserved.
