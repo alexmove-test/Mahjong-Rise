@@ -8,15 +8,23 @@ const praiseLanguages = {'en', 'ru'};
 const praisePhrases = <String, List<String>>{
   'ru': [
     'Здорово!',
-    'У тебя получается!',
-    'Получилось это — получится и остальное!',
-    'Ещё один шаг к успеху!',
+    'Отлично!',
+    'Супер!',
+    'Есть!',
+    'Красиво!',
+    'Молодец!',
+    'Класс!',
+    'Так держать!',
   ],
   'en': [
     'Great!',
-    "You're getting it!",
-    "You did this — you'll do the rest!",
-    'Another step toward success!',
+    'Nice!',
+    'Super!',
+    'Yes!',
+    'Beautiful!',
+    'Well done!',
+    'Awesome!',
+    'Keep it up!',
   ],
 };
 
@@ -26,10 +34,15 @@ String resolvePraiseLanguage(String languageCode) {
   return 'en';
 }
 
-/// [phraseIndex] is 0-based and wraps every four clips.
+int praiseClipCount(String languageCode) {
+  final lang = resolvePraiseLanguage(languageCode);
+  return praisePhrases[lang]!.length;
+}
+
+/// [phraseIndex] is 0-based and wraps over the language's clip count.
 String praiseClipAsset(String languageCode, int phraseIndex) {
   final lang = resolvePraiseLanguage(languageCode);
-  final n = phraseIndex % 4 + 1;
+  final n = phraseIndex % praiseClipCount(lang) + 1;
   return 'sfx/praise/${lang}_$n.mp3';
 }
 
@@ -74,7 +87,7 @@ class FastMatchStreak {
     }
 
     final asset = praiseClipAsset(languageCode, _phraseIndex);
-    _phraseIndex = (_phraseIndex + 1) % 4;
+    _phraseIndex = (_phraseIndex + 1) % praiseClipCount(languageCode);
     _lastPraiseAt = now;
     return asset;
   }

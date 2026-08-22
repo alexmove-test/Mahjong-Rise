@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mahjong/models/board.dart';
+import 'package:mahjong/models/game_snapshot.dart';
 import 'package:mahjong/models/levels.dart';
 import 'package:mahjong/models/tile.dart';
 import 'package:mahjong/screens/game_screen.dart';
@@ -48,6 +49,20 @@ void main() {
         isTrue,
         reason: '$name ${positions.length}',
       );
+
+      final minX = positions.map((p) => p.$1).reduce(min);
+      final maxX = positions.map((p) => p.$1).reduce(max);
+      final minY = positions.map((p) => p.$2).reduce(min);
+      final maxY = positions.map((p) => p.$2).reduce(max);
+      final widthTiles = (maxX - minX + 2) / 2;
+      final heightTiles = (maxY - minY + 2) / 2;
+      expect(widthTiles, lessThanOrEqualTo(6), reason: '$name width');
+      expect(heightTiles, lessThanOrEqualTo(5), reason: '$name height');
+      expect(
+        positions.map((p) => p.$3).reduce(max),
+        greaterThanOrEqualTo(2),
+        reason: '$name should stack in depth',
+      );
     }
   });
 
@@ -80,6 +95,72 @@ void main() {
       expect(box.size.width, greaterThan(20));
       expect(box.size.height, greaterThan(20));
     }
+  });
+
+  testWidgets('deep layouts keep late-game tiles readable', (tester) async {
+    final board = Board.fromLayout('dragon', random: Random(1));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 400,
+            height: 720,
+            child: GameBoard(
+              board: board,
+              onTileTap: (_, _) {},
+              onTileRemoveComplete: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(TileWidget), findsWidgets);
+    for (final tile in tester.widgetList<TileWidget>(find.byType(TileWidget))) {
+      expect(tile.width, greaterThan(50));
+    }
+  });
+
+  testWidgets('GameBoard scale stays fixed as tiles leave the board', (
+    tester,
+  ) async {
+    final board = Board.fromLayout('petal', random: Random(1));
+
+    Widget app() => MaterialApp(
+      home: Scaffold(
+        body: SizedBox(
+          width: 400,
+          height: 720,
+          child: GameBoard(
+            board: board,
+            onTileTap: (_, _) {},
+            onTileRemoveComplete: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(app());
+    final firstTile = tester.widget<TileWidget>(find.byType(TileWidget).first);
+    final firstLogical = Size(firstTile.width, firstTile.height);
+    final keepId = firstTile.tile.id;
+    final keepFinder = find.byWidgetPredicate(
+      (w) => w is TileWidget && w.tile.id == keepId,
+    );
+    final keepRect = tester.getRect(keepFinder);
+
+    for (final tile in board.tiles.where((t) => t.id != keepId)) {
+      tile.inTray = true;
+    }
+
+    await tester.pumpWidget(app());
+    expect(find.byType(TileWidget), findsOneWidget);
+
+    final remaining = tester.widget<TileWidget>(find.byType(TileWidget));
+    expect(remaining.width, firstLogical.width);
+    expect(remaining.height, firstLogical.height);
+    expect(tester.getRect(keepFinder), keepRect);
   });
 
   test('symbol sits on the ceramic face, not the ice rim', () {
@@ -184,8 +265,324 @@ void main() {
     expect(find.byType(GameBoard), findsOneWidget);
     expect(find.byType(TileWidget), findsWidgets);
     expect(find.text('0'), findsWidgets);
-    expect(find.text('Уровень 1'), findsOneWidget);
-    expect(find.text('0/16'), findsOneWidget);
-    expect(find.text('1x'), findsOneWidget);
+    expect(find.text('Level 1'), findsOneWidget);
+    expect(find.text('Take only a free top tile'), findsOneWidget);
+    expect(find.text('0/16'), findsNothing);
+    expect(find.text('1x'), findsNothing);
   });
+
+  testWidgets('GameScreen restores a matching snapshot', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'progress.tableCoachDone': true,
+    });
+    final progress = await ProgressStore.open();
+    await progress.saveSnapshot(
+      _boardSnapshot(levelId: 1, score: 777, symbol: 'keep-me'),
+    );
+
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GameScreen(level: Levels.byId(1), progress: progress),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('777'), findsOneWidget);
+    expect(find.text('keep-me'), findsNothing);
+    expect(progress.savedSnapshot?.score, 777);
+  });
+
+  testWidgets('Retry clears the in-progress snapshot', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'progress.tableCoachDone': true,
+    });
+    final progress = await ProgressStore.open();
+    await progress.saveSnapshot(_boardSnapshot(levelId: 1, score: 777));
+
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GameScreen(level: Levels.byId(1), progress: progress),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.byIcon(Icons.menu_rounded));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Retry'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(progress.savedSnapshot, isNull);
+    expect(find.text('777'), findsNothing);
+  });
+
+  testWidgets('another level does not restore a foreign snapshot', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'progress.maxUnlocked': 2,
+      'progress.tableCoachDone': true,
+    });
+    final progress = await ProgressStore.open();
+    await progress.saveSnapshot(_boardSnapshot(levelId: 1, score: 777));
+
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GameScreen(level: Levels.byId(2), progress: progress),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('777'), findsNothing);
+    expect(progress.savedSnapshot, isNull);
+  });
+
+  testWidgets('shuffle does not spend a boost when no tiles are free', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'progress.tableCoachDone': true,
+    });
+    final progress = await ProgressStore.open();
+    final tiles = [
+      Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0, inTray: true),
+      Tile(id: 1, symbol: 'B', layer: 0, x: 4, y: 0, inTray: true),
+      Tile(id: 2, symbol: 'C', layer: 0, x: 8, y: 0, inTray: true),
+    ];
+    final board = Board(tiles: tiles, layoutName: 'petal');
+    board.tray.addAll(tiles);
+    await progress.saveSnapshot(
+      GameSnapshot.fromBoard(
+        levelId: 1,
+        board: board,
+        score: 40,
+        combo: 0,
+        shuffles: 2,
+        hints: 1,
+        undos: 1,
+        magnets: 1,
+      ),
+    );
+
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GameScreen(level: Levels.byId(1), progress: progress),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.byIcon(Icons.shuffle_rounded));
+    await tester.pump();
+
+    expect(find.text('No free tiles'), findsOneWidget);
+    expect(progress.savedSnapshot?.shuffles, 2);
+  });
+
+  testWidgets('hint highlights both tiles of a matching pair', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'progress.tableCoachDone': true,
+    });
+    final progress = await ProgressStore.open();
+    final board = Board(
+      tiles: [
+        Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
+        Tile(id: 1, symbol: 'A', layer: 0, x: 4, y: 0),
+        Tile(id: 2, symbol: 'B', layer: 0, x: 8, y: 0),
+      ],
+      layoutName: 'petal',
+    );
+    await progress.saveSnapshot(
+      GameSnapshot.fromBoard(
+        levelId: 1,
+        board: board,
+        score: 0,
+        combo: 0,
+        shuffles: 1,
+        hints: 2,
+        undos: 1,
+        magnets: 1,
+      ),
+    );
+
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GameScreen(level: Levels.byId(1), progress: progress),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(
+      tester
+          .widgetList<TileWidget>(find.byType(TileWidget))
+          .where((w) => w.isHinted),
+      isEmpty,
+    );
+
+    await tester.tap(find.byIcon(Icons.lightbulb_rounded));
+    await tester.pump();
+
+    final hinted = tester
+        .widgetList<TileWidget>(find.byType(TileWidget))
+        .where((w) => w.isHinted)
+        .map((w) => w.tile.id)
+        .toSet();
+    expect(hinted, {0, 1});
+    expect(progress.savedSnapshot?.hints, 1);
+  });
+
+  testWidgets('magnet clears a matching pair from the board', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'progress.tableCoachDone': true,
+    });
+    final progress = await ProgressStore.open();
+    final board = Board(
+      tiles: [
+        Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
+        Tile(id: 1, symbol: 'A', layer: 0, x: 4, y: 0),
+        Tile(id: 2, symbol: 'B', layer: 0, x: 8, y: 0),
+      ],
+      layoutName: 'petal',
+    );
+    await progress.saveSnapshot(
+      GameSnapshot.fromBoard(
+        levelId: 1,
+        board: board,
+        score: 0,
+        combo: 0,
+        shuffles: 1,
+        hints: 1,
+        undos: 1,
+        magnets: 2,
+      ),
+    );
+
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GameScreen(level: Levels.byId(1), progress: progress),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.byTooltip('Magnet'));
+    await tester.pump();
+
+    final onBoard = tester
+        .widgetList<TileWidget>(find.byType(TileWidget))
+        .where((w) => !w.compact && w.tile.isOnBoard)
+        .map((w) => w.tile.id)
+        .toSet();
+    expect(onBoard, {2});
+    expect(progress.savedSnapshot?.magnets, 1);
+    expect(find.text('100'), findsOneWidget);
+  });
+
+  testWidgets('watching a simulated ad grants a hint', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'progress.tableCoachDone': true,
+    });
+    final progress = await ProgressStore.open();
+    final board = Board(
+      tiles: [
+        Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
+        Tile(id: 1, symbol: 'A', layer: 0, x: 4, y: 0),
+        Tile(id: 2, symbol: 'B', layer: 0, x: 8, y: 0),
+      ],
+      layoutName: 'petal',
+    );
+    await progress.saveSnapshot(
+      GameSnapshot.fromBoard(
+        levelId: 1,
+        board: board,
+        score: 0,
+        combo: 0,
+        shuffles: 1,
+        hints: 0,
+        undos: 1,
+        magnets: 1,
+      ),
+    );
+
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GameScreen(level: Levels.byId(1), progress: progress),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.byIcon(Icons.lightbulb_rounded));
+    await tester.pump();
+    expect(find.text('Simulated ad'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 6));
+    await tester.pump();
+
+    expect(find.text('Simulated ad'), findsNothing);
+
+    final hinted = tester
+        .widgetList<TileWidget>(find.byType(TileWidget))
+        .where((w) => w.isHinted)
+        .map((w) => w.tile.id)
+        .toSet();
+    expect(hinted, {0, 1});
+  });
+}
+
+GameSnapshot _boardSnapshot({
+  required int levelId,
+  required int score,
+  String symbol = 'A',
+}) {
+  final board = Board(
+    tiles: [
+      Tile(id: 0, symbol: symbol, layer: 0, x: 0, y: 0),
+      Tile(id: 1, symbol: 'B', layer: 0, x: 4, y: 0),
+    ],
+    layoutName: 'petal',
+  );
+  return GameSnapshot.fromBoard(
+    levelId: levelId,
+    board: board,
+    score: score,
+    combo: 0,
+    shuffles: 1,
+    hints: 1,
+    undos: 1,
+    magnets: 1,
+  );
 }

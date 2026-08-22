@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/game_snapshot.dart';
 import '../models/levels.dart';
 
 /// Сохранённый прогресс кампании.
@@ -12,6 +15,12 @@ class ProgressStore {
   static const _kLastPlayed = 'progress.lastPlayed';
   static const _kStarsPrefix = 'progress.stars.';
   static const _kBestPrefix = 'progress.best.';
+  static const _kTableCoachDone = 'progress.tableCoachDone';
+  static const _kSnapshot = 'progress.snapshot';
+  static const _kDailyDate = 'progress.dailyDate';
+  static const _kDailyStreak = 'progress.dailyStreak';
+  static const _kBankedHints = 'progress.bankedHints';
+  static const _kBankedShuffles = 'progress.bankedShuffles';
 
   static Future<ProgressStore> open() async {
     final prefs = await SharedPreferences.getInstance();
@@ -31,6 +40,98 @@ class ProgressStore {
   int bestScore(int levelId) => _prefs.getInt('$_kBestPrefix$levelId') ?? 0;
 
   bool isCompleted(int levelId) => stars(levelId) > 0 || bestScore(levelId) > 0;
+
+  /// Хоть один уровень закрыт — больше не первый запуск.
+  bool get hasCompletedAny => maxUnlocked > 1 || isCompleted(1);
+
+  /// Подсказки на столе уровня 1 уже прошли.
+  bool get tableCoachDone => _prefs.getBool(_kTableCoachDone) ?? false;
+
+  Future<void> markTableCoachDone() => _prefs.setBool(_kTableCoachDone, true);
+
+  GameSnapshot? get savedSnapshot {
+    final raw = _prefs.getString(_kSnapshot);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return null;
+      return GameSnapshot.fromJson(Map<String, Object?>.from(decoded));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool hasSnapshotFor(int levelId) => savedSnapshot?.levelId == levelId;
+
+  Future<void> saveSnapshot(GameSnapshot snapshot) async {
+    await _prefs.setString(_kSnapshot, jsonEncode(snapshot.toJson()));
+  }
+
+  Future<void> clearSnapshot() async {
+    await _prefs.remove(_kSnapshot);
+  }
+
+  String get lastDailyDate => _prefs.getString(_kDailyDate) ?? '';
+
+  int get dailyStreak => _prefs.getInt(_kDailyStreak) ?? 0;
+
+  int get bankedHints => _prefs.getInt(_kBankedHints) ?? 0;
+
+  int get bankedShuffles => _prefs.getInt(_kBankedShuffles) ?? 0;
+
+  bool isDailyCompletedOn(DateTime date) => lastDailyDate == dateKey(date);
+
+  int visibleStreak([DateTime? now]) {
+    final date = now ?? DateTime.now();
+    final today = dateKey(date);
+    final yesterday = dateKey(date.subtract(const Duration(days: 1)));
+    if (lastDailyDate == today || lastDailyDate == yesterday) return dailyStreak;
+    return 0;
+  }
+
+  Future<void> expireStreakIfNeeded([DateTime? now]) async {
+    if (visibleStreak(now) > 0 || dailyStreak == 0) return;
+    await _prefs.setInt(_kDailyStreak, 0);
+  }
+
+  /// Зачёт ежедневки. Повтор в тот же день серию не растит.
+  Future<({int streak, bool counted, bool rewarded})> recordDailyWin({
+    DateTime? now,
+  }) async {
+    final date = now ?? DateTime.now();
+    final today = dateKey(date);
+    if (lastDailyDate == today) {
+      return (streak: dailyStreak, counted: false, rewarded: false);
+    }
+
+    final yesterday = dateKey(date.subtract(const Duration(days: 1)));
+    final streak = lastDailyDate == yesterday ? dailyStreak + 1 : 1;
+    final rewarded = streak == 3 || streak == 7;
+
+    await _prefs.setString(_kDailyDate, today);
+    await _prefs.setInt(_kDailyStreak, streak);
+    if (rewarded) {
+      await _prefs.setInt(_kBankedHints, bankedHints + 1);
+      await _prefs.setInt(_kBankedShuffles, bankedShuffles + 1);
+    }
+
+    return (streak: streak, counted: true, rewarded: rewarded);
+  }
+
+  Future<({int hints, int shuffles})> consumeBankedBoosts() async {
+    final hints = bankedHints;
+    final shuffles = bankedShuffles;
+    if (hints != 0) await _prefs.setInt(_kBankedHints, 0);
+    if (shuffles != 0) await _prefs.setInt(_kBankedShuffles, 0);
+    return (hints: hints, shuffles: shuffles);
+  }
+
+  static String dateKey(DateTime date) {
+    final local = DateTime(date.year, date.month, date.day);
+    final month = local.month.toString().padLeft(2, '0');
+    final day = local.day.toString().padLeft(2, '0');
+    return '${local.year}-$month-$day';
+  }
 
   /// Последний открытый/игранный уровень (для «Продолжить»).
   int get lastPlayedLevel {
@@ -57,6 +158,33 @@ class ProgressStore {
       sum += bestScore(level.id);
     }
     return sum;
+  }
+
+  int starsInCycle(int cycle) {
+    var sum = 0;
+    for (final level in Levels.cycleLevels(cycle)) {
+      sum += stars(level.id);
+    }
+    return sum;
+  }
+
+  /// Сколько уровней участка открыто (1–24).
+  int unlockedInCycle(int cycle) {
+    final start = Levels.cycleStartId(cycle);
+    final end = Levels.cycleEndId(cycle);
+    if (maxUnlocked < start) return 0;
+    if (maxUnlocked > end) return Levels.storyLength;
+    return maxUnlocked - start + 1;
+  }
+
+  bool isCycleComplete(int cycle) {
+    final end = Levels.cycleEndId(cycle);
+    return isCompleted(end) || maxUnlocked > end;
+  }
+
+  bool isCycleUnlocked(int cycle) {
+    if (cycle <= 0) return true;
+    return maxUnlocked >= Levels.cycleStartId(cycle);
   }
 
   /// Записать победу: звёзды, лучший счёт, разблокировка следующего.

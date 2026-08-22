@@ -13,7 +13,7 @@ class FirebaseBootstrap {
   static Future<void> init() async {
     if (!DefaultFirebaseOptions.isConfigured) {
       enabled = false;
-      initError = 'Firebase не настроен. Запустите flutterfire configure.';
+      initError = 'Firebase is not configured. Run flutterfire configure.';
       return;
     }
 

@@ -1,20 +1,28 @@
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/services.dart';
 
-/// Звуки партии; haptic — только match / win / lose.
+import 'haptic_controller.dart';
+
+/// Звуки партии и тактильный отклик.
 ///
 /// SFX идут через пул плееров, чтобы стук в лоток и нахождение пары
-/// не глушили друг друга при быстрых тапах.
+/// не глушили друг друга при быстрых тапах. Голос похвалы живёт на
+/// отдельном плеере и смешивается с SFX (без захвата аудиофокуса).
 class GameSfx {
   GameSfx();
 
   static const _poolSize = 8;
+  static const _voiceDuck = 0.7;
 
-  final List<AudioPlayer> _pool = List.generate(_poolSize, (_) => AudioPlayer());
+  final List<AudioPlayer> _pool = List.generate(
+    _poolSize,
+    (_) => AudioPlayer(),
+  );
   final AudioPlayer _voice = AudioPlayer();
   bool _ready = false;
   int _next = 0;
   int _collectIndex = 0;
+
+  bool get _voicePlaying => _voice.state == PlayerState.playing;
 
   Future<void> init() async {
     for (final player in _pool) {
@@ -22,7 +30,24 @@ class GameSfx {
       await player.setPlayerMode(PlayerMode.lowLatency);
     }
     await _voice.setReleaseMode(ReleaseMode.stop);
+    await _voice.setPlayerMode(PlayerMode.mediaPlayer);
+    await _applyMixContext();
     _ready = true;
+  }
+
+  Future<void> _applyMixContext() async {
+    try {
+      final mix = AudioContextConfig(
+        focus: AudioContextConfigFocus.mixWithOthers,
+      ).build();
+      await AudioPlayer.global.setAudioContext(mix);
+      for (final player in _pool) {
+        await player.setAudioContext(mix);
+      }
+      await _voice.setAudioContext(mix);
+    } catch (_) {
+      // Web / тесты / платформа без AudioContext.
+    }
   }
 
   Future<void> dispose() async {
@@ -36,11 +61,12 @@ class GameSfx {
   Future<void> _play(String asset, {double volume = 0.7}) async {
     if (!_ready) return;
     final player = _idlePlayer();
+    final gain = _voicePlaying ? volume * _voiceDuck : volume;
     try {
       if (player.state == PlayerState.playing) {
         await player.stop();
       }
-      await player.play(AssetSource(asset), volume: volume);
+      await player.play(AssetSource(asset), volume: gain);
     } catch (_) {
       // На CI / без аудио-устройства — молча игнорируем.
     }
@@ -60,8 +86,9 @@ class GameSfx {
     return player;
   }
 
-  /// Плитка ушла в лоток (без haptic). Чередует стук и bucket.
+  /// Плитка ушла в лоток.
   Future<void> collect() async {
+    HapticGate.light();
     final useBucket = _collectIndex.isOdd;
     _collectIndex += 1;
     if (useBucket) {
@@ -73,40 +100,43 @@ class GameSfx {
 
   /// Пара снята из лотка.
   Future<void> match() async {
-    HapticFeedback.mediumImpact();
+    HapticGate.medium();
     await _play('sfx/match.wav', volume: 0.78);
   }
 
   /// Лоток полон — проигрыш.
   Future<void> lose() async {
-    HapticFeedback.heavyImpact();
+    HapticGate.heavy();
     await _play('sfx/lose.wav', volume: 0.72);
   }
 
   Future<void> win() async {
-    HapticFeedback.heavyImpact();
+    HapticGate.heavy();
     await _play('sfx/win.wav', volume: 0.85);
   }
 
   /// Ошибка UI: блок, лоток полон при тапе, нет ходов для подсказки.
   Future<void> error() async {
+    HapticGate.error();
     await _play('sfx/error.wav', volume: 0.6);
   }
 
   /// Кнопки: shuffle, undo.
   Future<void> tap() async {
+    HapticGate.selection();
     await _play('sfx/tap.wav', volume: 0.45);
   }
 
   /// Подсказка.
   Future<void> select() async {
+    HapticGate.selection();
     await _play('sfx/select.wav', volume: 0.55);
   }
 
   /// Голос похвалы за быстрые пары. Не обрывает уже идущую реплику и SFX.
   Future<void> praise(String asset) async {
     if (!_ready) return;
-    if (_voice.state == PlayerState.playing) return;
+    if (_voicePlaying) return;
     try {
       await _voice.play(AssetSource(asset), volume: 0.7);
     } catch (_) {

@@ -5,11 +5,11 @@ import 'tile_icons.dart';
 /// Позиция плитки в раскладке: [x, y, layer].
 typedef LayoutPos = (int x, int y, int layer);
 
-/// Свободные плоские раскладки в духе Vita: живой силуэт, почти без пирамид.
+/// Компактные пирамиды: плитки уходят в высоту, чтобы оставаться крупными на экране.
 ///
 /// Координаты — в половинах размера плитки:
 /// сосед слева/справа отличается на ±2 по x, сверху/снизу — на ±2 по y.
-/// Нечётные координаты дают кирпичную «живую» сетку и лёгкие наложения.
+/// Нечётные координаты дают кирпичную сетку и наложения между стопками.
 class Layouts {
   Layouts._();
 
@@ -17,6 +17,13 @@ class Layouts {
 
   static void _row(List<LayoutPos> out, int y, List<int> xs, [int z = 0]) {
     for (final x in xs) {
+      out.add(_p(x, y, z));
+    }
+  }
+
+  /// Стопка в одной клетке: слои 0…[topZ].
+  static void _pillar(List<LayoutPos> out, int x, int y, int topZ) {
+    for (var z = 0; z <= topZ; z++) {
       out.add(_p(x, y, z));
     }
   }
@@ -29,274 +36,244 @@ class Layouts {
     return positions;
   }
 
-  /// Сколько вертикальных слоёв добавить в раскладку (0 = только база, 2 = до L2…).
-  static int _maxStackDepth(String name) {
-    switch (name) {
-      case 'petal':
-      case 'seed':
-      case 'bloom':
-        return 2;
-      case 'meadow':
-      case 'grove':
-      case 'wave':
-      case 'garden':
-      case 'pyramid':
-      case 'fan':
-      case 'fort':
-        return 2;
-      case 'lotus':
-      case 'koi':
-      case 'vine':
-      case 'tower':
-        return 3;
-      case 'festival':
-      case 'temple':
-      case 'pavilion':
-        return 3;
-      case 'dragon':
-      case 'turtle':
-        return 4;
-      default:
-        return 2;
-    }
-  }
-
-  /// Достраивает стопки вверх и подрезает край, чтобы число плиток оставалось чётным.
-  static List<LayoutPos> _finalizeStacks(
-    List<LayoutPos> positions,
-    int targetMaxLayer,
-    String name,
-  ) {
-    var out = List<LayoutPos>.from(positions);
-    final tops = <String, int>{};
-    for (final p in out) {
-      final key = '${p.$1},${p.$2}';
-      tops[key] = max(tops[key] ?? 0, p.$3);
-    }
-
-    for (final entry in tops.entries) {
-      if (entry.value < 1) continue;
-      final xy = entry.key.split(',');
-      final x = int.parse(xy[0]);
-      final y = int.parse(xy[1]);
-      for (var z = entry.value + 1; z <= targetMaxLayer; z++) {
-        out.add(_p(x, y, z));
-      }
-    }
-
-    while (out.length.isOdd) {
-      final idx = out.indexWhere((p) => p.$3 == 0);
-      if (idx < 0) break;
-      out.removeAt(idx);
-    }
-
-    return _done(out, name);
-  }
-
-  /// Крошечный бутон (16) — обучение.
+  /// Крошечный бутон (16) — обучение. 4×3 с двумя пиками.
   static List<LayoutPos> petal() {
     final p = <LayoutPos>[];
-    _row(p, 0, [2, 4, 6]);
-    _row(p, 2, [0, 2, 4, 6, 8]);
-    _row(p, 4, [1, 3, 5, 7]);
-    _row(p, 6, [2, 4, 6]);
-    _row(p, 3, [4], 1);
+    _row(p, 0, [0, 2, 4, 6]);
+    _row(p, 4, [0, 2, 4, 6]);
+    _row(p, 2, [0, 6]);
+    _pillar(p, 2, 2, 2);
+    _pillar(p, 4, 2, 2);
     return _done(p, 'petal');
   }
 
-  /// Цветок (20).
+  /// Цветок (24). 4×4 с центральным ромбом.
   static List<LayoutPos> bloom() {
     final p = <LayoutPos>[];
-    _row(p, 0, [2, 4, 6]);
-    _row(p, 2, [0, 2, 4, 6, 8]);
-    _row(p, 4, [0, 2, 4, 6, 8]);
-    _row(p, 6, [2, 4, 6]);
-    _row(p, 1, [4], 1);
-    _row(p, 3, [3, 5], 1);
-    _row(p, 5, [4], 1);
+    _row(p, 0, [1, 3, 5]);
+    _row(p, 6, [1, 3, 5]);
+    _row(p, 2, [0, 6]);
+    _row(p, 4, [0, 6]);
+    _pillar(p, 2, 2, 2);
+    _pillar(p, 4, 2, 2);
+    _pillar(p, 2, 4, 2);
+    _pillar(p, 4, 4, 2);
+    _pillar(p, 3, 3, 1);
     return _done(p, 'bloom');
   }
 
-  /// Две живые кучки (24).
+  /// Одна кучка (28). 4×4, без разнесения на два острова.
   static List<LayoutPos> meadow() {
     final p = <LayoutPos>[];
-    _row(p, 1, [0, 2, 4]);
-    _row(p, 3, [0, 2, 4, 6]);
-    _row(p, 5, [1, 3, 5]);
-    _row(p, 2, [2, 4], 1);
-
-    _row(p, 0, [10, 12, 14]);
-    _row(p, 2, [9, 11, 13, 15]);
-    _row(p, 4, [10, 12, 14]);
-    _row(p, 1, [12], 1);
-    _row(p, 3, [12], 1);
+    _row(p, 0, [0, 2, 4, 6]);
+    _row(p, 6, [0, 2, 4, 6]);
+    _row(p, 2, [0, 6]);
+    _row(p, 4, [0, 6]);
+    _pillar(p, 2, 2, 2);
+    _pillar(p, 4, 2, 2);
+    _pillar(p, 2, 4, 2);
+    _pillar(p, 4, 4, 2);
+    _pillar(p, 3, 3, 1);
+    _pillar(p, 3, 1, 1);
     return _done(p, 'meadow');
   }
 
-  /// Волна со сдвигом рядов (28).
+  /// Волна (30). 5×4, гребень по центру.
   static List<LayoutPos> wave() {
     final p = <LayoutPos>[];
-    _row(p, 0, [0, 2, 4, 6, 8, 10]);
-    _row(p, 2, [1, 3, 5, 7, 9]);
-    _row(p, 4, [0, 2, 4, 6, 8, 10]);
-    _row(p, 6, [1, 3, 5, 7, 9]);
-    _row(p, 8, [2, 4, 6, 8]);
-    _row(p, 3, [5], 1);
-    _row(p, 5, [5], 1);
+    _row(p, 0, [0, 2, 4, 6, 8]);
+    _row(p, 6, [0, 2, 4, 6, 8]);
+    _row(p, 2, [0, 8]);
+    _row(p, 4, [0, 8]);
+    _pillar(p, 2, 2, 2);
+    _pillar(p, 4, 2, 2);
+    _pillar(p, 6, 2, 2);
+    _pillar(p, 4, 4, 2);
+    _pillar(p, 2, 4, 1);
+    _pillar(p, 6, 4, 1);
     return _done(p, 'wave');
   }
 
-  /// Сад с просветами (32).
+  /// Сад (40). 5×4 с высокой серединой.
   static List<LayoutPos> garden() {
     final p = <LayoutPos>[];
-    _row(p, 0, [2, 4, 6, 8]);
-    _row(p, 2, [0, 2, 4, 6, 8, 10]);
-    _row(p, 4, [1, 3, 7, 9]);
-    _row(p, 6, [0, 2, 4, 6, 8, 10]);
-    _row(p, 8, [2, 4, 6, 8]);
-    _row(p, 1, [5], 1);
-    _row(p, 3, [3, 7], 1);
-    _row(p, 5, [4, 5, 6], 1);
-    _row(p, 7, [3, 7], 1);
+    _row(p, 0, [0, 2, 4, 6, 8]);
+    _row(p, 6, [0, 2, 4, 6, 8]);
+    _row(p, 2, [0, 8]);
+    _row(p, 4, [0, 8]);
+    _pillar(p, 2, 2, 2);
+    _pillar(p, 4, 2, 3);
+    _pillar(p, 6, 2, 2);
+    _pillar(p, 2, 4, 2);
+    _pillar(p, 4, 4, 3);
+    _pillar(p, 6, 4, 2);
+    _pillar(p, 4, 1, 1);
+    _pillar(p, 4, 5, 1);
+    _pillar(p, 3, 3, 1);
     return _done(p, 'garden');
   }
 
-  /// Веер, шире к низу (36).
+  /// Веер (44). 5×5, пик в центре.
   static List<LayoutPos> fan() {
     final p = <LayoutPos>[];
-    _row(p, 0, [4, 6]);
-    _row(p, 2, [2, 4, 6, 8]);
-    _row(p, 4, [1, 3, 5, 7, 9]);
-    _row(p, 6, [0, 2, 4, 6, 8, 10]);
-    _row(p, 8, [0, 2, 4, 6, 8, 10]);
-    _row(p, 10, [1, 3, 5, 7, 9]);
-    _row(p, 3, [5], 1);
-    _row(p, 5, [5], 1);
-    _row(p, 6, [4, 6], 1);
-    _row(p, 7, [3, 7], 1);
-    _row(p, 8, [5], 1);
-    _row(p, 9, [5], 1);
+    _row(p, 0, [0, 2, 4, 6, 8]);
+    _row(p, 8, [0, 2, 4, 6, 8]);
+    _row(p, 2, [0, 8]);
+    _row(p, 4, [0, 8]);
+    _row(p, 6, [0, 8]);
+    _pillar(p, 2, 2, 2);
+    _pillar(p, 4, 2, 2);
+    _pillar(p, 6, 2, 2);
+    _pillar(p, 2, 4, 2);
+    _pillar(p, 4, 4, 3);
+    _pillar(p, 6, 4, 2);
+    _pillar(p, 2, 6, 2);
+    _pillar(p, 4, 6, 2);
+    _pillar(p, 6, 6, 2);
     return _done(p, 'fan');
   }
 
-  /// Лотос (40).
+  /// Лотос (64). 5×5 пирамида.
   static List<LayoutPos> lotus() {
     final p = <LayoutPos>[];
-    _row(p, 0, [3, 5, 7]);
-    _row(p, 2, [1, 3, 5, 7, 9]);
-    _row(p, 4, [0, 2, 4, 6, 8, 10]);
-    _row(p, 6, [0, 2, 4, 6, 8, 10]);
-    _row(p, 8, [1, 3, 5, 7, 9]);
-    _row(p, 10, [3, 5, 7]);
-    _row(p, 1, [5], 1);
-    _row(p, 3, [5], 1);
-    _row(p, 4, [4, 6], 1);
-    _row(p, 5, [3, 5, 7], 1);
-    _row(p, 6, [4, 6], 1);
-    _row(p, 7, [5], 1);
-    _row(p, 9, [5], 1);
-    _row(p, 11, [5], 1);
+    _row(p, 0, [0, 2, 4, 6, 8]);
+    _row(p, 8, [0, 2, 4, 6, 8]);
+    _row(p, 2, [0, 8]);
+    _row(p, 4, [0, 8]);
+    _row(p, 6, [0, 8]);
+    _pillar(p, 4, 4, 4);
+    _pillar(p, 4, 2, 3);
+    _pillar(p, 2, 4, 3);
+    _pillar(p, 6, 4, 3);
+    _pillar(p, 4, 6, 3);
+    _pillar(p, 2, 2, 2);
+    _pillar(p, 6, 2, 2);
+    _pillar(p, 2, 6, 2);
+    _pillar(p, 6, 6, 2);
+    _pillar(p, 3, 3, 2);
+    _pillar(p, 5, 3, 2);
+    _pillar(p, 3, 5, 2);
+    _pillar(p, 5, 5, 2);
+    _pillar(p, 4, 1, 2);
     return _done(p, 'lotus');
   }
 
-  /// Карпы / пруд (48).
+  /// Карпы (62). 5×5, чуть ниже лотоса.
   static List<LayoutPos> koi() {
     final p = <LayoutPos>[];
-    _row(p, 0, [2, 4, 6, 8, 10]);
-    _row(p, 2, [1, 3, 5, 7, 9, 11]);
-    _row(p, 4, [0, 2, 4, 6, 8, 10, 12]);
-    _row(p, 6, [1, 3, 5, 7, 9, 11]);
-    _row(p, 8, [0, 2, 4, 6, 8, 10, 12]);
-    _row(p, 10, [1, 3, 5, 7, 9, 11]);
-    _row(p, 12, [3, 5, 7, 9]);
-    _row(p, 1, [6], 1);
-    _row(p, 3, [5], 1);
-    _row(p, 5, [7], 1);
-    _row(p, 7, [4, 8], 1);
-    _row(p, 9, [6], 1);
-    _row(p, 11, [5], 1);
+    _row(p, 0, [0, 2, 4, 6, 8]);
+    _row(p, 8, [0, 2, 4, 6, 8]);
+    _row(p, 2, [0, 8]);
+    _row(p, 4, [0, 8]);
+    _row(p, 6, [0, 8]);
+    _pillar(p, 4, 4, 4);
+    _pillar(p, 4, 2, 3);
+    _pillar(p, 2, 4, 3);
+    _pillar(p, 6, 4, 3);
+    _pillar(p, 4, 6, 3);
+    _pillar(p, 2, 2, 2);
+    _pillar(p, 6, 2, 2);
+    _pillar(p, 2, 6, 2);
+    _pillar(p, 6, 6, 2);
+    _pillar(p, 3, 3, 2);
+    _pillar(p, 5, 3, 2);
+    _pillar(p, 3, 5, 2);
+    _pillar(p, 5, 5, 2);
+    p.add(_p(4, 1, 0));
     return _done(p, 'koi');
   }
 
-  /// Вьющаяся лоза (56).
+  /// Лоза (72). 5×5, высокий крест.
   static List<LayoutPos> vine() {
     final p = <LayoutPos>[];
-    _row(p, 0, [0, 2, 4, 6, 8, 10, 12, 14]);
-    _row(p, 2, [1, 3, 5, 7, 9, 11, 13, 15]);
-    _row(p, 4, [0, 2, 4, 6, 8, 10, 12, 14]);
-    _row(p, 6, [1, 3, 5, 7, 9, 11, 13, 15]);
-    _row(p, 8, [0, 2, 4, 6, 8, 10, 12, 14]);
-    _row(p, 10, [1, 3, 5, 7, 9, 11, 13, 15]);
-    _row(p, 1, [7], 1);
-    _row(p, 3, [5, 9], 1);
-    _row(p, 5, [7], 1);
-    _row(p, 7, [5, 9], 1);
-    _row(p, 9, [7], 1);
-    _row(p, 11, [7], 1);
+    _row(p, 0, [0, 2, 4, 6, 8]);
+    _row(p, 8, [0, 2, 4, 6, 8]);
+    _row(p, 2, [0, 8]);
+    _row(p, 4, [0, 8]);
+    _row(p, 6, [0, 8]);
+    _pillar(p, 4, 4, 5);
+    _pillar(p, 4, 2, 4);
+    _pillar(p, 2, 4, 4);
+    _pillar(p, 6, 4, 4);
+    _pillar(p, 4, 6, 4);
+    _pillar(p, 2, 2, 3);
+    _pillar(p, 6, 2, 3);
+    _pillar(p, 2, 6, 3);
+    _pillar(p, 6, 6, 3);
+    _pillar(p, 3, 3, 2);
+    _pillar(p, 5, 3, 2);
+    _pillar(p, 3, 5, 2);
+    _pillar(p, 5, 5, 2);
+    _pillar(p, 4, 1, 1);
     return _done(p, 'vine');
   }
 
-  /// Праздничный ковёр (64).
+  /// Праздничный ковёр (72). 5×5, широкие террасы.
   static List<LayoutPos> festival() {
     final p = <LayoutPos>[];
-    for (var i = 0; i < 8; i++) {
-      final y = i * 2;
-      if (i.isEven) {
-        _row(p, y, [0, 2, 4, 6, 8, 10, 12, 14]);
-      } else {
-        _row(p, y, [1, 3, 5, 7, 9, 11, 13]);
+    for (final y in [0, 2, 4, 6, 8]) {
+      _row(p, y, [0, 2, 4, 6, 8]);
+    }
+    for (final y in [0, 2, 4, 6, 8]) {
+      for (final x in [0, 2, 4, 6, 8]) {
+        final isCorner = (x == 0 || x == 8) && (y == 0 || y == 8);
+        if (!isCorner) p.add(_p(x, y, 1));
       }
     }
-    _row(p, 3, [7], 1);
-    _row(p, 7, [4, 10], 1);
-    _row(p, 11, [7], 1);
+    for (final y in [2, 4, 6]) {
+      _row(p, y, [2, 4, 6], 2);
+      _row(p, y, [2, 4, 6], 3);
+    }
+    _row(p, 2, [2, 4], 4);
+    _row(p, 4, [2, 4, 6], 4);
+    _row(p, 6, [4, 6], 4);
+    _row(p, 4, [4], 5);
     return _done(p, 'festival');
   }
 
-  /// Павильон (72).
+  /// Павильон (88). 6×5, глубокий двор.
   static List<LayoutPos> pavilion() {
     final p = <LayoutPos>[];
-    for (var i = 0; i < 8; i++) {
-      final y = i * 2;
-      if (i.isEven) {
-        _row(p, y, [0, 2, 4, 6, 8, 10, 12, 14]);
-      } else {
-        _row(p, y, [1, 3, 5, 7, 9, 11, 13, 15]);
+    _row(p, 0, [0, 2, 4, 6, 8, 10]);
+    _row(p, 8, [0, 2, 4, 6, 8, 10]);
+    _row(p, 2, [0, 10]);
+    _row(p, 4, [0, 10]);
+    _row(p, 6, [0, 10]);
+    _pillar(p, 2, 2, 4);
+    _pillar(p, 8, 2, 4);
+    _pillar(p, 4, 2, 5);
+    _pillar(p, 6, 2, 5);
+    for (final y in [4, 6]) {
+      for (final x in [2, 4, 6, 8]) {
+        _pillar(p, x, y, 5);
       }
     }
-    _row(p, 1, [7], 1);
-    _row(p, 3, [5, 9], 1);
-    _row(p, 5, [7], 1);
-    _row(p, 7, [5, 9], 1);
-    _row(p, 9, [7], 1);
-    _row(p, 11, [7], 1);
     return _done(p, 'pavilion');
   }
 
-  /// Дракон — вытянутый живой силуэт (80).
+  /// Дракон (122). 6×5, уходит в высоту.
   static List<LayoutPos> dragon() {
     final p = <LayoutPos>[];
-    _row(p, 0, [2, 4, 6, 8, 10, 12]);
-    _row(p, 2, [1, 3, 5, 7, 9, 11, 13, 15]);
-    _row(p, 4, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]);
-    _row(p, 6, [1, 3, 5, 7, 9, 11, 13, 15, 17]);
-    _row(p, 8, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]);
-    _row(p, 10, [1, 3, 5, 7, 9, 11, 13, 15, 17]);
-    _row(p, 12, [1, 3, 5, 7, 9, 11, 13, 15]);
-    _row(p, 14, [2, 4, 6, 8, 10, 12]);
-    _row(p, 1, [8], 1);
-    _row(p, 3, [7, 11], 1);
-    _row(p, 5, [5, 9, 13], 1);
-    _row(p, 7, [7, 11], 1);
-    _row(p, 9, [5, 9, 13], 1);
-    _row(p, 11, [8], 1);
-    _row(p, 13, [6, 10], 1);
+    _row(p, 0, [0, 2, 4, 6, 8, 10]);
+    _row(p, 8, [0, 2, 4, 6, 8, 10]);
+    _row(p, 2, [0, 10]);
+    _row(p, 4, [0, 10]);
+    _row(p, 6, [0, 10]);
+    for (final y in [2, 4, 6]) {
+      _pillar(p, 4, y, 8);
+      _pillar(p, 6, y, 8);
+    }
+    _pillar(p, 2, 4, 8);
+    _pillar(p, 8, 4, 8);
+    _pillar(p, 2, 2, 7);
+    _pillar(p, 8, 2, 7);
+    _pillar(p, 2, 6, 7);
+    _pillar(p, 8, 6, 7);
     return _done(p, 'dragon');
   }
 
   static List<LayoutPos> byName(String name) {
-    final depth = _maxStackDepth(name);
-    final List<LayoutPos> raw = switch (name) {
+    return switch (name) {
       'petal' || 'seed' => petal(),
       'bloom' => bloom(),
       'meadow' || 'grove' => meadow(),
@@ -311,7 +288,6 @@ class Layouts {
       'dragon' || 'turtle' => dragon(),
       _ => bloom(),
     };
-    return _finalizeStacks(raw, depth, name);
   }
 
   static int tileCount(String name) => byName(name).length;

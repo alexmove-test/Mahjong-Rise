@@ -109,7 +109,7 @@ class FirebaseLeaderboardRepository {
       id: doc.id,
       name: (data['name'] as String?)?.trim().isNotEmpty == true
           ? data['name'] as String
-          : 'Игрок',
+          : 'Player',
       rating: (data['rating'] as num?)?.toInt() ?? 0,
       totalStars: (data['totalStars'] as num?)?.toInt() ?? 0,
       levelsUnlocked: (data['levelsUnlocked'] as num?)?.toInt() ?? 1,

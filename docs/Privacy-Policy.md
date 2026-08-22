@@ -11,7 +11,7 @@ By installing or using the App, you agree to the collection and use of informati
 ## 1. Who we are
 
 **App name:** Mahjong Rise  
-**Package name:** `com.mahjong.mahjong`  
+**Package name:** `com.rise.mahjong`  
 **Developer / Data controller:** Oleksii Hnylytskyi  
 **Contact email:** myevidentsuccess@gmail.com
 
@@ -238,4 +238,4 @@ Email: myevidentsuccess@gmail.com
 
 ---
 
-*This Privacy Policy applies to Mahjong Rise (`com.mahjong.mahjong`) published by Oleksii Hnylytskyi.*
+*This Privacy Policy applies to Mahjong Rise (`com.rise.mahjong`) published by Oleksii Hnylytskyi.*

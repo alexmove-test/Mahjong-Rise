@@ -18,7 +18,7 @@ class PlayerProfileStore {
   String get displayName =>
       _prefs.getString(_kDisplayName)?.trim().isNotEmpty == true
       ? _prefs.getString(_kDisplayName)!.trim()
-      : 'Вы';
+      : 'You';
 
   int get lastSyncedRating => _prefs.getInt(_kLastSyncedRating) ?? 0;
 

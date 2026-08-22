@@ -60,9 +60,10 @@ class TileWidget extends StatefulWidget {
 }
 
 class _TileWidgetState extends State<TileWidget>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   static int _loggedTiles = 0;
   late final AnimationController _burst;
+  late final AnimationController _hintPulse;
 
   @override
   void initState() {
@@ -74,8 +75,15 @@ class _TileWidgetState extends State<TileWidget>
               widget.onRemoveComplete?.call();
             }
           });
+    _hintPulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 720),
+    );
     if (widget.isRemoving) {
       _burst.forward();
+    }
+    if (widget.isHinted) {
+      _hintPulse.repeat(reverse: true);
     }
   }
 
@@ -88,17 +96,26 @@ class _TileWidgetState extends State<TileWidget>
     if (!widget.isRemoving && oldWidget.isRemoving) {
       _burst.reset();
     }
+    if (widget.isHinted && !_hintPulse.isAnimating) {
+      _hintPulse.repeat(reverse: true);
+    } else if (!widget.isHinted && _hintPulse.isAnimating) {
+      _hintPulse
+        ..stop()
+        ..value = 0;
+    }
   }
 
   @override
   void dispose() {
+    _hintPulse.dispose();
     _burst.dispose();
     super.dispose();
   }
 
   double _highlightIntensity() {
-    if (widget.isSelected) return widget.compact ? 0.92 : 1.0;
-    if (widget.isHinted) return widget.compact ? 0.72 : 0.82;
+    if (widget.isSelected || widget.isHinted) {
+      return widget.compact ? 0.92 : 1.0;
+    }
     return 0.0;
   }
 
@@ -110,12 +127,8 @@ class _TileWidgetState extends State<TileWidget>
     final isRemoving = widget.isRemoving;
     final showBack = widget.showBack;
 
-    final selectScale = widget.isSelected
-        ? 1.05
-        : (widget.isHinted ? 1.03 : 1.0);
-    final selectLift = widget.isSelected
-        ? -2.0
-        : (widget.isHinted ? -1.0 : 0.0);
+    final selectScale = (widget.isSelected || widget.isHinted) ? 1.05 : 1.0;
+    final selectLift = (widget.isSelected || widget.isHinted) ? -2.0 : 0.0;
     final tileSize = Size(width, height);
     final symbolRect = TileBaseLayout.symbolRectOf(tileSize);
     final pyramid = TilePyramidPosition.visuals(
@@ -123,7 +136,7 @@ class _TileWidgetState extends State<TileWidget>
       tileWidth: width,
       tileHeight: height,
     );
-    final highlight = _highlightIntensity();
+    final baseHighlight = _highlightIntensity();
     // #region agent log
     if (_loggedTiles < 3) {
       _loggedTiles++;
@@ -149,7 +162,7 @@ class _TileWidgetState extends State<TileWidget>
           'shadowDy': pyramid.shadowOffset.dy,
           'shadowOp': pyramid.shadowOpacity,
           'shadowBlur': pyramid.shadowBlur,
-          'highlight': highlight,
+          'highlight': baseHighlight,
           'spriteW': TileBaseLayout.spriteWidth,
           'spriteH': TileBaseLayout.spriteHeight,
           'faceFillsWidget':
@@ -200,10 +213,20 @@ class _TileWidgetState extends State<TileWidget>
                     child: _EngravedFace(symbol: tile.symbol),
                   ),
                 ),
-                if (highlight > 0)
-                  CustomPaint(
-                    size: tileSize,
-                    painter: TileHighlightPainter(intensity: highlight),
+                if (baseHighlight > 0)
+                  AnimatedBuilder(
+                    animation: _hintPulse,
+                    builder: (context, _) {
+                      final pulse = widget.isHinted
+                          ? 0.72 + 0.28 * _hintPulse.value
+                          : 1.0;
+                      return CustomPaint(
+                        size: tileSize,
+                        painter: TileHighlightPainter(
+                          intensity: baseHighlight * pulse,
+                        ),
+                      );
+                    },
                   ),
               ],
             )
