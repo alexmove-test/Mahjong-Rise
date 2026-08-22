@@ -9,6 +9,7 @@ class Tile {
     this.removed = false,
     this.removing = false,
     this.inTray = false,
+    this.flying = false,
   });
 
   final int id;
@@ -32,11 +33,14 @@ class Tile {
   /// Лежит в верхнем лотке (снята с поля, но ещё не сматчена).
   bool inTray;
 
+  /// Летит с поля в лоток (ещё не [pick], визуально уже снята).
+  bool flying;
+
   /// Полностью вышла из игры.
   bool get isCleared => removed || removing;
 
   /// Ещё лежит на раскладке.
-  bool get isOnBoard => !removed && !removing && !inTray;
+  bool get isOnBoard => !removed && !removing && !inTray && !flying;
 
   Tile copy() => Tile(
     id: id,
@@ -47,6 +51,7 @@ class Tile {
     removed: removed,
     removing: removing,
     inTray: inTray,
+    flying: flying,
   );
 
   @override

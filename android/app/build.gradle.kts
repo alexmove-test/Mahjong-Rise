@@ -1,3 +1,5 @@
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Properties
 
 plugins {
@@ -109,7 +111,8 @@ android {
 
 // Стандартное имя app-release.* нужно Flutter для post-build проверки AAB.
 // Версионированные копии складываем отдельно в outputs/named/.
-val versionedArtifactBase = "mahjong-rise-v${appVersion.name}+${appVersion.code}"
+val buildStamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"))
+val versionedArtifactBase = "mahjong-rise-v${appVersion.name}+${appVersion.code}_$buildStamp"
 
 tasks.register<Delete>("cleanStaleReleaseBundles") {
     delete(

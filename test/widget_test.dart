@@ -31,14 +31,22 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.textContaining('MAHJONG RISE'), findsOneWidget);
+    expect(find.textContaining('MAHJONG RISE'), findsNothing);
     expect(find.textContaining('Continue'), findsOneWidget);
     expect(find.text('Plot 1'), findsOneWidget);
     expect(find.text('Today'), findsOneWidget);
-    expect(find.text('Sprout'), findsWidgets);
-    expect(find.text('Bud'), findsOneWidget);
+    expect(find.text('Levels'), findsOneWidget);
+    expect(find.text('Sprout'), findsNothing);
+    expect(find.text('Bud'), findsNothing);
     expect(find.text('240'), findsNothing);
     expect(find.text('Take only a free top tile'), findsNothing);
+
+    await tester.tap(find.text('Levels'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Sprout'), findsWidgets);
+    expect(find.text('Bud'), findsOneWidget);
   });
 
   testWidgets('finished first plot offers a new courtyard', (tester) async {
@@ -84,6 +92,12 @@ void main() {
     expect(find.text('Участок 1'), findsOneWidget);
     expect(find.textContaining('Продолжить'), findsOneWidget);
     expect(find.text('Сегодня'), findsOneWidget);
+    expect(find.text('Уровни'), findsOneWidget);
+    expect(find.text('Росток'), findsNothing);
+
+    await tester.tap(find.text('Уровни'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Росток'), findsWidgets);
   });
 
@@ -104,6 +118,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('English'), findsOneWidget);
     expect(find.text('Русский'), findsOneWidget);
+    expect(find.text('Sound'), findsOneWidget);
     expect(find.text('Haptic feedback'), findsOneWidget);
 
     await tester.tap(find.text('Русский'));
@@ -131,18 +146,53 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    final toggle = find.byType(Switch);
-    expect(toggle, findsOneWidget);
-    expect(tester.widget<Switch>(toggle).value, isTrue);
+    expect(find.text('Sound'), findsOneWidget);
+    expect(find.text('Haptic feedback'), findsOneWidget);
 
-    await tester.tap(toggle);
+    final hapticToggle = find.descendant(
+      of: find.widgetWithText(SwitchListTile, 'Haptic feedback'),
+      matching: find.byType(Switch),
+    );
+    expect(tester.widget<Switch>(hapticToggle).value, isTrue);
+
+    await tester.tap(hapticToggle);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(tester.widget<Switch>(toggle).value, isFalse);
+    expect(tester.widget<Switch>(hapticToggle).value, isFalse);
 
     await tester.tap(find.text('Русский'));
     await tester.pump();
+    expect(find.text('Звук'), findsOneWidget);
     expect(find.text('Тактильный отклик'), findsOneWidget);
+  });
+
+  testWidgets('settings can turn sound off', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'progress.maxUnlocked': 2,
+      'progress.stars.1': 1,
+      'progress.best.1': 400,
+      'progress.lastPlayed': 1,
+    });
+    await tester.pumpWidget(const MahjongApp());
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final soundToggle = find.descendant(
+      of: find.widgetWithText(SwitchListTile, 'Sound'),
+      matching: find.byType(Switch),
+    );
+    expect(tester.widget<Switch>(soundToggle).value, isTrue);
+
+    await tester.tap(soundToggle);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(tester.widget<Switch>(soundToggle).value, isFalse);
   });
 }

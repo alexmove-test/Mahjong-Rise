@@ -37,6 +37,7 @@ class L10n {
       pick('$unlocked/$total open', 'открыто $unlocked/$total');
 
   String get courtyard => pick('Courtyard', 'Во двор');
+  String get levels => pick('Levels', 'Уровни');
   String get retry => pick('Retry', 'Заново');
   String get playAgain => pick('Play again', 'Ещё раз');
   String get next => pick('Next', 'Дальше');
@@ -51,6 +52,7 @@ class L10n {
   String get iconsBy => pick('Icons: Uicons by ', 'Иконки: Uicons от ');
 
   String get settings => pick('Settings', 'Настройки');
+  String get sound => pick('Sound', 'Звук');
   String get hapticFeedback => pick('Haptic feedback', 'Тактильный отклик');
   String get language => pick('Language', 'Язык');
   String get languageSystem => pick('System', 'Как в системе');
@@ -97,6 +99,7 @@ class L10n {
   String get hint => pick('Hint', 'Подсказка');
   String get undo => pick('Undo', 'Отмена');
   String watchAd(String name) => pick('Watch ad → $name', 'Реклама → $name');
+  String boostEarned(String name) => pick('+1 $name', '+1 $name');
   String get noneLeft => pick('none left', 'нет использований');
 
   String boostTooltip(String name, int left, {required bool adsAvailable}) {

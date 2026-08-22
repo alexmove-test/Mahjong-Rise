@@ -44,4 +44,14 @@ void main() {
     expect(HapticGate.enabled, isFalse);
     expect((await HapticStore.open()).enabled, isFalse);
   });
+
+  test('haptic pulses do not throw without a platform channel', () {
+    HapticGate.enabled = true;
+    HapticGate.light();
+    HapticGate.medium();
+    HapticGate.heavy();
+    HapticGate.selection();
+    HapticGate.error();
+    HapticGate.preview();
+  });
 }

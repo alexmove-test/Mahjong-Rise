@@ -12,7 +12,7 @@ import '../widgets/courtyard/courtyard_scene.dart';
 import 'game_screen.dart';
 import 'leaderboard_screen.dart';
 
-/// Двор (хаб) + сетка уровней.
+/// Двор на весь экран; сетка уровней открывается шторкой.
 class LevelSelectScreen extends StatefulWidget {
   const LevelSelectScreen({super.key});
 
@@ -28,7 +28,6 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
   bool _didAutoOpenFirst = false;
   int _cycle = 0;
 
-  static const _fieldGreen = Color(0xFFD7EEDC);
   static const _crossAxisCount = 3;
   static const _gridSpacing = 10.0;
   static const _gridAspect = 0.92;
@@ -98,8 +97,6 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
     _scrollToLevel(store.lastPlayedLevel);
   }
 
-  List<LevelDef> get _cycleLevels => Levels.cycleLevels(_cycle);
-
   LevelDef _continueLevel(ProgressStore store) {
     final last = store.lastPlayedLevel;
     if (Levels.cycleOf(last) == _cycle) return Levels.byId(last);
@@ -147,6 +144,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
     if (store == null || !store.isUnlocked(level.id)) return;
 
     await store.markPlayed(level.id);
+    if (!mounted) return;
 
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
@@ -170,6 +168,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
     final store = _store;
     if (store == null) return;
     await store.expireStreakIfNeeded();
+    if (!mounted) return;
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => GameScreen(
@@ -223,6 +222,35 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
     setState(() {});
   }
 
+  Future<void> _openLevels() async {
+    final store = _store;
+    if (store == null) return;
+    _didAutoScroll = false;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.38),
+      builder: (ctx) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToLevel(_continueLevel(store).id, force: true);
+        });
+        return _LevelsSheet(
+          height: MediaQuery.sizeOf(ctx).height * 0.62,
+          store: store,
+          cycle: _cycle,
+          gridScroll: _gridScroll,
+          onSelectLevel: (level) {
+            Navigator.of(ctx).pop();
+            _openLevel(level);
+          },
+        );
+      },
+    );
+    if (!mounted) return;
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final store = _store;
@@ -245,176 +273,173 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
       );
     }
 
+    final l10n = L10n.of(context);
+    final snapshot = CourtyardSnapshot.fromStore(store, cycle: _cycle);
+    final phrase = l10n.homePathPhrase(snapshot);
+    final stars = store.starsInCycle(_cycle);
+    final unlocked = store.unlockedInCycle(_cycle);
+    final showNewPlot =
+        store.isCycleComplete(_cycle) &&
+        _cycle + 1 < Levels.cycleCount &&
+        store.isCycleUnlocked(_cycle + 1);
+
     return Scaffold(
-      backgroundColor: _fieldGreen,
+      backgroundColor: const Color(0xFF1A3D2E),
       body: Stack(
         fit: StackFit.expand,
         children: [
-          const MahjongScreenBackdrop(vignetteCenter: Alignment(0, -0.2)),
+          CourtyardScene(to: snapshot),
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0x99081410),
+                      Color(0x00000000),
+                      Color(0x00000000),
+                      Color(0xB3141A12),
+                    ],
+                    stops: [0, 0.22, 0.52, 1],
+                  ),
+                ),
+              ),
+            ),
+          ),
           SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 10),
-                _CourtyardHub(store: store, cycle: _cycle),
-                const SizedBox(height: 10),
-                _PlotBar(
-                  cycle: _cycle,
-                  store: store,
-                  onPrev: _cycle > 0 && store.isCycleUnlocked(_cycle - 1)
-                      ? () => _selectCycle(_cycle - 1)
-                      : null,
-                  onNext:
-                      _cycle + 1 < Levels.cycleCount &&
-                          store.isCycleUnlocked(_cycle + 1)
-                      ? () => _selectCycle(_cycle + 1)
-                      : null,
-                ),
-                const SizedBox(height: 10),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
                   child: Row(
                     children: [
                       Expanded(
-                        child: FilledButton.icon(
+                        child: _PlotBar(
+                          cycle: _cycle,
+                          onPrev:
+                              _cycle > 0 && store.isCycleUnlocked(_cycle - 1)
+                              ? () => _selectCycle(_cycle - 1)
+                              : null,
+                          onNext:
+                              _cycle + 1 < Levels.cycleCount &&
+                                  store.isCycleUnlocked(_cycle + 1)
+                              ? () => _selectCycle(_cycle + 1)
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _HudIconButton(
+                        tooltip: l10n.settings,
+                        icon: Icons.settings_rounded,
+                        onTap: () => showAppSettings(context),
+                      ),
+                      const SizedBox(width: 8),
+                      _HudIconButton(
+                        icon: Icons.leaderboard_rounded,
+                        onTap: _openLeaderboard,
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Column(
+                    children: [
+                      Text(
+                        phrase,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFFF8F1DE),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          height: 1.25,
+                          shadows: [
+                            Shadow(color: Colors.black87, blurRadius: 8),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$stars ★ · ${l10n.openedProgress(unlocked, Levels.storyLength)}',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: const Color(
+                            0xFFF8F1DE,
+                          ).withValues(alpha: 0.86),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                          shadows: const [
+                            Shadow(color: Colors.black87, blurRadius: 8),
+                          ],
+                        ),
+                      ),
+                      if (showNewPlot) ...[
+                        const SizedBox(height: 10),
+                        FilledButton.icon(
                           style: FilledButton.styleFrom(
-                            backgroundColor: _woodTop,
-                            foregroundColor: _goldSoft,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            backgroundColor: _gold,
+                            foregroundColor: _woodDeep,
+                            minimumSize: const Size.fromHeight(46),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
-                              side: BorderSide(
-                                color: _gold.withValues(alpha: 0.75),
-                                width: 1.4,
-                              ),
                             ),
                           ),
-                          onPressed: _continueGame,
-                          icon: const Icon(Icons.play_arrow_rounded),
+                          onPressed: () => _selectCycle(_cycle + 1),
+                          icon: const Icon(Icons.home_work_rounded),
                           label: Text(
-                            _continueLabel(store, L10n.of(context)),
+                            l10n.newPlot,
                             style: const TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: 15,
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Tooltip(
-                        message: L10n.of(context).settings,
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => showAppSettings(context),
+                      ],
+                      const SizedBox(height: 10),
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: _woodTop,
+                          foregroundColor: _goldSoft,
+                          minimumSize: const Size.fromHeight(48),
+                          shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
-                            child: Ink(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(14),
-                                gradient: const LinearGradient(
-                                  colors: [_woodTop, _woodDeep],
-                                ),
-                                border: Border.all(
-                                  color: _gold.withValues(alpha: 0.75),
-                                  width: 1.4,
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.settings_rounded,
-                                color: _goldSoft,
-                              ),
+                            side: BorderSide(
+                              color: _gold.withValues(alpha: 0.75),
+                              width: 1.4,
                             ),
+                          ),
+                        ),
+                        onPressed: _continueGame,
+                        icon: const Icon(Icons.play_arrow_rounded),
+                        label: Text(
+                          _continueLabel(store, l10n),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: _openLeaderboard,
-                          borderRadius: BorderRadius.circular(14),
-                          child: Ink(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(14),
-                              gradient: const LinearGradient(
-                                colors: [_woodTop, _woodDeep],
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _DailyStrip(
+                              completedToday: store.isDailyCompletedOn(
+                                DateTime.now(),
                               ),
-                              border: Border.all(
-                                color: _gold.withValues(alpha: 0.75),
-                                width: 1.4,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.leaderboard_rounded,
-                              color: _goldSoft,
+                              streak: store.visibleStreak(),
+                              onTap: _openDaily,
                             ),
                           ),
-                        ),
+                          const SizedBox(width: 10),
+                          Expanded(child: _LevelsButton(onTap: _openLevels)),
+                        ],
                       ),
                     ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-                  child: _DailyStrip(
-                    completedToday: store.isDailyCompletedOn(DateTime.now()),
-                    streak: store.visibleStreak(),
-                    onTap: _openDaily,
-                  ),
-                ),
-                if (store.isCycleComplete(_cycle) &&
-                    _cycle + 1 < Levels.cycleCount &&
-                    store.isCycleUnlocked(_cycle + 1))
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: _gold,
-                        foregroundColor: _woodDeep,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      onPressed: () => _selectCycle(_cycle + 1),
-                      icon: const Icon(Icons.home_work_rounded),
-                      label: Text(
-                        L10n.of(context).newPlot,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: GridView.builder(
-                    controller: _gridScroll,
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: _crossAxisCount,
-                          mainAxisSpacing: _gridSpacing,
-                          crossAxisSpacing: _gridSpacing,
-                          childAspectRatio: _gridAspect,
-                        ),
-                    itemCount: _cycleLevels.length,
-                    itemBuilder: (context, index) {
-                      final level = _cycleLevels[index];
-                      return _LevelCard(
-                        level: level,
-                        unlocked: store.isUnlocked(level.id),
-                        stars: store.stars(level.id),
-                        inProgress: store.hasSnapshotFor(level.id),
-                        onTap: () => _openLevel(level),
-                      );
-                    },
                   ),
                 ),
               ],
@@ -426,131 +451,75 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
   }
 }
 
-class _CourtyardHub extends StatelessWidget {
-  const _CourtyardHub({required this.store, required this.cycle});
+class _HudIconButton extends StatelessWidget {
+  const _HudIconButton({required this.icon, required this.onTap, this.tooltip});
 
-  final ProgressStore store;
-  final int cycle;
+  final IconData icon;
+  final VoidCallback onTap;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = L10n.of(context);
-    final snapshot = CourtyardSnapshot.fromStore(store, cycle: cycle);
-    final phrase = l10n.homePathPhrase(snapshot);
-    final height = MediaQuery.sizeOf(context).height < 720 ? 200.0 : 248.0;
-    final stars = store.starsInCycle(cycle);
-    final unlocked = store.unlockedInCycle(cycle);
-
-    return CourtyardFrame(
-      height: height,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          CourtyardScene(to: snapshot),
-          const Positioned(
-            top: 8,
-            left: 12,
-            right: 12,
-            child: Text(
-              'MAHJONG RISE',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2.0,
-                color: Color(0xFF1E5A3A),
-                shadows: [
-                  Shadow(
-                    color: Color(0xEEFFFFFF),
-                    offset: Offset(0, 1),
-                    blurRadius: 6,
-                  ),
-                ],
-              ),
+    final button = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Ink(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF6B3E24), Color(0xFF3A2012)],
+            ),
+            border: Border.all(
+              color: const Color(0xFFD4AF37).withValues(alpha: 0.75),
+              width: 1.4,
             ),
           ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    const Color(0xFF1A3D2E).withValues(alpha: 0.32),
-                  ],
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      phrase,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0xFFF8F1DE),
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                        height: 1.25,
-                        shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$stars ★ · ${l10n.openedProgress(unlocked, Levels.storyLength)}',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: const Color(0xFFF8F1DE).withValues(alpha: 0.78),
-                        fontWeight: FontWeight.w600,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
+          child: Icon(icon, color: const Color(0xFFE8C96A)),
+        ),
       ),
     );
+    if (tooltip == null) return button;
+    return Tooltip(message: tooltip!, child: button);
   }
 }
 
 class _PlotBar extends StatelessWidget {
   const _PlotBar({
     required this.cycle,
-    required this.store,
     required this.onPrev,
     required this.onNext,
   });
 
   final int cycle;
-  final ProgressStore store;
   final VoidCallback? onPrev;
   final VoidCallback? onNext;
 
   static const _gold = Color(0xFFD4AF37);
-  static const _woodDeep = Color(0xFF3A2012);
+  static const _ivory = Color(0xFFF8F1DE);
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        gradient: const LinearGradient(
+          colors: [Color(0xCC6B3E24), Color(0xCC3A2012)],
+        ),
+        border: Border.all(color: _gold.withValues(alpha: 0.7), width: 1.3),
+      ),
       child: Row(
         children: [
           IconButton(
             onPressed: onPrev,
             tooltip: L10n.of(context).previousPlot,
+            visualDensity: VisualDensity.compact,
             icon: Icon(
               Icons.chevron_left_rounded,
-              color: onPrev == null
-                  ? _woodDeep.withValues(alpha: 0.2)
-                  : _woodDeep,
+              color: onPrev == null ? _ivory.withValues(alpha: 0.28) : _ivory,
             ),
           ),
           Expanded(
@@ -558,9 +527,9 @@ class _PlotBar extends StatelessWidget {
               L10n.of(context).plot(cycle),
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: _woodDeep,
+                color: _ivory,
                 fontWeight: FontWeight.w800,
-                fontSize: 16,
+                fontSize: 15,
                 letterSpacing: 0.4,
               ),
             ),
@@ -568,6 +537,7 @@ class _PlotBar extends StatelessWidget {
           IconButton(
             onPressed: onNext,
             tooltip: L10n.of(context).nextPlot,
+            visualDensity: VisualDensity.compact,
             icon: Icon(
               Icons.chevron_right_rounded,
               color: onNext == null ? _gold.withValues(alpha: 0.35) : _gold,
@@ -643,6 +613,8 @@ class _DailyStrip extends StatelessWidget {
                     ),
                     Text(
                       subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: _ivory.withValues(alpha: 0.75),
                         fontWeight: FontWeight.w600,
@@ -662,6 +634,164 @@ class _DailyStrip extends StatelessWidget {
                   ),
                 ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LevelsButton extends StatelessWidget {
+  const _LevelsButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  static const _gold = Color(0xFFD4AF37);
+  static const _goldSoft = Color(0xFFE8C96A);
+  static const _woodTop = Color(0xFF6B3E24);
+  static const _woodDeep = Color(0xFF3A2012);
+  static const _ivory = Color(0xFFF8F1DE);
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            gradient: const LinearGradient(colors: [_woodTop, _woodDeep]),
+            border: Border.all(
+              color: _gold.withValues(alpha: 0.75),
+              width: 1.3,
+            ),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.grid_view_rounded, color: _goldSoft),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  L10n.of(context).levels,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _ivory,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LevelsSheet extends StatelessWidget {
+  const _LevelsSheet({
+    required this.height,
+    required this.store,
+    required this.cycle,
+    required this.gridScroll,
+    required this.onSelectLevel,
+  });
+
+  final double height;
+  final ProgressStore store;
+  final int cycle;
+  final ScrollController gridScroll;
+  final ValueChanged<LevelDef> onSelectLevel;
+
+  static const _gold = Color(0xFFD4AF37);
+  static const _ivory = Color(0xFFF8F1DE);
+  static const _woodDeep = Color(0xFF3A2012);
+
+  @override
+  Widget build(BuildContext context) {
+    final levels = Levels.cycleLevels(cycle);
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: SizedBox(
+        height: height,
+        width: double.infinity,
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF4A2C18), _woodDeep],
+              ),
+              border: Border(
+                top: BorderSide(
+                  color: _gold.withValues(alpha: 0.55),
+                  width: 1.4,
+                ),
+              ),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
+                Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: _ivory.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+                  child: Text(
+                    L10n.of(context).plot(cycle),
+                    style: const TextStyle(
+                      color: _ivory,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GridView.builder(
+                    controller: gridScroll,
+                    padding: EdgeInsets.fromLTRB(
+                      12,
+                      0,
+                      12,
+                      20 + MediaQuery.paddingOf(context).bottom,
+                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount:
+                              _LevelSelectScreenState._crossAxisCount,
+                          mainAxisSpacing: _LevelSelectScreenState._gridSpacing,
+                          crossAxisSpacing:
+                              _LevelSelectScreenState._gridSpacing,
+                          childAspectRatio: _LevelSelectScreenState._gridAspect,
+                        ),
+                    itemCount: levels.length,
+                    itemBuilder: (context, index) {
+                      final level = levels[index];
+                      return _LevelCard(
+                        level: level,
+                        unlocked: store.isUnlocked(level.id),
+                        stars: store.stars(level.id),
+                        inProgress: store.hasSnapshotFor(level.id),
+                        onTap: () => onSelectLevel(level),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

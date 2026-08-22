@@ -4,6 +4,7 @@ import '../l10n/l10n.dart';
 import '../l10n/locale_controller.dart';
 import '../services/haptic_controller.dart';
 import '../services/locale_store.dart';
+import '../services/sfx_controller.dart';
 
 const _ivory = Color(0xFFF8F1DE);
 const _gold = Color(0xFFE8C96A);
@@ -12,8 +13,10 @@ const _wood = Color(0xFF3A2012);
 Future<void> showAppSettings(BuildContext context) {
   final locale = LocaleScope.maybeOf(context);
   final haptic = HapticScope.maybeOf(context);
+  final sfx = SfxScope.maybeOf(context);
   return showModalBottomSheet<void>(
     context: context,
+    isScrollControlled: true,
     backgroundColor: _wood,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
@@ -24,6 +27,7 @@ Future<void> showAppSettings(BuildContext context) {
           listenable: Listenable.merge([
             if (locale != null) locale,
             if (haptic != null) haptic,
+            if (sfx != null) sfx,
           ]),
           builder: (_, _) {
             final l10n = L10n.of(ctx);
@@ -42,6 +46,7 @@ Future<void> showAppSettings(BuildContext context) {
                     ),
                   ),
                 ),
+                SfxSwitchTile(controller: sfx, l10n: l10n),
                 HapticSwitchTile(controller: haptic, l10n: l10n),
                 const Padding(
                   padding: EdgeInsets.fromLTRB(20, 4, 20, 0),
@@ -148,6 +153,39 @@ Future<void> showLanguagePicker(BuildContext context) {
       );
     },
   );
+}
+
+class SfxSwitchTile extends StatelessWidget {
+  const SfxSwitchTile({
+    super.key,
+    required this.controller,
+    required this.l10n,
+  });
+
+  final SfxController? controller;
+  final L10n l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = controller?.enabled ?? true;
+    return SwitchListTile(
+      secondary: Icon(
+        enabled ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+        color: enabled ? _gold : _ivory,
+      ),
+      title: Text(
+        l10n.sound,
+        style: TextStyle(
+          color: enabled ? _gold : _ivory,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      value: enabled,
+      onChanged: controller?.setEnabled,
+      activeThumbColor: _gold,
+      activeTrackColor: _gold.withValues(alpha: 0.38),
+    );
+  }
 }
 
 class HapticSwitchTile extends StatelessWidget {

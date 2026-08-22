@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -35,6 +36,7 @@ class HapticController extends ChangeNotifier {
     _enabled = value;
     _userOverride = true;
     HapticGate.enabled = value;
+    if (value) HapticGate.preview();
     await _store.setEnabled(value);
     notifyListeners();
   }
@@ -63,23 +65,48 @@ class HapticScope extends InheritedNotifier<HapticController> {
 }
 
 /// Fire-and-forget platform haptics. No-ops when disabled or unsupported.
+///
+/// Android [HapticFeedback] is a keyboard tick and follows the system
+/// "touch vibration" setting, so many phones stay silent. We drive the
+/// vibrator motor instead, then fall back to [HapticFeedback] if needed.
 class HapticGate {
   HapticGate._();
 
+  static const _channel = MethodChannel('com.rise.mahjong/haptics');
+
   static bool enabled = true;
 
-  static void light() => _run(HapticFeedback.lightImpact);
-  static void medium() => _run(HapticFeedback.mediumImpact);
-  static void heavy() => _run(HapticFeedback.heavyImpact);
-  static void selection() => _run(HapticFeedback.selectionClick);
-  static void error() => _run(HapticFeedback.vibrate);
+  static void light() => _pulse(androidMs: 55, androidAmplitude: 255);
+  static void medium() => _pulse(androidMs: 90, androidAmplitude: 255);
+  static void heavy() => _pulse(androidMs: 140, androidAmplitude: 255);
+  static void selection() => _pulse(androidMs: 45, androidAmplitude: 255);
+  static void error() => _pulse(androidMs: 110, androidAmplitude: 255);
+  static void preview() => _pulse(androidMs: 160, androidAmplitude: 255);
 
-  static void _run(Future<void> Function() feedback) {
+  static void _pulse({required int androidMs, required int androidAmplitude}) {
     if (!enabled) return;
+    unawaited(_run(androidMs: androidMs, androidAmplitude: androidAmplitude));
+  }
+
+  static Future<void> _run({
+    required int androidMs,
+    required int androidAmplitude,
+  }) async {
     try {
-      unawaited(feedback());
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        await _channel.invokeMethod<void>('vibrate', {
+          'duration': androidMs,
+          'amplitude': androidAmplitude,
+        });
+        return;
+      }
+      await HapticFeedback.mediumImpact();
     } catch (_) {
-      // Desktop / tests / missing vibrator — ignore.
+      try {
+        await HapticFeedback.vibrate();
+      } catch (_) {
+        // Desktop / tests / missing vibrator — ignore.
+      }
     }
   }
 }

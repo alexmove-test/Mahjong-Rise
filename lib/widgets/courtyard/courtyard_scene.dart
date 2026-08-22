@@ -30,7 +30,7 @@ class _CourtyardSceneState extends State<CourtyardScene>
   late final AnimationController _idle;
   late final AnimationController _grow;
 
-  static const _artAlign = Alignment(0, -0.28);
+  static const _artAlign = Alignment(0, -0.12);
 
   @override
   void initState() {
@@ -106,7 +106,7 @@ class _CourtyardSceneState extends State<CourtyardScene>
           final snapshot = _snapshot;
           final fade = snapshot.artFade;
           final breath = widget.idle
-              ? 1.0 + 0.03 * (0.5 - 0.5 * math.cos(_idle.value * 2 * math.pi))
+              ? 1.0 + 0.01 * (0.5 - 0.5 * math.cos(_idle.value * 2 * math.pi))
               : 1.0;
           final life = snapshot.lifeArt;
 
@@ -139,11 +139,7 @@ class _CourtyardSceneState extends State<CourtyardScene>
 
 /// Рамка дерева/золота вокруг двора на главном экране.
 class CourtyardFrame extends StatelessWidget {
-  const CourtyardFrame({
-    super.key,
-    required this.height,
-    required this.child,
-  });
+  const CourtyardFrame({super.key, required this.height, required this.child});
 
   final double height;
   final Widget child;
@@ -165,10 +161,7 @@ class CourtyardFrame extends StatelessWidget {
               offset: const Offset(0, 4),
               blurRadius: 10,
             ),
-            BoxShadow(
-              color: _woodTop.withValues(alpha: 0.18),
-              blurRadius: 18,
-            ),
+            BoxShadow(color: _woodTop.withValues(alpha: 0.18), blurRadius: 18),
           ],
         ),
         child: ClipRRect(

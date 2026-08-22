@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mahjong/models/board.dart';
 import 'package:mahjong/models/game_snapshot.dart';
@@ -60,6 +62,35 @@ void main() {
     await store.clearSnapshot();
     expect(store.savedSnapshot, isNull);
     expect(store.hasSnapshotFor(1), isFalse);
+  });
+
+  test('each level keeps its own in-progress table', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = await ProgressStore.open();
+    await store.saveSnapshot(_sampleSnap(levelId: 1, score: 50));
+    await store.saveSnapshot(_sampleSnap(levelId: 2, score: 80));
+
+    expect(store.hasSnapshotFor(1), isTrue);
+    expect(store.hasSnapshotFor(2), isTrue);
+    expect(store.savedSnapshot!.levelId, 2);
+    expect(store.savedSnapshot!.score, 80);
+    expect(store.snapshotFor(1)!.score, 50);
+
+    await store.clearSnapshot(2);
+    expect(store.hasSnapshotFor(2), isFalse);
+    expect(store.hasSnapshotFor(1), isTrue);
+    expect(store.savedSnapshot!.levelId, 1);
+  });
+
+  test('legacy single snapshot is still readable', () async {
+    final snap = _sampleSnap(levelId: 3, score: 120);
+    SharedPreferences.setMockInitialValues({
+      'progress.snapshot': jsonEncode(snap.toJson()),
+    });
+    final store = await ProgressStore.open();
+    expect(store.hasSnapshotFor(3), isTrue);
+    expect(store.savedSnapshot!.score, 120);
+    expect(store.snapshotFor(1), isNull);
   });
 
   test('same-day daily win does not grow the streak', () async {

@@ -18,8 +18,12 @@ void main() {
     expect(ru.courtyard, 'Во двор');
     expect(en.settings, 'Settings');
     expect(ru.settings, 'Настройки');
+    expect(en.levels, 'Levels');
+    expect(ru.levels, 'Уровни');
     expect(en.hapticFeedback, 'Haptic feedback');
     expect(ru.hapticFeedback, 'Тактильный отклик');
+    expect(en.sound, 'Sound');
+    expect(ru.sound, 'Звук');
     expect(en.storyTitle(1), 'Sprout');
     expect(ru.storyTitle(1), 'Росток');
     expect(en.plot(0), 'Plot 1');
