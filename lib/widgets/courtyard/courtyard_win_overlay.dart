@@ -1,8 +1,7 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../../l10n/l10n.dart';
+import '../win_burst.dart';
 import 'courtyard_progress.dart';
 import 'courtyard_scene.dart';
 
@@ -97,26 +96,34 @@ class CourtyardWinOverlay extends StatefulWidget {
 }
 
 class _CourtyardWinOverlayState extends State<CourtyardWinOverlay>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   static const _gold = Color(0xFFD4AF37);
   static const _goldSoft = Color(0xFFE8C96A);
   static const _ivory = Color(0xFFF8F1DE);
   static const _woodTop = Color(0xFF6B3E24);
 
+  late final WinBurstLayout _burstLayout;
   late final AnimationController _celebrate;
+  late final AnimationController _rain;
 
   @override
   void initState() {
     super.initState();
+    _burstLayout = WinBurstLayout.generate();
     _celebrate = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2400),
     )..forward();
+    _rain = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3600),
+    )..repeat();
   }
 
   @override
   void dispose() {
     _celebrate.dispose();
+    _rain.dispose();
     super.dispose();
   }
 
@@ -157,7 +164,7 @@ class _CourtyardWinOverlayState extends State<CourtyardWinOverlay>
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _celebrate,
+      animation: Listenable.merge([_celebrate, _rain]),
       builder: (context, _) {
         final l10n = L10n.of(context);
         final titleIn = Curves.easeOutBack.transform(_segment(0.00, 0.18));
@@ -195,7 +202,11 @@ class _CourtyardWinOverlayState extends State<CourtyardWinOverlay>
               Positioned.fill(
                 child: IgnorePointer(
                   child: CustomPaint(
-                    painter: WinConfettiPainter(progress: _celebrate.value),
+                    painter: WinBurstPainter(
+                      layout: _burstLayout,
+                      burstT: (_celebrate.value * 2).clamp(0.0, 1.0),
+                      rainT: _rain.value,
+                    ),
                   ),
                 ),
               ),
@@ -417,87 +428,4 @@ class _CourtyardWinOverlayState extends State<CourtyardWinOverlay>
       },
     );
   }
-}
-
-class WinConfettiPainter extends CustomPainter {
-  const WinConfettiPainter({required this.progress});
-
-  final double progress;
-
-  static const _pieceCount = 88;
-  static const _sparkCount = 22;
-
-  static const _confettiColors = [
-    Color(0xFFD4AF37),
-    Color(0xFFE8C96A),
-    Color(0xFFF8F1DE),
-    Color(0xFFE84855),
-    Color(0xFF4DA3FF),
-    Colors.white,
-    Color(0xFFF2A65A),
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (progress <= 0) return;
-
-    final fade = progress < 0.88
-        ? 1.0
-        : (1 - (progress - 0.88) / 0.12).clamp(0.0, 1.0);
-
-    for (var i = 0; i < _pieceCount; i++) {
-      final rng = math.Random(i * 29 + 11);
-      final delay = rng.nextDouble() * 0.28;
-      final local = ((progress - delay) / (1 - delay)).clamp(0.0, 1.0);
-      if (local <= 0) continue;
-
-      final x =
-          rng.nextDouble() * size.width +
-          math.sin(local * math.pi * 3 + i) * 18;
-      final y = -12 + local * (size.height + 48);
-      final rotation = local * math.pi * 3 + rng.nextDouble();
-      final w = 4 + rng.nextDouble() * 5;
-      final h = 7 + rng.nextDouble() * 8;
-      final color = _confettiColors[i % _confettiColors.length].withValues(
-        alpha: (0.55 + rng.nextDouble() * 0.4) * fade,
-      );
-
-      canvas.save();
-      canvas.translate(x, y);
-      canvas.rotate(rotation);
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(center: Offset.zero, width: w, height: h),
-          const Radius.circular(1.4),
-        ),
-        Paint()..color = color,
-      );
-      canvas.restore();
-    }
-
-    final sparkCenter = Offset(size.width / 2, size.height * 0.28);
-    final sparkT = ((progress - 0.08) / 0.5).clamp(0.0, 1.0);
-    if (sparkT <= 0) return;
-
-    for (var i = 0; i < _sparkCount; i++) {
-      final angle = i / _sparkCount * math.pi * 2 - math.pi / 2;
-      final dist = 36 + 90 * Curves.easeOut.transform(sparkT);
-      final opacity = (1 - sparkT) * fade;
-      final tip =
-          sparkCenter +
-          Offset(math.cos(angle) * dist, math.sin(angle) * dist * 0.72);
-      canvas.drawLine(
-        sparkCenter,
-        tip,
-        Paint()
-          ..color = const Color(0xFFE8C96A).withValues(alpha: 0.5 * opacity)
-          ..strokeWidth = 2.2
-          ..strokeCap = StrokeCap.round,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant WinConfettiPainter oldDelegate) =>
-      oldDelegate.progress != progress;
 }

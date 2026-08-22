@@ -389,7 +389,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    await tester.tap(find.byIcon(Icons.shuffle_rounded));
+    await tester.tap(find.byTooltip('Shuffle'));
     await tester.pump();
 
     expect(find.text('No free tiles'), findsOneWidget);
@@ -397,7 +397,14 @@ void main() {
   });
 
   testWidgets('hint highlights both tiles of a matching pair', (tester) async {
-    SharedPreferences.setMockInitialValues({'progress.tableCoachDone': true});
+    SharedPreferences.setMockInitialValues({
+      'progress.tableCoachDone': true,
+      'tutorial.skipped': true,
+      'tutorial.collect': true,
+      'tutorial.match': true,
+      'tutorial.layers': true,
+      'tutorial.boosts': true,
+    });
     final progress = await ProgressStore.open();
     final board = Board(
       tiles: [
@@ -439,7 +446,7 @@ void main() {
       isEmpty,
     );
 
-    await tester.tap(find.byIcon(Icons.lightbulb_rounded));
+    await tester.tap(find.byTooltip('Hint'));
     await tester.pump();
 
     final hinted = tester
@@ -594,7 +601,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    await tester.tap(find.byIcon(Icons.lightbulb_rounded));
+    await tester.tap(find.byTooltip('Watch ad → Hint'));
     await tester.pump();
     expect(find.text('Simulated ad'), findsOneWidget);
 

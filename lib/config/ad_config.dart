@@ -13,9 +13,13 @@ abstract final class AdConfig {
   static String get rewardedUnitId =>
       kDebugMode ? testRewardedUnitId : productionRewardedUnitId;
 
-  /// Имитация ролика: debug, web и desktop. Release Android/iOS — AdMob.
+  /// Flip to `true` after the public Play/App Store release.
+  static const useRealAds = false;
+
+  /// Until [useRealAds], always simulate. Then AdMob on Android/iOS only.
   static bool get simulateAds {
-    if (kDebugMode || kIsWeb) return true;
+    if (!useRealAds) return true;
+    if (kIsWeb) return true;
     return defaultTargetPlatform != TargetPlatform.android &&
         defaultTargetPlatform != TargetPlatform.iOS;
   }
