@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:math' as math show Random, cos, pi, sin;
+import 'dart:math' as math show cos, pi, sin;
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -23,6 +23,7 @@ import '../widgets/game_board.dart';
 import '../widgets/premium_ui.dart';
 import '../widgets/tile_symbol_image.dart';
 import '../widgets/tile_widget.dart';
+import '../widgets/win_overlay.dart';
 
 /// Фон экранов: светлый damask для меню или сукно игрового стола.
 class MahjongScreenBackdrop extends StatelessWidget {
@@ -404,11 +405,8 @@ class _GameScreenState extends State<GameScreen> {
           _sfx.match();
           final praise = _fastPraise.registerMatch(
             now: DateTime.now(),
-            languageCode: WidgetsBinding
-                .instance
-                .platformDispatcher
-                .locale
-                .languageCode,
+            languageCode:
+                WidgetsBinding.instance.platformDispatcher.locale.languageCode,
           );
           if (praise != null) _sfx.praise(praise);
         case MatchResult.win:
@@ -428,7 +426,7 @@ class _GameScreenState extends State<GameScreen> {
           } else {
             _score += 500;
           }
-          _toast = 'Победа!';
+          _toast = null;
           _sfx.win();
           _fastPraise.reset();
           if (!_winHandled) {
@@ -796,31 +794,37 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
+  Future<void> _syncWinToLeaderboard() async {
+    final profile = await PlayerProfileStore.open();
+    await FirebaseLeaderboardRepository.syncProgress(
+      progress: widget.progress,
+      profile: profile,
+    );
+  }
+
   Future<void> _onLevelWon() async {
     final result = await widget.progress.recordWin(
       level: _level,
       score: _score,
     );
     widget.onProgressChanged?.call();
-
-    final profile = await PlayerProfileStore.open();
-    await FirebaseLeaderboardRepository.syncProgress(
-      progress: widget.progress,
-      profile: profile,
-    );
-
     if (!mounted) return;
+
+    unawaited(_syncWinToLeaderboard());
 
     final stars = result.stars;
     final hasNext = _level.id < Levels.all.length;
     final nextUnlocked =
         result.unlockedNext || widget.progress.isUnlocked(_level.id + 1);
 
-    await showDialog<void>(
+    await showGeneralDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) {
-        return _WinDialog(
+      barrierLabel: 'Победа',
+      barrierColor: Colors.transparent,
+      transitionDuration: const Duration(milliseconds: 280),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        return WinOverlay(
           levelId: _level.id,
           levelTitle: _level.title,
           score: _score,
@@ -850,6 +854,9 @@ class _GameScreenState extends State<GameScreen> {
             _startNewGame();
           },
         );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(opacity: animation, child: child);
       },
     );
   }
@@ -1796,334 +1803,4 @@ class _ActionButton extends StatelessWidget {
       ],
     );
   }
-}
-
-class _WinDialog extends StatefulWidget {
-  const _WinDialog({
-    required this.levelId,
-    required this.levelTitle,
-    required this.score,
-    required this.stars,
-    required this.isNewBest,
-    required this.unlockedNext,
-    required this.hasNext,
-    required this.nextUnlocked,
-    required this.onMap,
-    required this.onNext,
-    required this.onRetry,
-  });
-
-  final int levelId;
-  final String levelTitle;
-  final int score;
-  final int stars;
-  final bool isNewBest;
-  final bool unlockedNext;
-  final bool hasNext;
-  final bool nextUnlocked;
-  final VoidCallback onMap;
-  final VoidCallback onNext;
-  final VoidCallback onRetry;
-
-  @override
-  State<_WinDialog> createState() => _WinDialogState();
-}
-
-class _WinDialogState extends State<_WinDialog>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _celebrate;
-
-  @override
-  void initState() {
-    super.initState();
-    _celebrate = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2400),
-    )..forward();
-  }
-
-  @override
-  void dispose() {
-    _celebrate.dispose();
-    super.dispose();
-  }
-
-  double _segment(double start, double end) {
-    final t = _celebrate.value;
-    if (t <= start) return 0;
-    if (t >= end) return 1;
-    return ((t - start) / (end - start)).clamp(0.0, 1.0);
-  }
-
-  double _starProgress(int index) =>
-      _segment(0.14 + index * 0.16, 0.30 + index * 0.16);
-
-  Widget _starIcon(int index) {
-    final earned = index < widget.stars;
-    if (!earned) {
-      return const Icon(
-        Icons.star_outline_rounded,
-        color: Colors.white24,
-        size: 36,
-      );
-    }
-
-    final t = Curves.elasticOut.transform(_starProgress(index));
-    return Transform.scale(
-      scale: t,
-      child: Icon(
-        Icons.star_rounded,
-        color: _Ui.gold,
-        size: 36,
-        shadows: [
-          Shadow(
-            color: _Ui.goldSoft.withValues(alpha: 0.55 * t),
-            blurRadius: 10,
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _celebrate,
-      builder: (context, _) {
-        final scoreIn = Curves.easeOutBack.transform(_segment(0.04, 0.18));
-        final recordIn = Curves.easeOut.transform(_segment(0.62, 0.82));
-        final unlockIn = Curves.easeOut.transform(_segment(0.72, 0.92));
-
-        return AlertDialog(
-          backgroundColor: const Color(0xFF3A2012),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-            side: BorderSide(
-              color: _Ui.gold.withValues(alpha: 0.7),
-              width: 1.6,
-            ),
-          ),
-          title: Text(
-            'Уровень ${widget.levelId} пройден!',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: _Ui.goldSoft,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          content: SizedBox(
-            width: 280,
-            child: Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.center,
-              children: [
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: CustomPaint(
-                      painter: _WinConfettiPainter(progress: _celebrate.value),
-                    ),
-                  ),
-                ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      widget.levelTitle,
-                      style: TextStyle(
-                        color: _Ui.ivory.withValues(alpha: 0.85),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        for (var i = 0; i < 3; i++) ...[
-                          if (i > 0) const SizedBox(width: 8),
-                          _starIcon(i),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Transform.scale(
-                      scale: 0.92 + 0.08 * scoreIn,
-                      child: Opacity(
-                        opacity: scoreIn.clamp(0.0, 1.0),
-                        child: Text(
-                          'Счёт: ${widget.score}',
-                          style: const TextStyle(
-                            color: _Ui.ivory,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 18,
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (widget.isNewBest)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Opacity(
-                          opacity: recordIn,
-                          child: Transform.scale(
-                            scale: 0.85 + 0.15 * recordIn,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    _Ui.gold.withValues(alpha: 0.35),
-                                    _Ui.goldSoft.withValues(alpha: 0.2),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: _Ui.goldSoft.withValues(alpha: 0.75),
-                                  width: 1.2,
-                                ),
-                              ),
-                              child: const Text(
-                                'Новый рекорд!',
-                                style: TextStyle(
-                                  color: _Ui.goldSoft,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    if (widget.unlockedNext)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Opacity(
-                          opacity: unlockIn,
-                          child: Text(
-                            'Открыт уровень ${widget.levelId + 1}',
-                            style: TextStyle(
-                              color: _Ui.goldSoft.withValues(alpha: 0.9),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            TextButton(
-              onPressed: widget.onMap,
-              child: const Text('Карта', style: TextStyle(color: _Ui.ivory)),
-            ),
-            if (widget.hasNext && widget.nextUnlocked)
-              FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: _Ui.woodTop,
-                  foregroundColor: _Ui.goldSoft,
-                ),
-                onPressed: widget.onNext,
-                child: const Text('Дальше'),
-              )
-            else
-              FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: _Ui.woodTop,
-                  foregroundColor: _Ui.goldSoft,
-                ),
-                onPressed: widget.onRetry,
-                child: const Text('Ещё раз'),
-              ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _WinConfettiPainter extends CustomPainter {
-  const _WinConfettiPainter({required this.progress});
-
-  final double progress;
-
-  static const _pieceCount = 42;
-  static const _sparkCount = 14;
-
-  static const _confettiColors = [
-    _Ui.gold,
-    _Ui.goldSoft,
-    _Ui.ivory,
-    Color(0xFFE84855),
-    Color(0xFF4DA3FF),
-    Colors.white,
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (progress <= 0) return;
-
-    final fade = progress < 0.88
-        ? 1.0
-        : (1 - (progress - 0.88) / 0.12).clamp(0.0, 1.0);
-
-    for (var i = 0; i < _pieceCount; i++) {
-      final rng = math.Random(i * 29 + 11);
-      final delay = rng.nextDouble() * 0.28;
-      final local = ((progress - delay) / (1 - delay)).clamp(0.0, 1.0);
-      if (local <= 0) continue;
-
-      final x =
-          rng.nextDouble() * size.width +
-          math.sin(local * math.pi * 3 + i) * 14;
-      final y = -8 + local * (size.height + 36);
-      final rotation = local * math.pi * 3 + rng.nextDouble();
-      final w = 3 + rng.nextDouble() * 4;
-      final h = 5 + rng.nextDouble() * 6;
-      final color = _confettiColors[i % _confettiColors.length].withValues(
-        alpha: (0.55 + rng.nextDouble() * 0.4) * fade,
-      );
-
-      canvas.save();
-      canvas.translate(x, y);
-      canvas.rotate(rotation);
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(center: Offset.zero, width: w, height: h),
-          const Radius.circular(1.2),
-        ),
-        Paint()..color = color,
-      );
-      canvas.restore();
-    }
-
-    final sparkCenter = Offset(size.width / 2, size.height * 0.38);
-    final sparkT = ((progress - 0.12) / 0.55).clamp(0.0, 1.0);
-    if (sparkT <= 0) return;
-
-    for (var i = 0; i < _sparkCount; i++) {
-      final angle = i / _sparkCount * math.pi * 2 - math.pi / 2;
-      final dist = 24 + 52 * Curves.easeOut.transform(sparkT);
-      final opacity = (1 - sparkT) * fade;
-      final tip =
-          sparkCenter +
-          Offset(math.cos(angle) * dist, math.sin(angle) * dist * 0.75);
-      canvas.drawLine(
-        sparkCenter,
-        tip,
-        Paint()
-          ..color = _Ui.goldSoft.withValues(alpha: 0.45 * opacity)
-          ..strokeWidth = 2
-          ..strokeCap = StrokeCap.round,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _WinConfettiPainter oldDelegate) =>
-      oldDelegate.progress != progress;
 }
