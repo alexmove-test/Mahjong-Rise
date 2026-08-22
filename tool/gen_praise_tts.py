@@ -13,15 +13,23 @@ OUT_DIR = ROOT / "assets" / "sfx" / "praise"
 PHRASES: dict[str, list[str]] = {
     "ru": [
         "Здорово!",
-        "У тебя получается!",
-        "Получилось это — получится и остальное!",
-        "Ещё один шаг к успеху!",
+        "Отлично!",
+        "Супер!",
+        "Есть!",
+        "Красиво!",
+        "Молодец!",
+        "Класс!",
+        "Так держать!",
     ],
     "en": [
         "Great!",
-        "You're getting it!",
-        "You did this — you'll do the rest!",
-        "Another step toward success!",
+        "Nice!",
+        "Super!",
+        "Yes!",
+        "Beautiful!",
+        "Well done!",
+        "Awesome!",
+        "Keep it up!",
     ],
 }
 
