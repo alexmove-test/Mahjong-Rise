@@ -71,6 +71,14 @@ void main() {
 
     expect(find.text('Plot 2'), findsOneWidget);
     expect(find.text('A house will stand here.'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate((widget) {
+        if (widget is! Image) return false;
+        final image = widget.image;
+        return image is AssetImage && image.assetName.contains('/plot2/');
+      }),
+      findsWidgets,
+    );
   });
 
   testWidgets('Russian phone language shows Russian courtyard copy', (

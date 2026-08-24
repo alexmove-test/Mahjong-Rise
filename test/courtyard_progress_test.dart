@@ -127,11 +127,46 @@ void main() {
       expect(done.blend, closeTo(1.0, 0.001));
     });
 
+    test('second plot uses the cartoon courtyard plates', () {
+      expect(
+        CourtyardArtFade.plot2Assets.length,
+        CourtyardArtFade.plateSteps.length,
+      );
+      expect(CourtyardArtFade.assetsFor(0), CourtyardArtFade.assets);
+      expect(CourtyardArtFade.assetsFor(1), CourtyardArtFade.plot2Assets);
+      expect(CourtyardArtFade.assetsFor(2), CourtyardArtFade.assets);
+      expect(CourtyardArtFade.lifeAssetFor(1), CourtyardArtFade.plot2LifeAsset);
+      expect(
+        CourtyardArtFade.plot2Assets.first,
+        'assets/courtyard/plot2/courtyard_00_field.jpg',
+      );
+      expect(
+        CourtyardArtFade.plot2Assets.last,
+        'assets/courtyard/plot2/courtyard_06_complete.jpg',
+      );
+    });
+
     test('evening overlay waits for a nearly finished house', () {
       final early = CourtyardSnapshot.fromStep(step: 12, totalStars: 72);
       final late = CourtyardSnapshot.fromStep(step: 24, totalStars: 72);
       expect(early.lifeArt, 0);
       expect(late.lifeArt, 1);
+    });
+
+    test('streak and festival light the house without building it', () {
+      final plain = CourtyardSnapshot.fromStep(step: 8, totalStars: 0);
+      final festive = CourtyardSnapshot.fromStep(
+        step: 8,
+        totalStars: 0,
+        streak: 7,
+        festival: true,
+      );
+      expect(plain.festival, 0);
+      expect(festive.festival, 1);
+      expect(festive.streakLife, 1);
+      expect(festive.birds, greaterThan(plain.birds));
+      expect(festive.goldLight, greaterThan(plain.goldLight));
+      expect(festive.walls, plain.walls);
     });
   });
 }

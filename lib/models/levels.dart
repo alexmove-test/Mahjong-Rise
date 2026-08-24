@@ -1,3 +1,6 @@
+import 'week_event.dart';
+import 'week_id.dart';
+
 /// Определение уровня: раскладка, бусты и «жёсткость» колоды.
 class LevelDef {
   const LevelDef({
@@ -125,19 +128,20 @@ abstract final class Levels {
   static String plotLabel(int cycle) => 'Plot ${cycle + 1}';
 
   /// Ежедневный стол: сюжетная раскладка по календарному дню, без прогресса кампании.
-  static LevelDef dailyFor(DateTime date) {
+  static LevelDef dailyFor(DateTime date, {WeekEvent? event}) {
     final day = DateTime(date.year, date.month, date.day);
     final index =
         day.difference(DateTime(2024, 1, 1)).inDays.abs() % storyLength;
     final base = byId(index + 1);
+    final weekEvent = event ?? WeekEvent.forWeek(WeekId.fromDate(day));
     return LevelDef(
       id: base.id,
       title: 'Today',
       layout: base.layout,
-      shuffles: base.shuffles,
-      hints: base.hints,
+      shuffles: base.shuffles + weekEvent.extraBoosts,
+      hints: base.hints + weekEvent.extraBoosts,
       undos: base.undos,
-      style: base.style,
+      style: weekEvent.style,
       pairSize: base.pairSize,
       uniqueCap: base.uniqueCap,
       starsThresholds: base.starsThresholds,

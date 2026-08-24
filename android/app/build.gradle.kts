@@ -39,23 +39,26 @@ fun resolveAndMaybeBumpVersion(): AppVersion {
     val code = if (bump) currentCode + 1 else currentCode.coerceAtLeast(1)
 
     if (bump) {
+        val builtAt = buildDateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
         pubspec.writeText(regex.replaceFirst(text, "version: $name+$code"))
         file("../../lib/app_version.dart").writeText(
             """
             |/// Сгенерировано при Android-сборке. Не править вручную.
             |const appVersionName = '$name';
             |const appBuildNumber = $code;
+            |const appBuildTime = '$builtAt';
             |
             |String get appVersionLabel => 'v${'$'}appVersionName+${'$'}appBuildNumber';
             |
             """.trimMargin(),
         )
-        println("Mahjong version -> $name+$code")
+        println("Mahjong version -> $name+$code ($builtAt)")
     }
 
     return AppVersion(name, code)
 }
 
+val buildDateTime = LocalDateTime.now()
 val appVersion = resolveAndMaybeBumpVersion()
 
 val keystorePropertiesFile = rootProject.file("key.properties")
@@ -70,6 +73,7 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -82,6 +86,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = appVersion.code
         versionName = appVersion.name
+        multiDexEnabled = true
     }
 
     signingConfigs {
@@ -110,9 +115,8 @@ android {
 }
 
 // Стандартное имя app-release.* нужно Flutter для post-build проверки AAB.
-// Версионированные копии складываем отдельно в outputs/named/.
-val buildStamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"))
-val versionedArtifactBase = "mahjong-rise-v${appVersion.name}+${appVersion.code}_$buildStamp"
+// Копии с датой и временем (дд-мм-чч-мм) складываем в outputs/named/.
+val buildStamp = buildDateTime.format(DateTimeFormatter.ofPattern("dd-MM-HH-mm"))
 
 tasks.register<Delete>("cleanStaleReleaseBundles") {
     delete(
@@ -126,7 +130,7 @@ tasks.register<Copy>("copyVersionedReleaseBundle") {
     val bundleFile = layout.buildDirectory.file("outputs/bundle/release/app-release.aab")
     from(bundleFile)
     into(layout.buildDirectory.dir("outputs/named"))
-    rename { "$versionedArtifactBase-release.aab" }
+    rename { "$buildStamp.aab" }
     onlyIf { bundleFile.get().asFile.exists() }
 }
 
@@ -134,7 +138,7 @@ tasks.register<Copy>("copyVersionedReleaseApk") {
     val apkFile = layout.buildDirectory.file("outputs/apk/release/app-release.apk")
     from(apkFile)
     into(layout.buildDirectory.dir("outputs/named"))
-    rename { "$versionedArtifactBase-release.apk" }
+    rename { "$buildStamp.apk" }
     onlyIf { apkFile.get().asFile.exists() }
 }
 
@@ -159,6 +163,7 @@ flutter {
 }
 
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     // play-services-ads pulls work-runtime 2.7.0, which crashes on startup in release
     // with AGP 9 + R8 full mode (WorkDatabase initialization via androidx.startup).
     // https://github.com/googleads/googleads-mobile-flutter/issues/1444

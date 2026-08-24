@@ -8,18 +8,16 @@ import 'courtyard_scene.dart';
 /// Полноэкранный двор сразу после победы: рост участка + праздник.
 Future<void> showCourtyardWinOverlay({
   required BuildContext context,
-  required int levelId,
-  required String levelTitle,
-  required int score,
   required int stars,
-  required bool isNewBest,
-  required bool unlockedNext,
   required bool hasNext,
   required bool nextUnlocked,
   required CourtyardSnapshot courtyardFrom,
   required CourtyardSnapshot courtyardTo,
   required String pathPhrase,
-  required bool firstHome,
+  int cycle = 0,
+  String? title,
+  String? subtitle,
+  bool showStars = true,
   required VoidCallback onMap,
   required VoidCallback onNext,
   required VoidCallback onRetry,
@@ -32,18 +30,16 @@ Future<void> showCourtyardWinOverlay({
     transitionDuration: const Duration(milliseconds: 280),
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
       return CourtyardWinOverlay(
-        levelId: levelId,
-        levelTitle: levelTitle,
-        score: score,
         stars: stars,
-        isNewBest: isNewBest,
-        unlockedNext: unlockedNext,
         hasNext: hasNext,
         nextUnlocked: nextUnlocked,
         courtyardFrom: courtyardFrom,
         courtyardTo: courtyardTo,
         pathPhrase: pathPhrase,
-        firstHome: firstHome,
+        cycle: cycle,
+        title: title,
+        subtitle: subtitle,
+        showStars: showStars,
         onMap: onMap,
         onNext: onNext,
         onRetry: onRetry,
@@ -58,35 +54,31 @@ Future<void> showCourtyardWinOverlay({
 class CourtyardWinOverlay extends StatefulWidget {
   const CourtyardWinOverlay({
     super.key,
-    required this.levelId,
-    required this.levelTitle,
-    required this.score,
     required this.stars,
-    required this.isNewBest,
-    required this.unlockedNext,
     required this.hasNext,
     required this.nextUnlocked,
     required this.courtyardFrom,
     required this.courtyardTo,
     required this.pathPhrase,
-    required this.firstHome,
+    this.cycle = 0,
+    this.title,
+    this.subtitle,
+    this.showStars = true,
     required this.onMap,
     required this.onNext,
     required this.onRetry,
   });
 
-  final int levelId;
-  final String levelTitle;
-  final int score;
   final int stars;
-  final bool isNewBest;
-  final bool unlockedNext;
   final bool hasNext;
   final bool nextUnlocked;
   final CourtyardSnapshot courtyardFrom;
   final CourtyardSnapshot courtyardTo;
   final String pathPhrase;
-  final bool firstHome;
+  final int cycle;
+  final String? title;
+  final String? subtitle;
+  final bool showStars;
   final VoidCallback onMap;
   final VoidCallback onNext;
   final VoidCallback onRetry;
@@ -100,7 +92,7 @@ class _CourtyardWinOverlayState extends State<CourtyardWinOverlay>
   static const _gold = Color(0xFFD4AF37);
   static const _goldSoft = Color(0xFFE8C96A);
   static const _ivory = Color(0xFFF8F1DE);
-  static const _woodTop = Color(0xFF6B3E24);
+  static const _ink = Color(0xFF2A160C);
 
   late final WinBurstLayout _burstLayout;
   late final AnimationController _celebrate;
@@ -168,10 +160,8 @@ class _CourtyardWinOverlayState extends State<CourtyardWinOverlay>
       builder: (context, _) {
         final l10n = L10n.of(context);
         final titleIn = Curves.easeOutBack.transform(_segment(0.00, 0.18));
-        final scoreIn = Curves.easeOutBack.transform(_segment(0.08, 0.24));
         final phraseIn = Curves.easeOut.transform(_segment(0.28, 0.55));
-        final recordIn = Curves.easeOut.transform(_segment(0.62, 0.82));
-        final unlockIn = Curves.easeOut.transform(_segment(0.72, 0.92));
+        final canContinue = widget.hasNext && widget.nextUnlocked;
 
         return Material(
           color: Colors.black,
@@ -183,6 +173,7 @@ class _CourtyardWinOverlayState extends State<CourtyardWinOverlay>
                 to: widget.courtyardTo,
                 animate: true,
                 idle: false,
+                cycle: widget.cycle,
               ),
               const DecoratedBox(
                 decoration: BoxDecoration(
@@ -223,7 +214,7 @@ class _CourtyardWinOverlayState extends State<CourtyardWinOverlay>
                           child: Transform.scale(
                             scale: 0.86 + 0.14 * titleIn,
                             child: Text(
-                              l10n.youWin,
+                              widget.title ?? l10n.youWin,
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 color: _goldSoft,
@@ -242,7 +233,7 @@ class _CourtyardWinOverlayState extends State<CourtyardWinOverlay>
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          l10n.levelCleared(widget.levelId),
+                          widget.subtitle ?? l10n.anotherLevelCleared,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             color: _ivory,
@@ -267,155 +258,49 @@ class _CourtyardWinOverlayState extends State<CourtyardWinOverlay>
                             ),
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          widget.levelTitle,
-                          style: TextStyle(
-                            color: _ivory.withValues(alpha: 0.72),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            for (var i = 0; i < 3; i++) ...[
-                              if (i > 0) const SizedBox(width: 10),
-                              _starIcon(i),
+                        if (widget.showStars) ...[
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              for (var i = 0; i < 3; i++) ...[
+                                if (i > 0) const SizedBox(width: 10),
+                                _starIcon(i),
+                              ],
                             ],
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Transform.scale(
-                          scale: 0.92 + 0.08 * scoreIn,
-                          child: Opacity(
-                            opacity: scoreIn.clamp(0.0, 1.0),
-                            child: Text(
-                              l10n.score(widget.score),
-                              style: const TextStyle(
-                                color: _ivory,
-                                fontWeight: FontWeight.w700,
+                          ),
+                        ],
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: _gold,
+                              foregroundColor: _ink,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              textStyle: const TextStyle(
+                                fontWeight: FontWeight.w900,
                                 fontSize: 20,
+                                letterSpacing: 0.4,
                               ),
+                            ),
+                            onPressed: canContinue
+                                ? widget.onNext
+                                : widget.onRetry,
+                            child: Text(
+                              canContinue ? l10n.next : l10n.playAgain,
                             ),
                           ),
                         ),
-                        if (widget.isNewBest)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Opacity(
-                              opacity: recordIn,
-                              child: Transform.scale(
-                                scale: 0.85 + 0.15 * recordIn,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 5,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        _gold.withValues(alpha: 0.35),
-                                        _goldSoft.withValues(alpha: 0.2),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: _goldSoft.withValues(alpha: 0.75),
-                                      width: 1.2,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    l10n.newBest,
-                                    style: const TextStyle(
-                                      color: _goldSoft,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
-                              ),
+                        TextButton(
+                          onPressed: widget.onMap,
+                          child: Text(
+                            l10n.courtyard,
+                            style: TextStyle(
+                              color: _ivory.withValues(alpha: 0.88),
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        if (widget.unlockedNext)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8),
-                            child: Opacity(
-                              opacity: unlockIn,
-                              child: Text(
-                                l10n.levelUnlocked(widget.levelId + 1),
-                                style: TextStyle(
-                                  color: _goldSoft.withValues(alpha: 0.95),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            if (widget.firstHome) ...[
-                              if (widget.hasNext && widget.nextUnlocked)
-                                Expanded(
-                                  child: TextButton(
-                                    onPressed: widget.onNext,
-                                    child: Text(
-                                      l10n.next,
-                                      style: const TextStyle(color: _ivory),
-                                    ),
-                                  ),
-                                )
-                              else
-                                const Spacer(),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                flex: 2,
-                                child: FilledButton(
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: _woodTop,
-                                    foregroundColor: _goldSoft,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                  ),
-                                  onPressed: widget.onMap,
-                                  child: Text(l10n.courtyard),
-                                ),
-                              ),
-                            ] else ...[
-                              Expanded(
-                                child: TextButton(
-                                  onPressed: widget.onMap,
-                                  child: Text(
-                                    l10n.courtyard,
-                                    style: const TextStyle(color: _ivory),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                flex: 2,
-                                child: FilledButton(
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: _woodTop,
-                                    foregroundColor: _goldSoft,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                  ),
-                                  onPressed:
-                                      widget.hasNext && widget.nextUnlocked
-                                      ? widget.onNext
-                                      : widget.onRetry,
-                                  child: Text(
-                                    widget.hasNext && widget.nextUnlocked
-                                        ? l10n.next
-                                        : l10n.playAgain,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
                         ),
                       ],
                     ),

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../../models/levels.dart';
 import '../../services/progress_store.dart';
 
@@ -29,6 +31,8 @@ class CourtyardSnapshot {
     required this.laundry,
     required this.cat,
     required this.goldLight,
+    this.festival = 0,
+    this.streakLife = 0,
   });
 
   /// 0 = пустое поле, 24 = дом собран.
@@ -58,10 +62,17 @@ class CourtyardSnapshot {
   final double laundry;
   final double cat;
   final double goldLight;
+  final double festival;
+  final double streakLife;
 
   static const maxStep = 24.0;
 
-  static CourtyardSnapshot fromStore(ProgressStore store, {int? cycle}) {
+  static CourtyardSnapshot fromStore(
+    ProgressStore store, {
+    int? cycle,
+    int streak = 0,
+    bool festival = false,
+  }) {
     final story = Levels.storyLength;
     final c = (cycle ?? Levels.cycleOf(store.maxUnlocked)).clamp(
       0,
@@ -74,6 +85,8 @@ class CourtyardSnapshot {
       lastCompleted: lastCompleted,
       totalStars: store.starsInCycle(c),
       levelCount: story,
+      streak: streak,
+      festival: festival,
     );
   }
 
@@ -82,13 +95,20 @@ class CourtyardSnapshot {
     required bool lastCompleted,
     required int totalStars,
     int levelCount = 24,
+    int streak = 0,
+    bool festival = false,
   }) {
     final step = gardenStep(
       maxUnlocked: maxUnlocked,
       lastCompleted: lastCompleted,
       levelCount: levelCount,
     ).toDouble();
-    return fromStep(step: step, totalStars: totalStars);
+    return fromStep(
+      step: step,
+      totalStars: totalStars,
+      streak: streak,
+      festival: festival,
+    );
   }
 
   static int gardenStep({
@@ -103,9 +123,13 @@ class CourtyardSnapshot {
   static CourtyardSnapshot fromStep({
     required double step,
     required int totalStars,
+    int streak = 0,
+    bool festival = false,
   }) {
     final s = step.clamp(0.0, maxStep);
     final stars = totalStars.clamp(0, 72);
+    final streakLife = _rise(streak.toDouble(), 1, 7);
+    final festive = festival ? 1.0 : 0.0;
     return CourtyardSnapshot(
       step: s,
       totalStars: stars,
@@ -126,12 +150,17 @@ class CourtyardSnapshot {
       hedge: _rise(s, 21, 23),
       yardProps: _rise(s, 22, 23.5),
       climber: _rise(s, 23, 24),
-      windowGlow: _rise(stars.toDouble(), 6, 14),
-      smoke: _rise(stars.toDouble(), 16, 28),
-      birds: _rise(stars.toDouble(), 32, 44),
-      laundry: _rise(stars.toDouble(), 36, 48),
-      cat: _rise(stars.toDouble(), 40, 54),
-      goldLight: _rise(stars.toDouble(), 48, 62),
+      windowGlow: math.max(_rise(stars.toDouble(), 6, 14), streakLife * 0.55),
+      smoke: math.max(_rise(stars.toDouble(), 16, 28), streakLife * 0.35),
+      birds: math.max(_rise(stars.toDouble(), 32, 44), streakLife * 0.85),
+      laundry: math.max(_rise(stars.toDouble(), 36, 48), streakLife * 0.4),
+      cat: math.max(_rise(stars.toDouble(), 40, 54), streakLife * 0.45),
+      goldLight: math.max(
+        _rise(stars.toDouble(), 48, 62),
+        festive * 0.28 + streakLife * 0.5,
+      ),
+      festival: festive,
+      streakLife: streakLife,
     );
   }
 
@@ -168,6 +197,8 @@ class CourtyardSnapshot {
       laundry: mix(a.laundry, b.laundry),
       cat: mix(a.cat, b.cat),
       goldLight: mix(a.goldLight, b.goldLight),
+      festival: mix(a.festival, b.festival),
+      streakLife: mix(a.streakLife, b.streakLife),
     );
   }
 
@@ -215,7 +246,9 @@ class CourtyardSnapshot {
         other.birds == birds &&
         other.laundry == laundry &&
         other.cat == cat &&
-        other.goldLight == goldLight;
+        other.goldLight == goldLight &&
+        other.festival == festival &&
+        other.streakLife == streakLife;
   }
 
   @override
@@ -245,6 +278,8 @@ class CourtyardSnapshot {
     laundry,
     cat,
     goldLight,
+    festival,
+    streakLife,
   ]);
 }
 
@@ -289,6 +324,30 @@ class CourtyardArtFade {
   ];
 
   static const lifeAsset = 'assets/courtyard/courtyard_07_life.jpg';
+
+  /// Мультяшный дом второго участка.
+  static const plot2Assets = <String>[
+    'assets/courtyard/plot2/courtyard_00_field.jpg',
+    'assets/courtyard/plot2/courtyard_00b_trail.jpg',
+    'assets/courtyard/plot2/courtyard_01_path.jpg',
+    'assets/courtyard/plot2/courtyard_01b_gate.jpg',
+    'assets/courtyard/plot2/courtyard_02_foundation.jpg',
+    'assets/courtyard/plot2/courtyard_02b_walls_rise.jpg',
+    'assets/courtyard/plot2/courtyard_03_walls.jpg',
+    'assets/courtyard/plot2/courtyard_03b_roof_rise.jpg',
+    'assets/courtyard/plot2/courtyard_04_roof.jpg',
+    'assets/courtyard/plot2/courtyard_04b_windows_rise.jpg',
+    'assets/courtyard/plot2/courtyard_05_windows.jpg',
+    'assets/courtyard/plot2/courtyard_05b_garden.jpg',
+    'assets/courtyard/plot2/courtyard_06_complete.jpg',
+  ];
+
+  static const plot2LifeAsset = 'assets/courtyard/plot2/courtyard_07_life.jpg';
+
+  static List<String> assetsFor(int cycle) => cycle == 1 ? plot2Assets : assets;
+
+  static String lifeAssetFor(int cycle) =>
+      cycle == 1 ? plot2LifeAsset : lifeAsset;
 
   /// Индекс нижней пластины (0–12).
   final int fromIndex;

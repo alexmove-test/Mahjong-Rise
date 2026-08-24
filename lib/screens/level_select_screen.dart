@@ -5,10 +5,18 @@ import '../debug_boot_timer.dart';
 import '../l10n/l10n.dart';
 import '../models/game_snapshot.dart';
 import '../models/levels.dart';
+import '../models/week_event.dart';
+import '../models/weekly_quests.dart';
+import '../models/weekly_score.dart';
+import '../services/analytics_service.dart';
+import '../services/local_reminder_service.dart';
 import '../services/progress_store.dart';
+import '../services/quest_store.dart';
 import '../widgets/app_settings.dart';
 import '../widgets/courtyard/courtyard_progress.dart';
 import '../widgets/courtyard/courtyard_scene.dart';
+import '../widgets/liveops/week_event_banner.dart';
+import '../widgets/liveops/weekly_quests_strip.dart';
 import 'game_screen.dart';
 import 'leaderboard_screen.dart';
 
@@ -22,6 +30,7 @@ class LevelSelectScreen extends StatefulWidget {
 
 class _LevelSelectScreenState extends State<LevelSelectScreen> {
   ProgressStore? _store;
+  QuestStore? _quests;
   final ScrollController _gridScroll = ScrollController();
   bool _didAutoScroll = false;
   bool _firstSessionCover = false;
@@ -59,7 +68,14 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
     );
     // #endregion
     final store = await ProgressStore.open();
+    final hadBrokenStreak =
+        store.dailyStreak > 0 && store.visibleStreak() == 0;
+    await store.ensureWeek();
     await store.expireStreakIfNeeded();
+    if (hadBrokenStreak) {
+      await AnalyticsService.log('streak_broken');
+    }
+    final quests = await QuestStore.open();
     // #region agent log
     agentDbg(
       location: 'level_select_screen.dart:_load',
@@ -74,6 +90,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
       _didAutoOpenFirst = true;
       setState(() {
         _store = store;
+        _quests = quests;
         _cycle = 0;
         _firstSessionCover = true;
       });
@@ -92,9 +109,93 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
 
     setState(() {
       _store = store;
+      _quests = quests;
       _cycle = Levels.cycleOf(store.lastPlayedLevel);
     });
     _scrollToLevel(store.lastPlayedLevel);
+    _afterHubReady();
+  }
+
+  Future<void> _afterHubReady() async {
+    if (!mounted) return;
+    await LocalReminderService.resync(l10n: L10n.of(context));
+    if (!mounted) return;
+    final summary = await _store?.consumeSeasonSheet();
+    if (!mounted || summary == null) return;
+    await _showSeasonClosed(summary);
+  }
+
+  Future<void> _showSeasonClosed(WeekSeasonSummary summary) async {
+    final l10n = L10n.of(context);
+    final rating = _formatRating(summary.rating);
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF3A2012),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: BorderSide(
+              color: const Color(0xFFD4AF37).withValues(alpha: 0.7),
+              width: 1.6,
+            ),
+          ),
+          title: Text(
+            l10n.seasonClosed,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFFE8C96A),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (summary.rank != null)
+                Text(
+                  l10n.lastWeekPlace(summary.rank!),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFFF8F1DE),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
+                ),
+              const SizedBox(height: 6),
+              Text(
+                l10n.lastWeekScore(rating),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: const Color(0xFFF8F1DE).withValues(alpha: 0.85),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(
+                l10n.done,
+                style: const TextStyle(color: Color(0xFFF8F1DE)),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _formatRating(int rating) {
+    final text = rating.toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < text.length; i++) {
+      final posFromEnd = text.length - i;
+      buffer.write(text[i]);
+      if (posFromEnd > 1 && posFromEnd % 3 == 1) buffer.write(' ');
+    }
+    return buffer.toString();
   }
 
   LevelDef _continueLevel(ProgressStore store) {
@@ -158,6 +259,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
       ),
     );
     if (!mounted) return;
+    await _quests?.ensureWeek();
     setState(() {
       _cycle = Levels.cycleOf(_store!.lastPlayedLevel);
     });
@@ -182,7 +284,23 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
       ),
     );
     if (!mounted) return;
+    await _quests?.ensureWeek();
     setState(() {});
+  }
+
+  Future<void> _claimQuest(QuestProgress quest) async {
+    final store = _store;
+    final quests = _quests;
+    if (store == null || quests == null) return;
+    final ok = await quests.claim(quest.def.id, store);
+    if (!ok || !mounted) return;
+    await AnalyticsService.log('quest_claim', {'quest_id': quest.def.id});
+    if (!mounted) return;
+    setState(() {});
+    final l10n = L10n.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.questBonus)),
+    );
   }
 
   Future<void> _continueGame() async {
@@ -274,7 +392,13 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
     }
 
     final l10n = L10n.of(context);
-    final snapshot = CourtyardSnapshot.fromStore(store, cycle: _cycle);
+    final quests = _quests;
+    final snapshot = CourtyardSnapshot.fromStore(
+      store,
+      cycle: _cycle,
+      streak: store.visibleStreak(),
+      festival: (quests?.claimedCount ?? 0) > 0,
+    );
     final phrase = l10n.homePathPhrase(snapshot);
     final stars = store.starsInCycle(_cycle);
     final unlocked = store.unlockedInCycle(_cycle);
@@ -282,13 +406,14 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
         store.isCycleComplete(_cycle) &&
         _cycle + 1 < Levels.cycleCount &&
         store.isCycleUnlocked(_cycle + 1);
+    final event = WeekEvent.current();
 
     return Scaffold(
       backgroundColor: const Color(0xFF1A3D2E),
       body: Stack(
         fit: StackFit.expand,
         children: [
-          CourtyardScene(to: snapshot),
+          CourtyardScene(to: snapshot, cycle: _cycle),
           const Positioned.fill(
             child: IgnorePointer(
               child: DecoratedBox(
@@ -397,6 +522,15 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                               fontSize: 15,
                             ),
                           ),
+                        ),
+                      ],
+                      const SizedBox(height: 10),
+                      WeekEventBanner(event: event, onTap: _openDaily),
+                      if (quests != null) ...[
+                        const SizedBox(height: 8),
+                        WeeklyQuestsStrip(
+                          quests: quests.quests,
+                          onClaim: _claimQuest,
                         ),
                       ],
                       const SizedBox(height: 10),

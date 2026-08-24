@@ -228,6 +228,59 @@ void main() {
     );
   });
 
+  test('shuffle stagger stays inside the play window', () {
+    for (var x = 0; x < 16; x++) {
+      for (var y = 0; y < 16; y++) {
+        for (var z = 0; z < 5; z++) {
+          final delay = TileWidget.shuffleStaggerOf(
+            Tile(id: z, symbol: 'A', layer: z, x: x, y: y),
+          );
+          expect(delay, lessThanOrEqualTo(TileWidget.shuffleMaxStagger));
+        }
+      }
+    }
+  });
+
+  testWidgets('shuffle token keeps the old face until the flip midpoint', (
+    tester,
+  ) async {
+    final tile = Tile(id: 1, symbol: 'soft-01', layer: 0, x: 0, y: 0);
+
+    Widget app({required int token}) => MaterialApp(
+      home: Scaffold(
+        body: TileWidget(
+          tile: tile,
+          width: 64,
+          height: 74,
+          isSelected: false,
+          isFree: true,
+          shuffleToken: token,
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(app(token: 0));
+    expect(
+      tester.widget<TileSymbolImage>(find.byType(TileSymbolImage)).symbol,
+      'soft-01',
+    );
+
+    tile.symbol = 'soft-02';
+    await tester.pumpWidget(app(token: 1));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(
+      tester.widget<TileSymbolImage>(find.byType(TileSymbolImage)).symbol,
+      'soft-01',
+    );
+
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(
+      tester.widget<TileSymbolImage>(find.byType(TileSymbolImage)).symbol,
+      'soft-02',
+    );
+  });
+
   testWidgets('dark game backdrop uses felt.png under the vignette', (
     tester,
   ) async {
@@ -496,6 +549,8 @@ void main() {
 
     await tester.tap(find.byTooltip('Magnet'));
     await tester.pump();
+    await tester.pump(TileFlightOverlay.duration);
+    await tester.pump(const Duration(milliseconds: 80));
 
     final onBoard = tester
         .widgetList<TileWidget>(find.byType(TileWidget))
@@ -503,6 +558,67 @@ void main() {
         .map((w) => w.tile.id)
         .toSet();
     expect(onBoard, {2});
+    expect(progress.savedSnapshot?.magnets, 1);
+    expect(find.text('100'), findsOneWidget);
+  });
+
+  testWidgets('magnet pulls a covered tile that matches the tray', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'progress.tableCoachDone': true,
+      'tutorial.skipped': true,
+      'tutorial.collect': true,
+      'tutorial.match': true,
+      'tutorial.layers': true,
+      'tutorial.boosts': true,
+    });
+    final progress = await ProgressStore.open();
+    final tray = Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0, inTray: true);
+    final buried = Tile(id: 1, symbol: 'A', layer: 0, x: 4, y: 0);
+    final cover = Tile(id: 2, symbol: 'B', layer: 1, x: 4, y: 0);
+    final other = Tile(id: 3, symbol: 'C', layer: 0, x: 8, y: 0);
+    final board = Board(
+      tiles: [tray, buried, cover, other],
+      layoutName: 'petal',
+    );
+    board.tray.add(tray);
+    await progress.saveSnapshot(
+      GameSnapshot.fromBoard(
+        levelId: 1,
+        board: board,
+        score: 0,
+        combo: 0,
+        shuffles: 1,
+        hints: 1,
+        undos: 1,
+        magnets: 2,
+      ),
+    );
+
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GameScreen(level: Levels.byId(1), progress: progress),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.byTooltip('Magnet'));
+    await tester.pump();
+    await tester.pump(TileFlightOverlay.duration);
+    await tester.pump(const Duration(milliseconds: 80));
+
+    final onBoard = tester
+        .widgetList<TileWidget>(find.byType(TileWidget))
+        .where((w) => !w.compact && w.tile.isOnBoard)
+        .map((w) => w.tile.id)
+        .toSet();
+    expect(onBoard, {2, 3});
     expect(progress.savedSnapshot?.magnets, 1);
     expect(find.text('100'), findsOneWidget);
   });

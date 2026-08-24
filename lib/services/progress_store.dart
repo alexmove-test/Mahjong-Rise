@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/game_snapshot.dart';
 import '../models/levels.dart';
+import '../models/week_id.dart';
+import '../models/weekly_score.dart';
 
 /// Сохранённый прогресс кампании.
 class ProgressStore {
@@ -23,6 +25,18 @@ class ProgressStore {
   static const _kDailyStreak = 'progress.dailyStreak';
   static const _kBankedHints = 'progress.bankedHints';
   static const _kBankedShuffles = 'progress.bankedShuffles';
+  static const _kWeekId = 'progress.weekId';
+  static const _kWeeklyStars = 'progress.weeklyStars';
+  static const _kWeeklyClears = 'progress.weeklyClears';
+  static const _kWeeklyDailies = 'progress.weeklyDailies';
+  static const _kWeeklyLastRank = 'progress.weeklyLastRank';
+  static const _kPrevWeekId = 'progress.prevWeekId';
+  static const _kPrevWeekRating = 'progress.prevWeekRating';
+  static const _kPrevWeekStars = 'progress.prevWeekStars';
+  static const _kPrevWeekClears = 'progress.prevWeekClears';
+  static const _kPrevWeekDailies = 'progress.prevWeekDailies';
+  static const _kPrevWeekRank = 'progress.prevWeekRank';
+  static const _kSeasonSheetPending = 'progress.seasonSheetPending';
 
   static Future<ProgressStore> open() async {
     final prefs = await SharedPreferences.getInstance();
@@ -145,6 +159,7 @@ class ProgressStore {
     DateTime? now,
   }) async {
     final date = now ?? DateTime.now();
+    await ensureWeek(date);
     final today = dateKey(date);
     if (lastDailyDate == today) {
       return (streak: dailyStreak, counted: false, rewarded: false);
@@ -160,6 +175,10 @@ class ProgressStore {
       await _prefs.setInt(_kBankedHints, bankedHints + 1);
       await _prefs.setInt(_kBankedShuffles, bankedShuffles + 1);
     }
+    await _prefs.setInt(
+      _kWeeklyDailies,
+      (weeklyDailies + 1).clamp(0, WeeklyScore.maxDailies),
+    );
 
     return (streak: streak, counted: true, rewarded: rewarded);
   }
@@ -170,6 +189,88 @@ class ProgressStore {
     if (hints != 0) await _prefs.setInt(_kBankedHints, 0);
     if (shuffles != 0) await _prefs.setInt(_kBankedShuffles, 0);
     return (hints: hints, shuffles: shuffles);
+  }
+
+  Future<void> addBankedBoosts({int hints = 0, int shuffles = 0}) async {
+    if (hints != 0) {
+      await _prefs.setInt(_kBankedHints, bankedHints + hints);
+    }
+    if (shuffles != 0) {
+      await _prefs.setInt(_kBankedShuffles, bankedShuffles + shuffles);
+    }
+  }
+
+  String get weekId => _prefs.getString(_kWeekId) ?? '';
+
+  int get weeklyStars => _prefs.getInt(_kWeeklyStars) ?? 0;
+
+  int get weeklyClears => _prefs.getInt(_kWeeklyClears) ?? 0;
+
+  int get weeklyDailies => _prefs.getInt(_kWeeklyDailies) ?? 0;
+
+  int? get weeklyLastRank {
+    final v = _prefs.getInt(_kWeeklyLastRank);
+    if (v == null || v <= 0) return null;
+    return v;
+  }
+
+  Future<void> setWeeklyLastRank(int rank) =>
+      _prefs.setInt(_kWeeklyLastRank, rank);
+
+  /// Сброс счётчиков при смене ISO-недели. Прошлую неделю с очками кладёт в шит.
+  Future<void> ensureWeek([DateTime? now]) async {
+    final current = WeekId.fromDate(now ?? DateTime.now()).value;
+    if (weekId == current) return;
+
+    if (weekId.isNotEmpty) {
+      final rating = WeeklyScore.ratingFrom(
+        weeklyStars: weeklyStars,
+        weeklyClears: weeklyClears,
+        weeklyDailies: weeklyDailies,
+      );
+      if (rating > 0) {
+        await _prefs.setString(_kPrevWeekId, weekId);
+        await _prefs.setInt(_kPrevWeekRating, rating);
+        await _prefs.setInt(_kPrevWeekStars, weeklyStars);
+        await _prefs.setInt(_kPrevWeekClears, weeklyClears);
+        await _prefs.setInt(_kPrevWeekDailies, weeklyDailies);
+        final rank = weeklyLastRank;
+        if (rank != null) {
+          await _prefs.setInt(_kPrevWeekRank, rank);
+        } else {
+          await _prefs.remove(_kPrevWeekRank);
+        }
+        await _prefs.setBool(_kSeasonSheetPending, true);
+      }
+    }
+
+    await _prefs.setString(_kWeekId, current);
+    await _prefs.setInt(_kWeeklyStars, 0);
+    await _prefs.setInt(_kWeeklyClears, 0);
+    await _prefs.setInt(_kWeeklyDailies, 0);
+    await _prefs.remove(_kWeeklyLastRank);
+  }
+
+  WeekSeasonSummary? get pendingSeasonSummary {
+    if (!(_prefs.getBool(_kSeasonSheetPending) ?? false)) return null;
+    final id = _prefs.getString(_kPrevWeekId) ?? '';
+    if (id.isEmpty) return null;
+    final rank = _prefs.getInt(_kPrevWeekRank);
+    return WeekSeasonSummary(
+      weekId: id,
+      rating: _prefs.getInt(_kPrevWeekRating) ?? 0,
+      stars: _prefs.getInt(_kPrevWeekStars) ?? 0,
+      clears: _prefs.getInt(_kPrevWeekClears) ?? 0,
+      dailies: _prefs.getInt(_kPrevWeekDailies) ?? 0,
+      rank: rank != null && rank > 0 ? rank : null,
+    );
+  }
+
+  Future<WeekSeasonSummary?> consumeSeasonSheet() async {
+    final summary = pendingSeasonSummary;
+    if (summary == null) return null;
+    await _prefs.setBool(_kSeasonSheetPending, false);
+    return summary;
   }
 
   static String dateKey(DateTime date) {
@@ -234,14 +335,24 @@ class ProgressStore {
   }
 
   /// Записать победу: звёзды, лучший счёт, разблокировка следующего.
-  Future<({int stars, bool unlockedNext, bool isNewBest})> recordWin({
-    required LevelDef level,
-    required int score,
-  }) async {
+  Future<
+    ({
+      int stars,
+      int starsGained,
+      int earnedStars,
+      bool firstClear,
+      bool unlockedNext,
+      bool isNewBest,
+    })
+  >
+  recordWin({required LevelDef level, required int score, DateTime? now}) async {
+    await ensureWeek(now);
     final earned = level.starsForScore(score);
     final prevStars = stars(level.id);
     final prevBest = bestScore(level.id);
+    final firstClear = prevStars == 0 && prevBest == 0;
     final isNewBest = score > prevBest;
+    final starsGained = earned > prevStars ? earned - prevStars : 0;
 
     if (earned > prevStars) {
       await _prefs.setInt('$_kStarsPrefix${level.id}', earned);
@@ -257,10 +368,26 @@ class ProgressStore {
       unlockedNext = true;
     }
 
+    if (starsGained > 0) {
+      await _prefs.setInt(
+        _kWeeklyStars,
+        (weeklyStars + starsGained).clamp(0, WeeklyScore.maxStars),
+      );
+    }
+    if (firstClear) {
+      await _prefs.setInt(
+        _kWeeklyClears,
+        (weeklyClears + 1).clamp(0, WeeklyScore.maxClears),
+      );
+    }
+
     await markPlayed(level.id);
 
     return (
       stars: earned > prevStars ? earned : prevStars,
+      starsGained: starsGained,
+      earnedStars: earned,
+      firstClear: firstClear,
       unlockedNext: unlockedNext,
       isNewBest: isNewBest,
     );

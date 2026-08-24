@@ -19,6 +19,7 @@ class GameBoard extends StatefulWidget {
     required this.onTileRemoveComplete,
     this.hintedIds = const {},
     this.introToken = 0,
+    this.shuffleToken = 0,
   });
 
   final Board board;
@@ -28,6 +29,9 @@ class GameBoard extends StatefulWidget {
 
   /// Меняется при старте уровня — запускает intro-анимацию плиток.
   final int introToken;
+
+  /// Меняется при перемешивании — плитки переворачиваются волной.
+  final int shuffleToken;
 
   /// Почти квадратная кость референса.
   static const tileAspect = 1.15;
@@ -42,7 +46,7 @@ class GameBoard extends StatefulWidget {
   static const trayBarH = 64.0;
 
   @override
-  State<GameBoard> createState() => _GameBoardState();
+  State<GameBoard> createState() => GameBoardState();
 }
 
 class _BoardLayoutMetrics {
@@ -71,9 +75,33 @@ class _BoardLayoutMetrics {
   final double cellH;
 }
 
-class _GameBoardState extends State<GameBoard> {
+class GameBoardState extends State<GameBoard> {
   static const _refTileW = 80.0;
   static int _layoutLogs = 0;
+  final GlobalKey _stackKey = GlobalKey();
+  _BoardLayoutMetrics? _lastMetrics;
+  ({double minLeft, double minTop, double visualW, double visualH})?
+  _lastBounds;
+
+  Rect? globalBoardRectOf(Tile tile) {
+    final metrics = _lastMetrics;
+    final bounds = _lastBounds;
+    final box = _stackKey.currentContext?.findRenderObject() as RenderBox?;
+    if (metrics == null || bounds == null || box == null || !box.hasSize) {
+      return null;
+    }
+    final origin = _tileOrigin(metrics, tile);
+    final topLeft = box.localToGlobal(
+      Offset(origin.dx - bounds.minLeft, origin.dy - bounds.minTop),
+    );
+    final bottomRight = box.localToGlobal(
+      Offset(
+        origin.dx - bounds.minLeft + metrics.tileW,
+        origin.dy - bounds.minTop + metrics.tileH,
+      ),
+    );
+    return Rect.fromPoints(topLeft, bottomRight);
+  }
 
   Offset _tileOrigin(_BoardLayoutMetrics metrics, Tile tile) {
     return TilePyramidPosition.boardOrigin(
@@ -232,6 +260,8 @@ class _GameBoardState extends State<GameBoard> {
       builder: (context, constraints) {
         final metrics = _computeMetrics(constraints, widget.board);
         final bounds = _visualBounds(metrics, widget.board.tiles);
+        _lastMetrics = metrics;
+        _lastBounds = bounds;
         // #region agent log
         if (_layoutLogs < 2) {
           _layoutLogs++;
@@ -255,6 +285,7 @@ class _GameBoardState extends State<GameBoard> {
         // #endregion
 
         final stack = SizedBox(
+          key: _stackKey,
           width: bounds.visualW,
           height: bounds.visualH,
           child: Stack(
@@ -276,6 +307,7 @@ class _GameBoardState extends State<GameBoard> {
                     showBack: false,
                     isHinted: widget.hintedIds.contains(tile.id),
                     isRemoving: false,
+                    shuffleToken: widget.shuffleToken,
                     onTap: (rect) => widget.onTileTap(tile, rect),
                     onRemoveComplete: () => widget.onTileRemoveComplete(tile),
                   ),

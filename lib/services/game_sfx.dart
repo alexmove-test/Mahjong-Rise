@@ -21,9 +21,11 @@ class GameSfx {
     (_) => AudioPlayer(),
   );
   final AudioPlayer _voice = AudioPlayer();
+  final AudioPlayer _fanfare = AudioPlayer();
   bool _ready = false;
   int _next = 0;
   int _collectIndex = 0;
+  static int _winIndex = 0;
 
   bool get _voicePlaying => _voice.state == PlayerState.playing;
 
@@ -34,6 +36,8 @@ class GameSfx {
     }
     await _voice.setReleaseMode(ReleaseMode.stop);
     await _voice.setPlayerMode(PlayerMode.mediaPlayer);
+    await _fanfare.setReleaseMode(ReleaseMode.stop);
+    await _fanfare.setPlayerMode(PlayerMode.mediaPlayer);
     await _applyMixContext();
     SfxGate.onMute = _stopAll;
     _ready = true;
@@ -49,6 +53,7 @@ class GameSfx {
         await player.setAudioContext(mix);
       }
       await _voice.setAudioContext(mix);
+      await _fanfare.setAudioContext(mix);
     } catch (_) {
       // Web / тесты / платформа без AudioContext.
     }
@@ -61,6 +66,7 @@ class GameSfx {
       await player.dispose();
     }
     await _voice.dispose();
+    await _fanfare.dispose();
   }
 
   void _stopAll() {
@@ -71,6 +77,9 @@ class GameSfx {
     }
     if (_voice.state == PlayerState.playing) {
       unawaited(_voice.stop());
+    }
+    if (_fanfare.state == PlayerState.playing) {
+      unawaited(_fanfare.stop());
     }
   }
 
@@ -118,7 +127,13 @@ class GameSfx {
   /// Пара снята из лотка.
   Future<void> match() async {
     HapticGate.medium();
-    await _play('sfx/match.wav', volume: 0.78);
+    await _play('sfx/match.mp3', volume: 0.82);
+  }
+
+  /// Редкий удар плиток друг о друга.
+  Future<void> smash() async {
+    HapticGate.heavy();
+    await _play('sfx/smash.wav', volume: 0.92);
   }
 
   /// Лоток полон — проигрыш.
@@ -129,7 +144,19 @@ class GameSfx {
 
   Future<void> win() async {
     HapticGate.heavy();
-    await _play('sfx/win.wav', volume: 0.85);
+    final useAlt = _winIndex.isOdd;
+    _winIndex += 1;
+    if (!_ready || !SfxGate.enabled) return;
+    try {
+      if (_fanfare.state == PlayerState.playing) {
+        await _fanfare.stop();
+      }
+      if (!SfxGate.enabled) return;
+      final asset = useAlt ? 'sfx/win2.mp3' : 'sfx/win.mp3';
+      await _fanfare.play(AssetSource(asset), volume: 0.9);
+    } catch (_) {
+      // На CI / без аудио-устройства — молча игнорируем.
+    }
   }
 
   /// Ошибка UI: блок, лоток полон при тапе, нет ходов для подсказки.
@@ -138,10 +165,22 @@ class GameSfx {
     await _play('sfx/error.wav', volume: 0.6);
   }
 
-  /// Кнопки: shuffle, undo.
+  /// Кнопки: shuffle.
   Future<void> tap() async {
     HapticGate.selection();
     await _play('sfx/tap.wav', volume: 0.45);
+  }
+
+  /// Отмена последнего действия.
+  Future<void> undo() async {
+    HapticGate.selection();
+    await _play('sfx/undo.mp3', volume: 0.8);
+  }
+
+  /// Магнит: пара улетает с поля.
+  Future<void> magnet() async {
+    HapticGate.medium();
+    await _play('sfx/magnet.mp3', volume: 0.85);
   }
 
   /// Подсказка.

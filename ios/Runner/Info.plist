@@ -58,6 +58,8 @@
 	<string>ca-app-pub-1524654355170130~6121469025</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>Mahjong Rise reminds you about the daily table and weekly courtyard season.</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
 	<key>UISupportedInterfaceOrientations</key>

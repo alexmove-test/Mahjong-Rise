@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../l10n/l10n.dart';
 import '../models/leaderboard_entry.dart';
+import '../services/analytics_service.dart';
 import '../services/firebase_bootstrap.dart';
 import '../services/firebase_leaderboard_repository.dart';
 import '../services/leaderboard_service.dart';
 import '../services/player_profile_store.dart';
 import '../services/progress_store.dart';
+import '../services/weekly_leaderboard_repository.dart';
+import '../services/weekly_leaderboard_service.dart';
 import 'game_screen.dart';
 
 /// Общий рейтинг игроков.
@@ -19,10 +22,14 @@ class LeaderboardScreen extends StatefulWidget {
   State<LeaderboardScreen> createState() => _LeaderboardScreenState();
 }
 
-class _LeaderboardScreenState extends State<LeaderboardScreen> {
+class _LeaderboardScreenState extends State<LeaderboardScreen>
+    with SingleTickerProviderStateMixin {
   PlayerProfileStore? _profile;
-  List<LeaderboardEntry> _entries = const [];
-  int? _rank;
+  late final TabController _tabs;
+  List<LeaderboardEntry> _allEntries = const [];
+  List<LeaderboardEntry> _weekEntries = const [];
+  int? _allRank;
+  int? _weekRank;
   bool _loading = true;
   bool _online = false;
   String? _error;
@@ -37,8 +44,27 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   @override
   void initState() {
     super.initState();
+    _tabs = TabController(length: 2, vsync: this);
+    _tabs.addListener(_onTab);
     _load();
   }
+
+  @override
+  void dispose() {
+    _tabs.removeListener(_onTab);
+    _tabs.dispose();
+    super.dispose();
+  }
+
+  void _onTab() {
+    if (_tabs.indexIsChanging) return;
+    if (_tabs.index == 0) {
+      AnalyticsService.log('weekly_open');
+    }
+    setState(() {});
+  }
+
+  bool get _weekly => _tabs.index == 0;
 
   Future<void> _load() async {
     setState(() {
@@ -47,29 +73,43 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     });
 
     final profile = await PlayerProfileStore.open();
+    await widget.progress.ensureWeek();
     try {
-      final entries = await FirebaseLeaderboardRepository.fetchTop(
+      final all = await FirebaseLeaderboardRepository.fetchTop(
+        progress: widget.progress,
+        profile: profile,
+      );
+      final week = await WeeklyLeaderboardRepository.fetchTop(
         progress: widget.progress,
         profile: profile,
       );
       if (!mounted) return;
       setState(() {
         _profile = profile;
-        _entries = entries;
-        _rank = LeaderboardService.rankOf(entries);
+        _allEntries = all;
+        _weekEntries = week;
+        _allRank = LeaderboardService.rankOf(all);
+        _weekRank = LeaderboardService.rankOf(week);
         _loading = false;
         _online = FirebaseBootstrap.enabled;
       });
+      AnalyticsService.log('weekly_open');
     } catch (error) {
       if (!mounted) return;
-      final fallback = LeaderboardService.buildLocal(
+      final allFallback = LeaderboardService.buildLocal(
+        progress: widget.progress,
+        profile: profile,
+      );
+      final weekFallback = WeeklyLeaderboardService.buildLocal(
         progress: widget.progress,
         profile: profile,
       );
       setState(() {
         _profile = profile;
-        _entries = fallback;
-        _rank = LeaderboardService.rankOf(fallback);
+        _allEntries = allFallback;
+        _weekEntries = weekFallback;
+        _allRank = LeaderboardService.rankOf(allFallback);
+        _weekRank = LeaderboardService.rankOf(weekFallback);
         _loading = false;
         _online = false;
         _error = L10n.of(context).loadRankingFailed;
@@ -81,7 +121,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     final profile = _profile;
     if (profile == null) return;
 
-    final controller = TextEditingController(text: profile.displayName);
+    final controller = TextEditingController(
+      text: profile.hasCustomName ? profile.displayName : '',
+    );
     final saved = await showDialog<String>(
       context: context,
       builder: (context) {
@@ -101,7 +143,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             autofocus: true,
             style: const TextStyle(color: _ivory),
             decoration: InputDecoration(
-              hintText: L10n.of(context).player,
+              hintText: profile.displayName,
               hintStyle: TextStyle(color: _ivory.withValues(alpha: 0.45)),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -151,7 +193,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   @override
   Widget build(BuildContext context) {
     final profile = _profile;
-    final current = _entries.where((e) => e.isCurrentPlayer).firstOrNull;
+    final entries = _weekly ? _weekEntries : _allEntries;
+    final rank = _weekly ? _weekRank : _allRank;
+    final current = entries.where((e) => e.isCurrentPlayer).firstOrNull;
+    final l10n = L10n.of(context);
 
     return Scaffold(
       backgroundColor: _fieldGreen,
@@ -170,7 +215,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                         child: Row(
                           children: [
                             IconButton(
-                              tooltip: L10n.of(context).back,
+                              tooltip: l10n.back,
                               onPressed: () => Navigator.of(context).pop(),
                               icon: const Icon(
                                 Icons.arrow_back_rounded,
@@ -179,9 +224,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                             ),
                             Expanded(
                               child: Text(
-                                L10n.of(context).leaderboard,
+                                l10n.leaderboard,
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w800,
                                   color: Color(0xFF1E5A3A),
@@ -189,7 +234,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                               ),
                             ),
                             IconButton(
-                              tooltip: L10n.of(context).refresh,
+                              tooltip: l10n.refresh,
                               onPressed: _loading ? null : _load,
                               icon: const Icon(
                                 Icons.refresh_rounded,
@@ -197,13 +242,26 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                               ),
                             ),
                             IconButton(
-                              tooltip: L10n.of(context).changeName,
+                              tooltip: l10n.changeName,
                               onPressed: _editName,
                               icon: const Icon(
                                 Icons.edit_rounded,
                                 color: Color(0xFF1E5A3A),
                               ),
                             ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        child: TabBar(
+                          controller: _tabs,
+                          labelColor: const Color(0xFF1E5A3A),
+                          unselectedLabelColor: const Color(0xFF3D6B52),
+                          indicatorColor: _gold,
+                          tabs: [
+                            Tab(text: l10n.thisWeek),
+                            Tab(text: l10n.allTime),
                           ],
                         ),
                       ),
@@ -231,11 +289,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                           child: Text(
                             _online
-                                ? L10n.of(context).onlineRanking(
-                                    FirebaseLeaderboardRepository.fetchLimit,
+                                ? l10n.onlineRanking(
+                                    _weekly
+                                        ? WeeklyLeaderboardRepository.fetchLimit
+                                        : FirebaseLeaderboardRepository
+                                              .fetchLimit,
                                   )
                                 : FirebaseBootstrap.initError ??
-                                      L10n.of(context).offlineRanking,
+                                      l10n.offlineRanking,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 12,
@@ -246,20 +307,24 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                             ),
                           ),
                         ),
-                        if (current != null && _rank != null)
+                        if (current != null && rank != null)
                           Padding(
                             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                             child: _CurrentPlayerCard(
-                              rank: _rank!,
+                              rank: rank,
                               entry: current,
                               ratingLabel: _formatRating(current.rating),
+                              weekly: _weekly,
+                              plotsOpened: LeaderboardService.plotsOpened(
+                                current.levelsUnlocked,
+                              ),
                               onEditName: _editName,
                             ),
                           ),
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                           child: Text(
-                            L10n.of(context).rankingFormula,
+                            _weekly ? l10n.weeklyFormula : l10n.rankingFormula,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 12,
@@ -270,6 +335,23 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                             ),
                           ),
                         ),
+                        if (!_weekly)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 28, 6),
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                l10n.scorePlotsLegend,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: const Color(
+                                    0xFF3D6B52,
+                                  ).withValues(alpha: 0.7),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
                         Expanded(
                           child: RefreshIndicator(
                             color: _gold,
@@ -277,15 +359,19 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                             child: ListView.separated(
                               physics: const AlwaysScrollableScrollPhysics(),
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                              itemCount: _entries.length,
+                              itemCount: entries.length,
                               separatorBuilder: (_, __) =>
                                   const SizedBox(height: 8),
                               itemBuilder: (context, index) {
-                                final entry = _entries[index];
+                                final entry = entries[index];
                                 return _LeaderboardRow(
                                   rank: index + 1,
                                   entry: entry,
                                   ratingLabel: _formatRating(entry.rating),
+                                  weekly: _weekly,
+                                  plotsOpened: LeaderboardService.plotsOpened(
+                                    entry.levelsUnlocked,
+                                  ),
                                 );
                               },
                             ),
@@ -306,13 +392,17 @@ class _CurrentPlayerCard extends StatelessWidget {
     required this.rank,
     required this.entry,
     required this.ratingLabel,
+    required this.plotsOpened,
     required this.onEditName,
+    this.weekly = false,
   });
 
   final int rank;
   final LeaderboardEntry entry;
   final String ratingLabel;
+  final int plotsOpened;
   final VoidCallback onEditName;
+  final bool weekly;
 
   @override
   Widget build(BuildContext context) {
@@ -354,10 +444,16 @@ class _CurrentPlayerCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    L10n.of(context).starsLevel(
-                      entry.totalStars,
-                      entry.levelsUnlocked,
-                    ),
+                    weekly
+                        ? L10n.of(context).weeklyStarsClearsDailies(
+                            entry.totalStars,
+                            entry.levelsUnlocked,
+                            entry.weeklyDailies,
+                          )
+                        : L10n.of(context).starsLevel(
+                            entry.totalStars,
+                            entry.levelsUnlocked,
+                          ),
                     style: TextStyle(
                       color: const Color(0xFFF8F1DE).withValues(alpha: 0.78),
                       fontWeight: FontWeight.w600,
@@ -370,14 +466,23 @@ class _CurrentPlayerCard extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  ratingLabel,
-                  style: const TextStyle(
-                    color: Color(0xFFF8F1DE),
-                    fontWeight: FontWeight.w800,
-                    fontSize: 18,
+                if (weekly)
+                  Text(
+                    ratingLabel,
+                    style: const TextStyle(
+                      color: Color(0xFFF8F1DE),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                    ),
+                  )
+                else
+                  _ScoreAndPlots(
+                    ratingLabel: ratingLabel,
+                    plotsOpened: plotsOpened,
+                    color: const Color(0xFFF8F1DE),
+                    separatorColor: const Color(0xFFE8C96A),
+                    large: true,
                   ),
-                ),
                 TextButton(
                   onPressed: onEditName,
                   style: TextButton.styleFrom(
@@ -402,11 +507,15 @@ class _LeaderboardRow extends StatelessWidget {
     required this.rank,
     required this.entry,
     required this.ratingLabel,
+    required this.plotsOpened,
+    this.weekly = false,
   });
 
   final int rank;
   final LeaderboardEntry entry;
   final String ratingLabel;
+  final int plotsOpened;
+  final bool weekly;
 
   @override
   Widget build(BuildContext context) {
@@ -448,10 +557,16 @@ class _LeaderboardRow extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    L10n.of(context).starsLevel(
-                      entry.totalStars,
-                      entry.levelsUnlocked,
-                    ),
+                    weekly
+                        ? L10n.of(context).weeklyStarsClearsDailies(
+                            entry.totalStars,
+                            entry.levelsUnlocked,
+                            entry.weeklyDailies,
+                          )
+                        : L10n.of(context).starsLevel(
+                            entry.totalStars,
+                            entry.levelsUnlocked,
+                          ),
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -463,19 +578,81 @@ class _LeaderboardRow extends StatelessWidget {
                 ],
               ),
             ),
-            Text(
-              ratingLabel,
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 15,
+            if (weekly)
+              Text(
+                ratingLabel,
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                  color: highlight
+                      ? const Color(0xFFF8F1DE)
+                      : const Color(0xFF1E5A3A),
+                ),
+              )
+            else
+              _ScoreAndPlots(
+                ratingLabel: ratingLabel,
+                plotsOpened: plotsOpened,
                 color: highlight
                     ? const Color(0xFFF8F1DE)
                     : const Color(0xFF1E5A3A),
+                separatorColor: highlight
+                    ? const Color(0xFFE8C96A)
+                    : const Color(0xFF3D6B52),
               ),
-            ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ScoreAndPlots extends StatelessWidget {
+  const _ScoreAndPlots({
+    required this.ratingLabel,
+    required this.plotsOpened,
+    required this.color,
+    required this.separatorColor,
+    this.large = false,
+  });
+
+  final String ratingLabel;
+  final int plotsOpened;
+  final Color color;
+  final Color separatorColor;
+  final bool large;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = large ? 18.0 : 15.0;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          ratingLabel,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w800,
+            fontSize: size,
+          ),
+        ),
+        Text(
+          ' : ',
+          style: TextStyle(
+            color: separatorColor.withValues(alpha: 0.85),
+            fontWeight: FontWeight.w700,
+            fontSize: size,
+          ),
+        ),
+        Text(
+          '$plotsOpened',
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w800,
+            fontSize: size,
+          ),
+        ),
+      ],
     );
   }
 }

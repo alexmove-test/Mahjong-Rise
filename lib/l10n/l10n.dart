@@ -50,7 +50,7 @@ class L10n {
   String get privacyPolicy =>
       pick('Privacy Policy', 'Политика конфиденциальности');
   String get aboutGame => pick('About game', 'О игре');
-  String get iconsBy => pick('Icons: Uicons by ', 'Иконки: Uicons от ');
+  String builtAt(String time) => pick('Built: $time', 'Сборка: $time');
 
   String get settings => pick('Settings', 'Настройки');
   String get sound => pick('Sound', 'Звук');
@@ -89,8 +89,8 @@ class L10n {
       pick('Bonus: +1 hint and shuffle', 'Запас: +1 подсказка и перемешивание');
 
   String level(int id) => pick('Level $id', 'Уровень $id');
-  String levelCleared(int id) =>
-      pick('Level $id cleared!', 'Уровень $id пройден!');
+  String get anotherLevelCleared =>
+      pick('Another level cleared', 'Ещё один уровень пройден');
   String get newBest => pick('New best!', 'Новый рекорд!');
   String levelUnlocked(int id) =>
       pick('Level $id unlocked', 'Открыт уровень $id');
@@ -243,6 +243,7 @@ class L10n {
     'Rating: stars × 100,000 + best scores + campaign progress.',
     'Рейтинг: звёзды × 100 000 + лучшие счёта + прогресс кампании.',
   );
+  String get scorePlotsLegend => pick('Score : plots', 'Баллы : участки');
   String get loadRankingFailed => pick(
     'Could not load the online ranking',
     'Не удалось загрузить онлайн-рейтинг',
@@ -300,6 +301,62 @@ class L10n {
   String get pathLifePhrase =>
       pick('The house feels warmer.', 'В доме стало теплее.');
 
+  String get thisWeek => pick('This week', 'Эта неделя');
+  String get allTime => pick('All-time', 'Всегда');
+  String get weeklyFormula => pick(
+    'This week: stars × 10,000 + new clears × 2,500 + daily wins × 1,000.',
+    'Эта неделя: звёзды × 10 000 + новые уровни × 2 500 + daily × 1 000.',
+  );
+  String weeklyStarsClearsDailies(int stars, int clears, int dailies) => pick(
+    '$stars ★ · $clears lv · $dailies daily',
+    '$stars ★ · $clears ур. · $dailies daily',
+  );
+  String get weeklyQuests => pick('Weekly quests', 'Задания недели');
+  String get claim => pick('Claim', 'Забрать');
+  String get claimed => pick('Claimed', 'Получено');
+  String get questBonus =>
+      pick('+1 hint and shuffle', '+1 подсказка и перемешивание');
+  String questTitle(String id) => switch (id) {
+    'daily3' => pick('Clear daily 3 times', 'Закройте daily 3 раза'),
+    'stars8' => pick('Earn 8 stars', 'Наберите 8 звёзд'),
+    'clears4' => pick('Clear 4 campaign levels', 'Пройдите 4 уровня кампании'),
+    'threeStar1' => pick('Score 3★ on a level', 'Возьмите 3★ на уровне'),
+    'streak3' => pick('Keep a 3-day streak', 'Удержите серию 3 дня'),
+    _ => id,
+  };
+  String weekEventTitle(String id) => switch (id) {
+    'garden' => pick('Garden week', 'Неделя сада'),
+    'court' => pick('Courtyard week', 'Неделя двора'),
+    'lanterns' => pick('Lantern week', 'Неделя фонарей'),
+    'myth' => pick('Myth week', 'Неделя мифа'),
+    'harvest' => pick('Harvest week', 'Неделя урожая'),
+    _ => pick('This week’s table', 'Стол этой недели'),
+  };
+  String get extraBoostThisWeek =>
+      pick('+1 boost on today’s table', '+1 буст на столе сегодня');
+  String get seasonClosed => pick('Season closed', 'Сезон закрыт');
+  String lastWeekPlace(int rank) =>
+      pick('Last week: place $rank', 'Прошлая неделя: место $rank');
+  String lastWeekScore(String rating) =>
+      pick('Score $rating', 'Счёт $rating');
+  String get reminders => pick('Daily reminders', 'Напоминания');
+  String get reminderDailyTitle =>
+      pick('Your courtyard is waiting', 'Двор ждёт вас');
+  String get reminderDailyBody =>
+      pick('A new table is ready today.', 'Сегодня готов новый стол.');
+  String get reminderStreakTitle =>
+      pick('Your streak is at risk', 'Серия сейчас сгорит');
+  String get reminderStreakBody => pick(
+    'Clear today’s table before midnight.',
+    'Закройте сегодняшний стол до полуночи.',
+  );
+  String get reminderWeekTitle =>
+      pick('A new courtyard season', 'Новый сезон двора');
+  String get reminderWeekBody => pick(
+    'Weekly quests and ranking have reset.',
+    'Задания и рейтинг недели обновились.',
+  );
+
   String homePathPhrase(CourtyardSnapshot snapshot) {
     final band = snapshot.band;
     if (band <= 0) return pathStagePhrases.first;
@@ -319,6 +376,10 @@ class L10n {
       return pathWarmPhrases[to.step.floor() % pathWarmPhrases.length];
     }
     if (to.totalStars > from.totalStars) return pathLifePhrase;
+    if (to.streakLife > from.streakLife + 0.01 ||
+        to.festival > from.festival + 0.01) {
+      return pathLifePhrase;
+    }
     return pathWarmPhrases.first;
   }
 }

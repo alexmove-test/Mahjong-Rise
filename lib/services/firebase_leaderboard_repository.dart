@@ -30,22 +30,37 @@ class FirebaseLeaderboardRepository {
     final nameChanged = profile.displayName != profile.lastSyncedName;
     if (rating <= lastSynced && !nameChanged) return;
 
-    final doc = _db!.collection(collection).doc(user.uid);
-    final existing = await doc.get();
-    final existingRating = existing.data()?['rating'] as int? ?? 0;
+    try {
+      final doc = _db!.collection(collection).doc(user.uid);
+      final existing = await doc.get();
+      final existingRating = _asInt(existing.data()?['rating']);
 
-    if (rating < existingRating && !nameChanged) return;
+      if (rating < existingRating) {
+        if (!nameChanged) return;
+        await doc.set({
+          'name': profile.displayName,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        await profile.markSynced(
+          rating: existingRating,
+          name: profile.displayName,
+        );
+        return;
+      }
 
-    await doc.set({
-      'name': profile.displayName,
-      'rating': rating,
-      'totalStars': progress.totalStars,
-      'levelsUnlocked': progress.maxUnlocked,
-      'sumBestScores': progress.sumBestScores,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+      await doc.set({
+        'name': profile.displayName,
+        'rating': rating,
+        'totalStars': progress.totalStars,
+        'levelsUnlocked': progress.maxUnlocked,
+        'sumBestScores': progress.sumBestScores,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
-    await profile.markSynced(rating: rating, name: profile.displayName);
+      await profile.markSynced(rating: rating, name: profile.displayName);
+    } catch (_) {
+      // Read of the table must still work if a write is rejected.
+    }
   }
 
   static Future<List<LeaderboardEntry>> fetchTop({
@@ -110,10 +125,16 @@ class FirebaseLeaderboardRepository {
       name: (data['name'] as String?)?.trim().isNotEmpty == true
           ? data['name'] as String
           : 'Player',
-      rating: (data['rating'] as num?)?.toInt() ?? 0,
-      totalStars: (data['totalStars'] as num?)?.toInt() ?? 0,
-      levelsUnlocked: (data['levelsUnlocked'] as num?)?.toInt() ?? 1,
+      rating: _asInt(data['rating']),
+      totalStars: _asInt(data['totalStars']),
+      levelsUnlocked: _asInt(data['levelsUnlocked'], fallback: 1),
       isCurrentPlayer: doc.id == currentUid,
     );
+  }
+
+  static int _asInt(Object? value, {int fallback = 0}) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return fallback;
   }
 }

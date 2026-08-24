@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -23,6 +25,7 @@ class TileWidget extends StatefulWidget {
     this.onRemoveComplete,
     this.compact = false,
     this.showBack = false,
+    this.shuffleToken = 0,
   });
 
   final Tile tile;
@@ -31,6 +34,7 @@ class TileWidget extends StatefulWidget {
   final bool isSelected;
   final bool isFree;
   final bool isHinted;
+  final int shuffleToken;
 
   /// Тап с глобальным rect плитки (для полёта в лоток).
   final void Function(Rect globalRect)? onTap;
@@ -46,6 +50,15 @@ class TileWidget extends StatefulWidget {
   static const removeDuration = Duration(milliseconds: 280);
   static const burstDuration = MatchSparkBurst.duration;
   static const selectDuration = Duration(milliseconds: 80);
+  static const shuffleFlipDuration = Duration(milliseconds: 480);
+  static const shuffleMaxStagger = Duration(milliseconds: 216);
+  static Duration get shufflePlayDuration =>
+      shuffleFlipDuration + shuffleMaxStagger;
+
+  static Duration shuffleStaggerOf(Tile tile) {
+    final wave = (tile.x * 3 + tile.y * 5 + tile.layer * 11).abs() % 12;
+    return Duration(milliseconds: wave * 18);
+  }
 
   static Offset layerOffset(int zIndex, double tileW, double tileH) {
     return TilePyramidPosition.baseOffset(
@@ -59,15 +72,19 @@ class TileWidget extends StatefulWidget {
   State<TileWidget> createState() => _TileWidgetState();
 }
 
-class _TileWidgetState extends State<TileWidget>
-    with TickerProviderStateMixin {
+class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
   static int _loggedTiles = 0;
   late final AnimationController _burst;
   late final AnimationController _hintPulse;
+  late final AnimationController _shuffleFlip;
+  late String _shownSymbol;
+  String? _shuffleFromSymbol;
+  int _shuffleDelayMs = 0;
 
   @override
   void initState() {
     super.initState();
+    _shownSymbol = widget.tile.symbol;
     _burst =
         AnimationController(vsync: this, duration: TileWidget.burstDuration)
           ..addStatusListener((status) {
@@ -79,6 +96,15 @@ class _TileWidgetState extends State<TileWidget>
       vsync: this,
       duration: const Duration(milliseconds: 720),
     );
+    _shuffleFlip =
+        AnimationController(
+          vsync: this,
+          duration: TileWidget.shuffleFlipDuration,
+        )..addStatusListener((status) {
+          if (status == AnimationStatus.completed) {
+            _shownSymbol = widget.tile.symbol;
+          }
+        });
     if (widget.isRemoving) {
       _burst.forward();
     }
@@ -103,13 +129,46 @@ class _TileWidgetState extends State<TileWidget>
         ..stop()
         ..value = 0;
     }
+    final shuffled = widget.shuffleToken != oldWidget.shuffleToken;
+    final symbolChanged = widget.tile.symbol != _shownSymbol;
+    if (!widget.compact && (shuffled || symbolChanged)) {
+      final from = _shuffleFlip.isAnimating ? _faceSymbol : _shownSymbol;
+      _playShuffle(fromSymbol: from);
+    }
+  }
+
+  void _playShuffle({required String fromSymbol}) {
+    _shuffleFromSymbol = fromSymbol;
+    _shuffleDelayMs = TileWidget.shuffleStaggerOf(widget.tile).inMilliseconds;
+    _shuffleFlip.duration =
+        TileWidget.shuffleFlipDuration +
+        Duration(milliseconds: _shuffleDelayMs);
+    _shuffleFlip.forward(from: 0);
   }
 
   @override
   void dispose() {
+    _shuffleFlip.dispose();
     _hintPulse.dispose();
     _burst.dispose();
     super.dispose();
+  }
+
+  double get _shuffleLocalT {
+    final duration = _shuffleFlip.duration;
+    if (duration == null || duration.inMilliseconds <= 0) {
+      return _shuffleFlip.value;
+    }
+    final elapsed = _shuffleFlip.value * duration.inMilliseconds;
+    return ((elapsed - _shuffleDelayMs) /
+            TileWidget.shuffleFlipDuration.inMilliseconds)
+        .clamp(0.0, 1.0);
+  }
+
+  String get _faceSymbol {
+    final from = _shuffleFromSymbol;
+    if (from == null || _shuffleLocalT >= 0.5) return widget.tile.symbol;
+    return from;
   }
 
   double _highlightIntensity() {
@@ -210,7 +269,11 @@ class _TileWidgetState extends State<TileWidget>
                   height: symbolRect.height,
                   child: Opacity(
                     opacity: lifted ? 1.0 : 0.78,
-                    child: _EngravedFace(symbol: tile.symbol),
+                    child: AnimatedBuilder(
+                      animation: _shuffleFlip,
+                      builder: (context, _) =>
+                          _EngravedFace(symbol: _faceSymbol),
+                    ),
                   ),
                 ),
                 if (baseHighlight > 0)
@@ -259,7 +322,28 @@ class _TileWidgetState extends State<TileWidget>
               ? TileWidget.removeDuration
               : TileWidget.selectDuration,
           curve: Curves.easeOut,
-          child: tileBody,
+          child: AnimatedBuilder(
+            animation: _shuffleFlip,
+            builder: (context, child) {
+              final t = _shuffleLocalT;
+              final scaleX = (t == 0 || t == 1)
+                  ? 1.0
+                  : (t < 0.5 ? (1 - t * 2) : (t - 0.5) * 2).clamp(0.08, 1.0);
+              final bounce = math.sin(t * math.pi);
+              final lift = -12.0 * bounce;
+              final tilt = bounce * 0.14 * (widget.tile.id.isEven ? 1.0 : -1.0);
+              final pop = 1.0 + 0.07 * bounce;
+              return Transform(
+                alignment: Alignment.center,
+                transform: Matrix4.identity()
+                  ..translate(0.0, lift)
+                  ..rotateZ(tilt)
+                  ..scale(scaleX * pop, pop),
+                child: child,
+              );
+            },
+            child: tileBody,
+          ),
         ),
       ),
     );
@@ -291,12 +375,13 @@ class _TileWidgetState extends State<TileWidget>
       ),
     );
 
+    final shuffling = _shuffleFlip.isAnimating;
     if (widget.onTap == null) {
-      return IgnorePointer(ignoring: isRemoving, child: body);
+      return IgnorePointer(ignoring: isRemoving || shuffling, child: body);
     }
 
     return IgnorePointer(
-      ignoring: isRemoving,
+      ignoring: isRemoving || shuffling,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
@@ -335,11 +420,7 @@ class _SpriteBone extends StatelessWidget {
       asset: TileBaseLayout.baseAsset,
       tileSize: tileSize,
       errorBuilder: (context, error, stackTrace) {
-        return TileFallbackFace(
-          size: tileSize,
-          locked: false,
-          lifted: lifted,
-        );
+        return TileFallbackFace(size: tileSize, locked: false, lifted: lifted);
       },
     );
     if (locked) {

@@ -4,6 +4,8 @@ import '../l10n/l10n.dart';
 import '../l10n/locale_controller.dart';
 import '../services/haptic_controller.dart';
 import '../services/locale_store.dart';
+import '../services/local_reminder_service.dart';
+import '../services/reminder_store.dart';
 import '../services/sfx_controller.dart';
 
 const _ivory = Color(0xFFF8F1DE);
@@ -48,6 +50,7 @@ Future<void> showAppSettings(BuildContext context) {
                 ),
                 SfxSwitchTile(controller: sfx, l10n: l10n),
                 HapticSwitchTile(controller: haptic, l10n: l10n),
+                const ReminderSwitchTile(),
                 const Padding(
                   padding: EdgeInsets.fromLTRB(20, 4, 20, 0),
                   child: Divider(color: Color(0x44F8F1DE)),
@@ -182,6 +185,65 @@ class SfxSwitchTile extends StatelessWidget {
       ),
       value: enabled,
       onChanged: controller?.setEnabled,
+      activeThumbColor: _gold,
+      activeTrackColor: _gold.withValues(alpha: 0.38),
+    );
+  }
+}
+
+class ReminderSwitchTile extends StatefulWidget {
+  const ReminderSwitchTile({super.key});
+
+  @override
+  State<ReminderSwitchTile> createState() => _ReminderSwitchTileState();
+}
+
+class _ReminderSwitchTileState extends State<ReminderSwitchTile> {
+  ReminderStore? _store;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final store = await ReminderStore.open();
+    if (!mounted) return;
+    setState(() => _store = store);
+  }
+
+  Future<void> _setEnabled(bool value) async {
+    final store = _store;
+    if (store == null) return;
+    if (value) {
+      final allowed = await LocalReminderService.requestPermission();
+      if (!allowed) return;
+    }
+    await store.setEnabled(value);
+    if (!mounted) return;
+    await LocalReminderService.resync(l10n: L10n.of(context));
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = L10n.of(context);
+    final enabled = _store?.enabled ?? false;
+    return SwitchListTile(
+      secondary: Icon(
+        Icons.notifications_rounded,
+        color: enabled ? _gold : _ivory,
+      ),
+      title: Text(
+        l10n.reminders,
+        style: TextStyle(
+          color: enabled ? _gold : _ivory,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      value: enabled,
+      onChanged: _store == null ? null : _setEnabled,
       activeThumbColor: _gold,
       activeTrackColor: _gold.withValues(alpha: 0.38),
     );

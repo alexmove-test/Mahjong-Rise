@@ -14,6 +14,7 @@ import 'services/firebase_bootstrap.dart';
 import 'services/haptic_controller.dart';
 import 'services/haptic_store.dart';
 import 'services/locale_store.dart';
+import 'services/local_reminder_service.dart';
 import 'services/sfx_controller.dart';
 import 'services/sfx_store.dart';
 
@@ -64,6 +65,7 @@ Future<void> _initServices() async {
   );
   // #endregion
   await AdBootstrap.init();
+  await LocalReminderService.init();
   // #region agent log
   agentDbg(
     location: 'main.dart:ads',

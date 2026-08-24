@@ -182,25 +182,52 @@ class Board {
     return null;
   }
 
-  /// Магнит: пара, которую можно снять сейчас, не переполняя лоток.
+  /// Магнит: сначала пара к плитке в лотке (с любого слоя), иначе свободная пара на поле.
   ({Tile boardTile, Tile match})? findMagnetPair() {
+    final freeSlots = trayCapacity - trayLiveCount;
+    final liveTray = tray.where((t) => !t.removing).toList();
+    if (freeSlots >= 1 && liveTray.isNotEmpty) {
+      final pulled = _magnetMatchForTray(liveTray);
+      if (pulled != null) return pulled;
+    }
+
     final hint = findHint();
     if (hint == null) return null;
     final needTwoSlots = hint.match.isOnBoard;
-    final freeSlots = trayCapacity - trayLiveCount;
     if (needTwoSlots && freeSlots < 2) return null;
     if (!needTwoSlots && freeSlots < 1) return null;
     return hint;
+  }
+
+  /// Пара к лотку: свободная плитка предпочтительнее, иначе самая верхняя из закрытых.
+  ({Tile boardTile, Tile match})? _magnetMatchForTray(List<Tile> liveTray) {
+    Tile? bestBoard;
+    Tile? bestTray;
+    var bestRank = -1;
+    for (final trayTile in liveTray) {
+      for (final boardTile in tiles) {
+        if (!boardTile.isOnBoard) continue;
+        if (!TileSymbols.matches(boardTile.symbol, trayTile.symbol)) continue;
+        final rank = (isFree(boardTile) ? 1000 : 0) + boardTile.layer;
+        if (rank <= bestRank) continue;
+        bestRank = rank;
+        bestBoard = boardTile;
+        bestTray = trayTile;
+      }
+    }
+    if (bestBoard == null || bestTray == null) return null;
+    return (boardTile: bestBoard, match: bestTray);
   }
 
   /// Последняя снятая пара (для анимации / undo).
   List<Tile> lastMatched = [];
 
   /// Клик по плитке на поле → в лоток (пары — после [resolveTray], обычно после полёта).
-  MatchResult pick(Tile tile) {
+  /// [force] — магнит: можно снять даже закрытую плитку с любого слоя.
+  MatchResult pick(Tile tile, {bool force = false}) {
     lastMatched = [];
     if (!tile.isOnBoard) return MatchResult.blocked;
-    if (!isFree(tile)) return MatchResult.blocked;
+    if (!force && !isFree(tile)) return MatchResult.blocked;
     if (trayLiveCount >= trayCapacity) return MatchResult.trayFull;
 
     tile.inTray = true;

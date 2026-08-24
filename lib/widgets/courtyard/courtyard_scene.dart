@@ -13,12 +13,16 @@ class CourtyardScene extends StatefulWidget {
     this.from,
     this.animate = false,
     this.idle = true,
+    this.cycle = 0,
   });
 
   final CourtyardSnapshot to;
   final CourtyardSnapshot? from;
   final bool animate;
   final bool idle;
+
+  /// 0-based номер участка: 1 = мультяшный двор.
+  final int cycle;
 
   static const growDuration = Duration(milliseconds: 2400);
 
@@ -49,18 +53,28 @@ class _CourtyardSceneState extends State<CourtyardScene>
     if (widget.animate) _grow.forward();
   }
 
+  void _precacheArt() {
+    for (final asset in CourtyardArtFade.assetsFor(widget.cycle)) {
+      precacheImage(AssetImage(asset), context);
+    }
+    precacheImage(
+      AssetImage(CourtyardArtFade.lifeAssetFor(widget.cycle)),
+      context,
+    );
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    for (final asset in CourtyardArtFade.assets) {
-      precacheImage(AssetImage(asset), context);
-    }
-    precacheImage(const AssetImage(CourtyardArtFade.lifeAsset), context);
+    _precacheArt();
   }
 
   @override
   void didUpdateWidget(covariant CourtyardScene oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.cycle != oldWidget.cycle) {
+      _precacheArt();
+    }
     if (widget.idle && !_idle.isAnimating) {
       _idle.repeat();
     } else if (!widget.idle && _idle.isAnimating) {
@@ -107,6 +121,7 @@ class _CourtyardSceneState extends State<CourtyardScene>
         builder: (context, _) {
           final snapshot = _snapshot;
           final fade = snapshot.artFade;
+          final plates = CourtyardArtFade.assetsFor(widget.cycle);
           final breath = widget.idle
               ? 1.0 + 0.01 * (0.5 - 0.5 * math.cos(_idle.value * 2 * math.pi))
               : 1.0;
@@ -121,16 +136,29 @@ class _CourtyardSceneState extends State<CourtyardScene>
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  _plate(CourtyardArtFade.assets[fade.fromIndex]),
+                  _plate(plates[fade.fromIndex]),
                   if (fade.blend > 0.01)
                     Opacity(
                       opacity: fade.blend,
-                      child: _plate(CourtyardArtFade.assets[fade.toIndex]),
+                      child: _plate(plates[fade.toIndex]),
                     ),
                   if (life > 0.01)
                     Opacity(
                       opacity: life,
-                      child: _plate(CourtyardArtFade.lifeAsset),
+                      child: _plate(
+                        CourtyardArtFade.lifeAssetFor(widget.cycle),
+                      ),
+                    ),
+                  if (snapshot.festival > 0.02 || snapshot.streakLife > 0.08)
+                    IgnorePointer(
+                      child: CustomPaint(
+                        painter: FestivalLanternsPainter(
+                          strength: (snapshot.festival * 0.7 +
+                                  snapshot.streakLife * 0.5)
+                              .clamp(0.0, 1.0),
+                          t: widget.idle ? _idle.value : 0.35,
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -175,5 +203,51 @@ class CourtyardFrame extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Гирлянда фонарей поверх двора на неделю события и за серию.
+class FestivalLanternsPainter extends CustomPainter {
+  const FestivalLanternsPainter({required this.strength, required this.t});
+
+  final double strength;
+  final double t;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (strength <= 0) return;
+    final sway = 6 * math.sin(t * 2 * math.pi);
+    final line = Paint()
+      ..color = const Color(0xFFE8C96A).withValues(alpha: 0.55 * strength)
+      ..strokeWidth = 1.4
+      ..style = PaintingStyle.stroke;
+    final glow = Paint()
+      ..color = const Color(0xFFFFD54F).withValues(alpha: 0.42 * strength)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+    final core = Paint()
+      ..color = const Color(0xFFFFF3C4).withValues(alpha: 0.9 * strength);
+
+    final y = size.height * 0.18;
+    final points = <Offset>[
+      Offset(size.width * 0.12 + sway * 0.15, y + 10),
+      Offset(size.width * 0.28, y - 4),
+      Offset(size.width * 0.46 + sway * 0.08, y + 6),
+      Offset(size.width * 0.64, y - 2),
+      Offset(size.width * 0.82 - sway * 0.12, y + 8),
+    ];
+    final path = Path()..moveTo(points.first.dx, points.first.dy - 14);
+    for (final p in points) {
+      path.lineTo(p.dx, p.dy - 14);
+    }
+    canvas.drawPath(path, line);
+    for (final p in points) {
+      canvas.drawCircle(p, 9, glow);
+      canvas.drawCircle(p, 4.2, core);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant FestivalLanternsPainter oldDelegate) {
+    return oldDelegate.strength != strength || oldDelegate.t != t;
   }
 }

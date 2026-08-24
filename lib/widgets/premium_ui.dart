@@ -455,77 +455,30 @@ class FilledGlyph extends StatelessWidget {
   }
 }
 
-/// Подкова-магнит: силовые линии и опилки, которые тянутся к полюсам.
-class MagnetGlyph extends StatefulWidget {
+/// Подкова-магнит сплошной заливкой (буст «Магнит»).
+class MagnetGlyph extends StatelessWidget {
   const MagnetGlyph({
     super.key,
     this.size = 26,
     this.color = const Color(0xFFF8F1DE),
-    this.animate = true,
   });
 
   final double size;
   final Color color;
-  final bool animate;
-
-  @override
-  State<MagnetGlyph> createState() => _MagnetGlyphState();
-}
-
-class _MagnetGlyphState extends State<MagnetGlyph>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1700),
-    );
-    if (widget.animate) _ctrl.repeat();
-  }
-
-  @override
-  void didUpdateWidget(covariant MagnetGlyph oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.animate && !_ctrl.isAnimating) {
-      _ctrl.repeat();
-    } else if (!widget.animate && _ctrl.isAnimating) {
-      _ctrl
-        ..stop()
-        ..value = 0;
-    }
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (context, _) {
-        return CustomPaint(
-          size: Size.square(widget.size),
-          painter: _MagnetGlyphPainter(
-            color: widget.color,
-            t: widget.animate ? _ctrl.value : 0,
-          ),
-        );
-      },
+    return CustomPaint(
+      size: Size.square(size),
+      painter: _MagnetGlyphPainter(color: color),
     );
   }
 }
 
 class _MagnetGlyphPainter extends CustomPainter {
-  const _MagnetGlyphPainter({required this.color, this.t = 0});
+  const _MagnetGlyphPainter({required this.color});
 
   final Color color;
-  final double t;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -553,21 +506,6 @@ class _MagnetGlyphPainter extends CustomPainter {
         ..strokeCap = StrokeCap.butt
         ..strokeJoin = StrokeJoin.round,
     );
-
-    if (t > 0) {
-      final glow = 0.14 + 0.16 * (0.5 + 0.5 * math.sin(t * math.pi * 2));
-      canvas.drawPath(
-        path,
-        Paint()
-          ..color = color.withValues(alpha: glow)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = stroke * 1.7
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.4),
-      );
-      _paintField(canvas, rect, s);
-      _paintFilings(canvas, rect, s);
-    }
-
     canvas.drawPath(
       path,
       Paint()
@@ -604,79 +542,53 @@ class _MagnetGlyphPainter extends CustomPainter {
     );
   }
 
-  void _paintField(Canvas canvas, Rect rect, double s) {
-    final left = Offset(rect.left, rect.top + s * 0.04);
-    final right = Offset(rect.right, rect.top + s * 0.04);
-    for (var i = 0; i < 3; i++) {
-      final phase = (t + i * 0.28) % 1.0;
-      final alpha = math.sin(phase * math.pi);
-      if (alpha < 0.08) continue;
-      final bulge = 0.20 + i * 0.13 + phase * 0.07;
-      final field = Path()
-        ..moveTo(left.dx, left.dy)
-        ..quadraticBezierTo(
-          s / 2,
-          rect.top + s * bulge,
-          right.dx,
-          right.dy,
-        );
-      canvas.drawPath(
-        field,
-        Paint()
-          ..color = color.withValues(alpha: alpha * 0.62)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.05
-          ..strokeCap = StrokeCap.round,
-      );
-    }
-  }
-
-  void _paintFilings(Canvas canvas, Rect rect, double s) {
-    final mouth = Offset(s / 2, rect.top + s * 0.26);
-    const seeds = <(double, double, double)>[
-      (0.22, 0.02, 0.00),
-      (0.78, 0.06, 0.22),
-      (0.34, 0.38, 0.47),
-      (0.68, 0.34, 0.63),
-      (0.50, 0.00, 0.81),
-    ];
-    for (final seed in seeds) {
-      final phase = (t + seed.$3) % 1.0;
-      final start = Offset(s * seed.$1, s * seed.$2);
-      final p = Offset.lerp(start, mouth, Curves.easeIn.transform(phase))!;
-      final alpha = math.sin(phase * math.pi);
-      if (alpha < 0.06) continue;
-      canvas.drawCircle(
-        p,
-        0.85 + (1 - phase) * 0.55,
-        Paint()..color = color.withValues(alpha: alpha * 0.9),
-      );
-    }
-  }
-
   @override
   bool shouldRepaint(covariant _MagnetGlyphPainter oldDelegate) =>
-      oldDelegate.color != color || oldDelegate.t != t;
+      oldDelegate.color != color;
 }
 
-/// Две стрелки shuffle: плитки меняются местами, стрелки прокручиваются.
-class ShuffleGlyph extends StatefulWidget {
+/// Две стрелки перемешивания.
+class ShuffleGlyph extends StatelessWidget {
   const ShuffleGlyph({
     super.key,
     this.size = 28,
     this.color = const Color(0xFFF8F1DE),
-    this.animate = true,
+    this.t = 0,
   });
 
   final double size;
   final Color color;
-  final bool animate;
+  final double t;
 
   @override
-  State<ShuffleGlyph> createState() => _ShuffleGlyphState();
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size.square(size),
+      painter: _ShuffleGlyphPainter(color: color, t: t),
+    );
+  }
 }
 
-class _ShuffleGlyphState extends State<ShuffleGlyph>
+/// Проигрывает стрелки перемешивания при смене [playToken].
+class PlayingShuffleGlyph extends StatefulWidget {
+  const PlayingShuffleGlyph({
+    super.key,
+    required this.playToken,
+    this.size = 28,
+    required this.color,
+  });
+
+  final int playToken;
+  final double size;
+  final Color color;
+
+  static const duration = Duration(milliseconds: 640);
+
+  @override
+  State<PlayingShuffleGlyph> createState() => _PlayingShuffleGlyphState();
+}
+
+class _PlayingShuffleGlyphState extends State<PlayingShuffleGlyph>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
 
@@ -685,20 +597,15 @@ class _ShuffleGlyphState extends State<ShuffleGlyph>
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1800),
+      duration: PlayingShuffleGlyph.duration,
     );
-    if (widget.animate) _ctrl.repeat();
   }
 
   @override
-  void didUpdateWidget(covariant ShuffleGlyph oldWidget) {
+  void didUpdateWidget(covariant PlayingShuffleGlyph oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.animate && !_ctrl.isAnimating) {
-      _ctrl.repeat();
-    } else if (!widget.animate && _ctrl.isAnimating) {
-      _ctrl
-        ..stop()
-        ..value = 0;
+    if (widget.playToken != oldWidget.playToken && widget.playToken > 0) {
+      _ctrl.forward(from: 0);
     }
   }
 
@@ -712,15 +619,8 @@ class _ShuffleGlyphState extends State<ShuffleGlyph>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _ctrl,
-      builder: (context, _) {
-        return CustomPaint(
-          size: Size.square(widget.size),
-          painter: _ShuffleGlyphPainter(
-            color: widget.color,
-            t: widget.animate ? _ctrl.value : 0,
-          ),
-        );
-      },
+      builder: (context, _) =>
+          ShuffleGlyph(size: widget.size, color: widget.color, t: _ctrl.value),
     );
   }
 }
@@ -851,68 +751,22 @@ class _ShuffleGlyphPainter extends CustomPainter {
       oldDelegate.color != color || oldDelegate.t != t;
 }
 
-/// Иконка undo: стрелка отматывает ход, плитка едет назад по дуге.
-class UndoGlyph extends StatefulWidget {
+/// Иконка отмены хода.
+class UndoGlyph extends StatelessWidget {
   const UndoGlyph({
     super.key,
     this.size = 28,
     this.color = const Color(0xFFF8F1DE),
-    this.animate = true,
   });
 
   final double size;
   final Color color;
-  final bool animate;
-
-  @override
-  State<UndoGlyph> createState() => _UndoGlyphState();
-}
-
-class _UndoGlyphState extends State<UndoGlyph>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1700),
-    );
-    if (widget.animate) _ctrl.repeat();
-  }
-
-  @override
-  void didUpdateWidget(covariant UndoGlyph oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.animate && !_ctrl.isAnimating) {
-      _ctrl.repeat();
-    } else if (!widget.animate && _ctrl.isAnimating) {
-      _ctrl
-        ..stop()
-        ..value = 0;
-    }
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (context, _) {
-        return CustomPaint(
-          size: Size.square(widget.size),
-          painter: _UndoGlyphPainter(
-            color: widget.color,
-            t: widget.animate ? _ctrl.value : 0,
-          ),
-        );
-      },
+    return CustomPaint(
+      size: Size.square(size),
+      painter: _UndoGlyphPainter(color: color),
     );
   }
 }
@@ -1004,12 +858,7 @@ class _UndoGlyphPainter extends CustomPainter {
     }
   }
 
-  void _paintRewindChip(
-    Canvas canvas,
-    Offset center,
-    double radius,
-    double s,
-  ) {
+  void _paintRewindChip(Canvas canvas, Offset center, double radius, double s) {
     final rewind = Curves.easeInOutCubic.transform(
       ((t - 0.06) / 0.52).clamp(0.0, 1.0),
     );
@@ -1018,11 +867,7 @@ class _UndoGlyphPainter extends CustomPainter {
     final angle = (_startAngle + _sweep) + (-_sweep) * rewind;
     final p =
         center + Offset(math.cos(angle), math.sin(angle)) * (radius * 0.92);
-    final rect = Rect.fromCenter(
-      center: p,
-      width: s * 0.20,
-      height: s * 0.26,
-    );
+    final rect = Rect.fromCenter(center: p, width: s * 0.20, height: s * 0.26);
     final rrect = RRect.fromRectAndRadius(rect, Radius.circular(s * 0.04));
     canvas.drawRRect(
       rrect.shift(Offset(0, s * 0.03)),
@@ -1035,8 +880,7 @@ class _UndoGlyphPainter extends CustomPainter {
     canvas.drawCircle(
       p,
       s * 0.035,
-      Paint()
-        ..color = const Color(0xFF3A2012).withValues(alpha: 0.45 * fade),
+      Paint()..color = const Color(0xFF3A2012).withValues(alpha: 0.45 * fade),
     );
   }
 
@@ -1045,68 +889,22 @@ class _UndoGlyphPainter extends CustomPainter {
       oldDelegate.color != color || oldDelegate.t != t;
 }
 
-/// Лампочка-подсказка: лучи вспыхивают, внутри пульсирует свет.
-class HintGlyph extends StatefulWidget {
+/// Лампочка-подсказка.
+class HintGlyph extends StatelessWidget {
   const HintGlyph({
     super.key,
     this.size = 28,
     this.color = const Color(0xFFF8F1DE),
-    this.animate = true,
   });
 
   final double size;
   final Color color;
-  final bool animate;
-
-  @override
-  State<HintGlyph> createState() => _HintGlyphState();
-}
-
-class _HintGlyphState extends State<HintGlyph>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1600),
-    );
-    if (widget.animate) _ctrl.repeat();
-  }
-
-  @override
-  void didUpdateWidget(covariant HintGlyph oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.animate && !_ctrl.isAnimating) {
-      _ctrl.repeat();
-    } else if (!widget.animate && _ctrl.isAnimating) {
-      _ctrl
-        ..stop()
-        ..value = 0;
-    }
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (context, _) {
-        return CustomPaint(
-          size: Size.square(widget.size),
-          painter: _HintGlyphPainter(
-            color: widget.color,
-            t: widget.animate ? _ctrl.value : 0,
-          ),
-        );
-      },
+    return CustomPaint(
+      size: Size.square(size),
+      painter: _HintGlyphPainter(color: color),
     );
   }
 }

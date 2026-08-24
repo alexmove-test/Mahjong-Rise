@@ -32,6 +32,8 @@ void main() {
       expect(board.isFree(top), isTrue);
       expect(board.pick(bottom), MatchResult.blocked);
       expect(board.tray, isEmpty);
+      expect(board.pick(bottom, force: true), MatchResult.collected);
+      expect(board.tray, [bottom]);
     });
 
     test('same-layer neighbors do not block on a flat layout', () {
@@ -281,6 +283,35 @@ void main() {
           Tile(id: 2, symbol: 'B', layer: 0, x: 8, y: 0),
         ],
       );
+      board.tray.add(tray);
+
+      final pair = board.findMagnetPair();
+      expect(pair, isNotNull);
+      expect(pair!.boardTile.id, 1);
+      expect(pair.match.id, 0);
+    });
+
+    test('pulls a covered tile that matches the tray', () {
+      final tray = Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0, inTray: true);
+      final buried = Tile(id: 1, symbol: 'A', layer: 0, x: 4, y: 0);
+      final cover = Tile(id: 2, symbol: 'B', layer: 1, x: 4, y: 0);
+      final board = Board(tiles: [tray, buried, cover]);
+      board.tray.add(tray);
+
+      expect(board.isFree(buried), isFalse);
+      final pair = board.findMagnetPair();
+      expect(pair, isNotNull);
+      expect(pair!.boardTile.id, 1);
+      expect(pair.match.id, 0);
+    });
+
+    test('prefers a tray match over a free pair of another symbol', () {
+      final tray = Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0, inTray: true);
+      final buried = Tile(id: 1, symbol: 'A', layer: 0, x: 4, y: 0);
+      final cover = Tile(id: 2, symbol: 'B', layer: 1, x: 4, y: 0);
+      final freeC1 = Tile(id: 3, symbol: 'C', layer: 0, x: 8, y: 0);
+      final freeC2 = Tile(id: 4, symbol: 'C', layer: 0, x: 12, y: 0);
+      final board = Board(tiles: [tray, buried, cover, freeC1, freeC2]);
       board.tray.add(tray);
 
       final pair = board.findMagnetPair();
