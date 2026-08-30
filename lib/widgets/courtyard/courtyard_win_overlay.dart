@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/l10n.dart';
+import '../streak_lanterns.dart';
 import '../win_burst.dart';
 import 'courtyard_progress.dart';
 import 'courtyard_scene.dart';
@@ -17,7 +18,10 @@ Future<void> showCourtyardWinOverlay({
   int cycle = 0,
   String? title,
   String? subtitle,
+  String? carePhrase,
   bool showStars = true,
+  int? streak,
+  int streakFrom = 0,
   required VoidCallback onMap,
   required VoidCallback onNext,
   required VoidCallback onRetry,
@@ -39,7 +43,10 @@ Future<void> showCourtyardWinOverlay({
         cycle: cycle,
         title: title,
         subtitle: subtitle,
+        carePhrase: carePhrase,
         showStars: showStars,
+        streak: streak,
+        streakFrom: streakFrom,
         onMap: onMap,
         onNext: onNext,
         onRetry: onRetry,
@@ -63,7 +70,10 @@ class CourtyardWinOverlay extends StatefulWidget {
     this.cycle = 0,
     this.title,
     this.subtitle,
+    this.carePhrase,
     this.showStars = true,
+    this.streak,
+    this.streakFrom = 0,
     required this.onMap,
     required this.onNext,
     required this.onRetry,
@@ -78,7 +88,10 @@ class CourtyardWinOverlay extends StatefulWidget {
   final int cycle;
   final String? title;
   final String? subtitle;
+  final String? carePhrase;
   final bool showStars;
+  final int? streak;
+  final int streakFrom;
   final VoidCallback onMap;
   final VoidCallback onNext;
   final VoidCallback onRetry;
@@ -128,6 +141,23 @@ class _CourtyardWinOverlayState extends State<CourtyardWinOverlay>
 
   double _starProgress(int index) =>
       _segment(0.14 + index * 0.16, 0.30 + index * 0.16);
+
+  double _lanternProgress(int order) =>
+      _segment(0.16 + order * 0.14, 0.38 + order * 0.14);
+
+  List<double> _lanternLights() {
+    final to = (widget.streak ?? 0).clamp(0, 3);
+    final from = widget.streakFrom.clamp(0, 3);
+    return [
+      for (var i = 0; i < 3; i++)
+        if (i < from)
+          1.0
+        else if (i < to)
+          Curves.elasticOut.transform(_lanternProgress(i - from)).clamp(0.0, 1.0)
+        else
+          0.0,
+    ];
+  }
 
   Widget _starIcon(int index) {
     final earned = index < widget.stars;
@@ -258,6 +288,22 @@ class _CourtyardWinOverlayState extends State<CourtyardWinOverlay>
                             ),
                           ),
                         ),
+                        if (widget.carePhrase != null &&
+                            widget.carePhrase!.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Opacity(
+                            opacity: phraseIn,
+                            child: Text(
+                              widget.carePhrase!,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: _goldSoft.withValues(alpha: 0.95),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
                         if (widget.showStars) ...[
                           const SizedBox(height: 12),
                           Row(
@@ -268,6 +314,16 @@ class _CourtyardWinOverlayState extends State<CourtyardWinOverlay>
                                 _starIcon(i),
                               ],
                             ],
+                          ),
+                        ] else if (widget.streak != null) ...[
+                          const SizedBox(height: 12),
+                          StreakLanterns(
+                            litCount: (widget.streak ?? 0).clamp(0, 3),
+                            lights: _lanternLights(),
+                            celebrate: (widget.streak ?? 0) >= 3,
+                            size: 36,
+                            gap: 10,
+                            idle: false,
                           ),
                         ],
                         const SizedBox(height: 20),

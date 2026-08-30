@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mahjong/models/leaderboard_entry.dart';
+import 'package:mahjong/services/guest_name.dart';
 import 'package:mahjong/services/leaderboard_service.dart';
 import 'package:mahjong/services/player_profile_store.dart';
 import 'package:mahjong/services/progress_store.dart';
@@ -97,5 +101,57 @@ void main() {
     expect(LeaderboardService.plotsOpened(24), 1);
     expect(LeaderboardService.plotsOpened(25), 2);
     expect(LeaderboardService.plotsOpened(240), 10);
+  });
+
+  test('one table failing does not wipe the other', () async {
+    const me = LeaderboardEntry(
+      id: 'me',
+      name: 'Me',
+      rating: 100,
+      totalStars: 1,
+      levelsUnlocked: 1,
+      isCurrentPlayer: true,
+    );
+    const localWeek = LeaderboardEntry(
+      id: 'local-player',
+      name: 'Me',
+      rating: 0,
+      totalStars: 0,
+      levelsUnlocked: 0,
+      isCurrentPlayer: true,
+    );
+
+    final all = await LeaderboardFetch.guard(
+      load: () async => [me],
+      fallback: () => const [],
+    );
+    final week = await LeaderboardFetch.guard(
+      load: () async => throw Exception('permission-denied'),
+      fallback: () => const [localWeek],
+    );
+
+    expect(all.online, isTrue);
+    expect(all.entries, [me]);
+    expect(week.online, isFalse);
+    expect(week.entries, [localWeek]);
+  });
+
+  test('ranking names stay within Firestore limit', () {
+    expect(GuestName.clamp('  Jade Koi 12  '), 'Jade Koi 12');
+    expect(GuestName.clamp(''), 'Player');
+    expect(GuestName.clamp('   '), 'Player');
+    final long = 'A' * 40;
+    expect(GuestName.clamp(long).length, GuestName.maxLength);
+    expect(GuestName.clamp(long), 'A' * GuestName.maxLength);
+    expect(GuestName.clamp('Золотой Дракон 12').length, lessThanOrEqualTo(20));
+    expect(
+      utf8.encode(GuestName.clamp('Золотой Дракон 12')).length,
+      lessThanOrEqualTo(GuestName.maxLength),
+    );
+    for (var i = 0; i < 40; i++) {
+      final name = GuestName.generate(isRu: true, random: Random(i));
+      expect(name.length, lessThanOrEqualTo(GuestName.maxLength));
+      expect(utf8.encode(name).length, lessThanOrEqualTo(GuestName.maxLength));
+    }
   });
 }

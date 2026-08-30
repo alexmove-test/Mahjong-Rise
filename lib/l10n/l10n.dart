@@ -1,6 +1,8 @@
 import 'package:flutter/widgets.dart';
 
 import '../models/levels.dart';
+import '../models/pet.dart';
+import '../models/plot_kind.dart';
 import '../widgets/courtyard/courtyard_progress.dart';
 
 /// UI strings: Russian only when [code] is `ru`, otherwise English.
@@ -25,13 +27,37 @@ class L10n {
   String get newPlot => pick('New plot', 'Новый участок');
   String get previousPlot => pick('Previous plot', 'Предыдущий участок');
   String get nextPlot => pick('Next plot', 'Следующий участок');
-  String plot(int cycle) => pick('Plot ${cycle + 1}', 'Участок ${cycle + 1}');
+  String plot(int cycle) {
+    final kind = PlotKind.ofCycle(cycle);
+    return isRu ? kind.titleRu : kind.titleEn;
+  }
 
   String get today => pick('Today', 'Сегодня');
   String get clearedToday => pick('Cleared today', 'День закрыт');
-  String streak(int n) => pick('Streak $n', 'Серия $n');
-  String get newTableEveryDay =>
-      pick('A new table every day', 'Новый стол каждый день');
+  String streakNights(int n) => pick('Day $n of 3', 'День $n из 3');
+  String get streakKept => pick('Three nights kept', 'Серия сохранена');
+  String get streakAtRisk => pick('Goes out at midnight', 'Сгорит в полночь');
+  String get keepTheLight => pick('Keep the light', 'Сохрани свет');
+
+  String streakWinSubtitle(int n) {
+    if (n <= 0) return streakLabel(0);
+    if (n < 3) return streakNights(n);
+    if (n == 3) return streakKept;
+    return streakLabel(n);
+  }
+
+  String dailyStreakSubtitle({
+    required int streak,
+    required bool completedToday,
+  }) {
+    if (completedToday) {
+      if (streak >= 3) return streakKept;
+      if (streak > 0) return streakNights(streak);
+      return clearedToday;
+    }
+    if (streak > 0) return streakAtRisk;
+    return keepTheLight;
+  }
 
   String openedProgress(int unlocked, int total) =>
       pick('$unlocked/$total open', 'открыто $unlocked/$total');
@@ -160,7 +186,7 @@ class L10n {
 
   String levelTitle(LevelDef level) {
     if (level.title == 'Today') return today;
-    return storyTitle(level.storyId);
+    return isRu ? level.plotKind.titleRu : level.plotKind.titleEn;
   }
 
   String storyTitle(int storyId) {
@@ -263,43 +289,128 @@ class L10n {
   String get claimReward => pick('Claim reward', 'Получить награду');
   String get watchingAd => pick('Watching ad…', 'Смотрите рекламу…');
 
-  String get firstHomePhrase => pick(
-    'This house grows as you play.',
-    'Этот дом растёт, пока ты играешь.',
-  );
+  String firstHomePhraseFor(PlotKind kind) => switch (kind) {
+    PlotKind.house => pick(
+      'This house grows as you play.',
+      'Этот дом растёт, пока ты играешь.',
+    ),
+    PlotKind.pond => pick(
+      'This pond fills as you play.',
+      'Этот ставок наполняется, пока ты играешь.',
+    ),
+    PlotKind.road => pick(
+      'This road grows as you play.',
+      'Эта дорога растёт, пока ты играешь.',
+    ),
+    PlotKind.internet => pick(
+      'This yard comes online as you play.',
+      'Этот двор выходит в сеть, пока ты играешь.',
+    ),
+  };
 
-  List<String> get pathStagePhrases => isRu
-      ? const [
-          'Здесь будет дом.',
-          'Забор держит участок.',
-          'Стены уже свои.',
-          'Крыша легла.',
-          'В окнах можно жить.',
-          'Дом собрался из пройденного.',
-        ]
-      : const [
-          'A house will stand here.',
-          'The fence holds the plot.',
-          'The walls are yours.',
-          'The roof is on.',
-          'The windows are ready.',
-          'The house rose from your wins.',
-        ];
+  String get firstHomePhrase => firstHomePhraseFor(PlotKind.house);
 
-  List<String> get pathWarmPhrases => isRu
-      ? const [
-          'Ещё один шаг по тропе.',
-          'Участок стал своим.',
-          'Дом чуть ближе.',
-        ]
-      : const [
-          'Another step along the path.',
-          'The plot is yours now.',
-          'The house is a little closer.',
-        ];
+  List<String> pathStagePhrasesFor(PlotKind kind) {
+    switch (kind) {
+      case PlotKind.pond:
+        return isRu
+            ? const [
+                'Здесь нальётся ставок.',
+                'Берега держат воду.',
+                'Камыш взял кромку.',
+                'Мостки легли.',
+                'Карпам есть дом.',
+                'Ставок собрался из пройденного.',
+              ]
+            : pondStagePhrases;
+      case PlotKind.road:
+        return isRu
+            ? const [
+                'Отсюда уйдёт дорога.',
+                'Тропа держит линию.',
+                'Щебень лёг в путь.',
+                'Камни легли.',
+                'Фонари стоят вдоль.',
+                'Дорога собралась из пройденного.',
+              ]
+            : roadStagePhrases;
+      case PlotKind.internet:
+        return isRu
+            ? const [
+                'Сюда дойдёт сигнал.',
+                'Столб держит линию.',
+                'Кабель нашёл дом.',
+                'Тарелка стоит.',
+                'Экраны светятся во дворе.',
+                'Двор вышел в сеть из пройденного.',
+              ]
+            : internetStagePhrases;
+      case PlotKind.house:
+        return isRu
+            ? const [
+                'Здесь будет дом.',
+                'Забор держит участок.',
+                'Стены уже свои.',
+                'Крыша легла.',
+                'В окнах можно жить.',
+                'Дом собрался из пройденного.',
+              ]
+            : const [
+                'A house will stand here.',
+                'The fence holds the plot.',
+                'The walls are yours.',
+                'The roof is on.',
+                'The windows are ready.',
+                'The house rose from your wins.',
+              ];
+    }
+  }
 
-  String get pathLifePhrase =>
-      pick('The house feels warmer.', 'В доме стало теплее.');
+  List<String> get pathStagePhrases => pathStagePhrasesFor(PlotKind.house);
+
+  List<String> pathWarmPhrasesFor(PlotKind kind) {
+    switch (kind) {
+      case PlotKind.pond:
+        return isRu
+            ? const [
+                'Вода поднялась чуть.',
+                'Ставок стал своим.',
+                'Берега ближе.',
+              ]
+            : pondWarmPhrases;
+      case PlotKind.road:
+        return isRu
+            ? const ['Ещё кусок дороги.', 'Путь стал своим.', 'Тропа ближе.']
+            : roadWarmPhrases;
+      case PlotKind.internet:
+        return isRu
+            ? const ['Сигнал чуть сильнее.', 'Двор связаннее.', 'Линия ближе.']
+            : internetWarmPhrases;
+      case PlotKind.house:
+        return isRu
+            ? const [
+                'Ещё один шаг по тропе.',
+                'Участок стал своим.',
+                'Дом чуть ближе.',
+              ]
+            : const [
+                'Another step along the path.',
+                'The plot is yours now.',
+                'The house is a little closer.',
+              ];
+    }
+  }
+
+  List<String> get pathWarmPhrases => pathWarmPhrasesFor(PlotKind.house);
+
+  String pathLifePhraseFor(PlotKind kind) => switch (kind) {
+    PlotKind.house => pick('The house feels warmer.', 'В доме стало теплее.'),
+    PlotKind.pond => pick('The pond feels alive.', 'Ставок ожил.'),
+    PlotKind.road => pick('The road feels warmer.', 'Дороге теплее.'),
+    PlotKind.internet => pick('The yard hums a little.', 'Двор чуть гудит.'),
+  };
+
+  String get pathLifePhrase => pathLifePhraseFor(PlotKind.house);
 
   String get thisWeek => pick('This week', 'Эта неделя');
   String get allTime => pick('All-time', 'Всегда');
@@ -321,7 +432,7 @@ class L10n {
     'stars8' => pick('Earn 8 stars', 'Наберите 8 звёзд'),
     'clears4' => pick('Clear 4 campaign levels', 'Пройдите 4 уровня кампании'),
     'threeStar1' => pick('Score 3★ on a level', 'Возьмите 3★ на уровне'),
-    'streak3' => pick('Keep a 3-day streak', 'Удержите серию 3 дня'),
+    'streak3' => pick('Keep three nights lit', 'Три вечера света'),
     _ => id,
   };
   String weekEventTitle(String id) => switch (id) {
@@ -337,8 +448,7 @@ class L10n {
   String get seasonClosed => pick('Season closed', 'Сезон закрыт');
   String lastWeekPlace(int rank) =>
       pick('Last week: place $rank', 'Прошлая неделя: место $rank');
-  String lastWeekScore(String rating) =>
-      pick('Score $rating', 'Счёт $rating');
+  String lastWeekScore(String rating) => pick('Score $rating', 'Счёт $rating');
   String get reminders => pick('Daily reminders', 'Напоминания');
   String get reminderDailyTitle =>
       pick('Your courtyard is waiting', 'Двор ждёт вас');
@@ -347,8 +457,8 @@ class L10n {
   String get reminderStreakTitle =>
       pick('Your streak is at risk', 'Серия сейчас сгорит');
   String get reminderStreakBody => pick(
-    'Clear today’s table before midnight.',
-    'Закройте сегодняшний стол до полуночи.',
+    'The third lantern goes out at midnight.',
+    'Третий фонарь погаснет в полночь.',
   );
   String get reminderWeekTitle =>
       pick('A new courtyard season', 'Новый сезон двора');
@@ -357,29 +467,109 @@ class L10n {
     'Задания и рейтинг недели обновились.',
   );
 
+  String get pet => pick('Pet', 'Питомец');
+  String get pets => pick('Pets', 'Питомцы');
+  String petsTitle(int count) => count > 1 ? pets : pet;
+  String get chooseAPet => pick('Choose a companion', 'Выберите питомца');
+  String get addPet => pick('Add a companion', 'Добавить питомца');
+  String get petCareHint => pick(
+    'Clear a table to help whoever needs you most.',
+    'Пройдите уровень — помощь тому, кому сейчас нужнее.',
+  );
+  String get petStarvingLine => pick(
+    'They are starving. Clear a table to feed them.',
+    'Голодает. Пройдите уровень, чтобы покормить.',
+  );
+  String get petRemindersPromptTitle =>
+      pick('Hungry reminders?', 'Напомнить о голоде?');
+  String get petRemindersPromptBody => pick(
+    'We can ping you when they get hungry.',
+    'Можем напомнить, когда питомец проголодается.',
+  );
+  String get petRemindersYes => pick('Remind me', 'Напомнить');
+  String get petRemindersLater => pick('Not now', 'Не сейчас');
+
+  String petName(PetKind kind) => switch (kind) {
+    PetKind.cat => pick('Cat', 'Кот'),
+    PetKind.dog => pick('Dog', 'Собака'),
+    PetKind.raccoon => pick('Raccoon', 'Енот'),
+    PetKind.hamster => pick('Hamster', 'Хомяк'),
+    PetKind.fox => pick('Fox', 'Лисица'),
+  };
+
+  String petNeedLabel(PetNeed need) => switch (need) {
+    PetNeed.hunger => pick('Hunger', 'Голод'),
+    PetNeed.play => pick('Play', 'Игра'),
+    PetNeed.rest => pick('Rest', 'Отдых'),
+  };
+
+  String petMoodLine(PetKind kind, PetMood mood) {
+    final name = petName(kind);
+    return switch (mood) {
+      PetMood.content => pick('$name is content.', '$name в порядке.'),
+      PetMood.asking => pick('$name needs you.', '$name просит внимания.'),
+      PetMood.starving => pick('$name is starving.', '$name голодает.'),
+    };
+  }
+
+  String petCareWinLine(PetKind kind, PetNeed need) {
+    final name = petName(kind);
+    return switch (need) {
+      PetNeed.hunger => pick('You fed $name.', 'Вы покормили $name.'),
+      PetNeed.play => pick('You played with $name.', 'Вы поиграли с $name.'),
+      PetNeed.rest => pick('$name rested.', 'Вы дали $name отдохнуть.'),
+    };
+  }
+
+  String reminderPetHungerTitle(String name) =>
+      pick('$name is hungry', '$name хочет есть');
+  String get reminderPetHungerBody =>
+      pick('Clear a table to feed them.', 'Пройдите уровень, чтобы покормить.');
+  String reminderPetPlayTitle(String name) =>
+      pick('$name wants to play', '$name хочет играть');
+  String get reminderPetPlayBody => pick(
+    'Clear a table to play with them.',
+    'Пройдите уровень, чтобы поиграть.',
+  );
+  String reminderPetRestTitle(String name) =>
+      pick('$name wants to rest', '$name хочет отдохнуть');
+  String get reminderPetRestBody => pick(
+    'Clear a table so they can rest.',
+    'Пройдите уровень — питомцу нужен отдых.',
+  );
+  String reminderPetStarveTitle(String name) =>
+      pick('$name is starving', '$name голодает');
+  String get reminderPetStarveBody =>
+      pick('Clear a table to feed them.', 'Пройдите стол, чтобы покормить.');
+
   String homePathPhrase(CourtyardSnapshot snapshot) {
+    final phrases = pathStagePhrasesFor(snapshot.plotKind);
     final band = snapshot.band;
-    if (band <= 0) return pathStagePhrases.first;
-    return pathStagePhrases[band - 1];
+    if (band <= 0) return phrases.first;
+    return phrases[band - 1];
   }
 
   String winPathPhrase({
     required CourtyardSnapshot from,
     required CourtyardSnapshot to,
   }) {
+    final phrases = pathStagePhrasesFor(to.plotKind);
+    final warm = pathWarmPhrasesFor(to.plotKind);
     final fromBand = from.band;
     final toBand = to.band;
     if (toBand > fromBand && toBand > 0) {
-      return pathStagePhrases[toBand - 1];
+      return phrases[toBand - 1];
     }
     if (to.step > from.step + 0.01) {
-      return pathWarmPhrases[to.step.floor() % pathWarmPhrases.length];
+      return warm[to.step.floor() % warm.length];
     }
-    if (to.totalStars > from.totalStars) return pathLifePhrase;
+    if (to.totalStars > from.totalStars) {
+      return pathLifePhraseFor(to.plotKind);
+    }
     if (to.streakLife > from.streakLife + 0.01 ||
         to.festival > from.festival + 0.01) {
-      return pathLifePhrase;
+      return pathLifePhraseFor(to.plotKind);
     }
-    return pathWarmPhrases.first;
+    return warm.first;
   }
 }

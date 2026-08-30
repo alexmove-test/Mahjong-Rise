@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../../models/levels.dart';
+import '../../models/plot_kind.dart';
 import '../../services/progress_store.dart';
 
 /// Визуальное состояние участка: чистая функция прогресса кампании.
@@ -33,6 +34,7 @@ class CourtyardSnapshot {
     required this.goldLight,
     this.festival = 0,
     this.streakLife = 0,
+    this.plotKind = PlotKind.house,
   });
 
   /// 0 = пустое поле, 24 = дом собран.
@@ -64,6 +66,7 @@ class CourtyardSnapshot {
   final double goldLight;
   final double festival;
   final double streakLife;
+  final PlotKind plotKind;
 
   static const maxStep = 24.0;
 
@@ -76,7 +79,7 @@ class CourtyardSnapshot {
     final story = Levels.storyLength;
     final c = (cycle ?? Levels.cycleOf(store.maxUnlocked)).clamp(
       0,
-      Levels.cycleCount - 1,
+      Levels.maxCycle,
     );
     final localUnlocked = store.unlockedInCycle(c).clamp(1, story);
     final lastCompleted = store.isCycleComplete(c);
@@ -87,6 +90,7 @@ class CourtyardSnapshot {
       levelCount: story,
       streak: streak,
       festival: festival,
+      plotKind: PlotKind.ofCycle(c),
     );
   }
 
@@ -97,6 +101,7 @@ class CourtyardSnapshot {
     int levelCount = 24,
     int streak = 0,
     bool festival = false,
+    PlotKind plotKind = PlotKind.house,
   }) {
     final step = gardenStep(
       maxUnlocked: maxUnlocked,
@@ -108,6 +113,7 @@ class CourtyardSnapshot {
       totalStars: totalStars,
       streak: streak,
       festival: festival,
+      plotKind: plotKind,
     );
   }
 
@@ -125,6 +131,7 @@ class CourtyardSnapshot {
     required int totalStars,
     int streak = 0,
     bool festival = false,
+    PlotKind plotKind = PlotKind.house,
   }) {
     final s = step.clamp(0.0, maxStep);
     final stars = totalStars.clamp(0, 72);
@@ -161,6 +168,7 @@ class CourtyardSnapshot {
       ),
       festival: festive,
       streakLife: streakLife,
+      plotKind: plotKind,
     );
   }
 
@@ -199,13 +207,11 @@ class CourtyardSnapshot {
       goldLight: mix(a.goldLight, b.goldLight),
       festival: mix(a.festival, b.festival),
       streakLife: mix(a.streakLife, b.streakLife),
+      plotKind: u < 0.5 ? a.plotKind : b.plotKind,
     );
   }
 
   int get band => pathBand(step);
-
-  /// Кроссфейд соседних иллюстраций участка.
-  CourtyardArtFade get artFade => CourtyardArtFade.fromStep(step);
 
   /// Вечерний слой только на почти готовом доме, сила от звёзд.
   double get lifeArt {
@@ -213,6 +219,32 @@ class CourtyardSnapshot {
     final stars = (0.25 * windowGlow + 0.75 * goldLight).clamp(0.0, 1.0);
     return ready * stars;
   }
+
+  double layerOpacity(CourtyardLayer layer) => switch (layer) {
+    CourtyardLayer.yard => 1,
+    CourtyardLayer.pond => layerPond,
+    CourtyardLayer.road => layerRoad,
+    CourtyardLayer.house => layerHouse,
+    CourtyardLayer.internet => layerInternet,
+    CourtyardLayer.flowers => layerFlowers,
+  };
+
+  double get layerPond => plotKind == PlotKind.pond ? _rise(step, 4, 16) : 0;
+
+  double get layerRoad =>
+      plotKind == PlotKind.road ? _rise(step, 0.3, 18) : path;
+
+  double get layerHouse => switch (plotKind) {
+    PlotKind.house => _rise(step, 6, 16),
+    PlotKind.internet => _rise(step, 6, 12),
+    PlotKind.pond => 0,
+    PlotKind.road => 0,
+  };
+
+  double get layerInternet =>
+      plotKind == PlotKind.internet ? _rise(step, 12, 20) : 0;
+
+  double get layerFlowers => _rise(step, 17, 23);
 
   static double _rise(double value, double start, double end) {
     if (end <= start) return value >= start ? 1 : 0;
@@ -248,7 +280,8 @@ class CourtyardSnapshot {
         other.cat == cat &&
         other.goldLight == goldLight &&
         other.festival == festival &&
-        other.streakLife == streakLife;
+        other.streakLife == streakLife &&
+        other.plotKind == plotKind;
   }
 
   @override
@@ -280,103 +313,47 @@ class CourtyardSnapshot {
     goldLight,
     festival,
     streakLife,
+    plotKind,
   ]);
 }
 
-/// Соседние пластины двора для кроссфейда.
-class CourtyardArtFade {
-  const CourtyardArtFade({
-    required this.fromIndex,
-    required this.toIndex,
-    required this.blend,
-  });
+/// Слои одного кадра двора: поле, затем участки, цветы сверху.
+enum CourtyardLayer { yard, pond, road, house, internet, flowers }
 
-  static const plateSteps = <double>[
-    0,
-    2,
-    4,
-    6,
-    8,
-    10,
-    12,
-    14,
-    16,
-    18,
-    20,
-    22,
-    24,
+abstract final class CourtyardLayers {
+  static const yardAsset = 'assets/courtyard/layers/yard.jpg';
+  static const pondAsset = 'assets/courtyard/layers/pond.png';
+  static const roadAsset = 'assets/courtyard/layers/road.png';
+  static const houseAsset = 'assets/courtyard/layers/house.png';
+  static const internetAsset = 'assets/courtyard/layers/internet.png';
+  static const flowersAsset = 'assets/courtyard/layers/flowers.png';
+
+  static const stackOrder = [
+    CourtyardLayer.yard,
+    CourtyardLayer.pond,
+    CourtyardLayer.road,
+    CourtyardLayer.house,
+    CourtyardLayer.internet,
+    CourtyardLayer.flowers,
   ];
 
-  static const assets = <String>[
-    'assets/courtyard/courtyard_00_field.jpg',
-    'assets/courtyard/courtyard_00b_trail.jpg',
-    'assets/courtyard/courtyard_01_path.jpg',
-    'assets/courtyard/courtyard_01b_gate.jpg',
-    'assets/courtyard/courtyard_02_foundation.jpg',
-    'assets/courtyard/courtyard_02b_walls_rise.jpg',
-    'assets/courtyard/courtyard_03_walls.jpg',
-    'assets/courtyard/courtyard_03b_roof_rise.jpg',
-    'assets/courtyard/courtyard_04_roof.jpg',
-    'assets/courtyard/courtyard_04b_windows_rise.jpg',
-    'assets/courtyard/courtyard_05_windows.jpg',
-    'assets/courtyard/courtyard_05b_garden.jpg',
-    'assets/courtyard/courtyard_06_complete.jpg',
+  static const allAssets = [
+    yardAsset,
+    pondAsset,
+    roadAsset,
+    houseAsset,
+    internetAsset,
+    flowersAsset,
   ];
 
-  static const lifeAsset = 'assets/courtyard/courtyard_07_life.jpg';
-
-  /// Мультяшный дом второго участка.
-  static const plot2Assets = <String>[
-    'assets/courtyard/plot2/courtyard_00_field.jpg',
-    'assets/courtyard/plot2/courtyard_00b_trail.jpg',
-    'assets/courtyard/plot2/courtyard_01_path.jpg',
-    'assets/courtyard/plot2/courtyard_01b_gate.jpg',
-    'assets/courtyard/plot2/courtyard_02_foundation.jpg',
-    'assets/courtyard/plot2/courtyard_02b_walls_rise.jpg',
-    'assets/courtyard/plot2/courtyard_03_walls.jpg',
-    'assets/courtyard/plot2/courtyard_03b_roof_rise.jpg',
-    'assets/courtyard/plot2/courtyard_04_roof.jpg',
-    'assets/courtyard/plot2/courtyard_04b_windows_rise.jpg',
-    'assets/courtyard/plot2/courtyard_05_windows.jpg',
-    'assets/courtyard/plot2/courtyard_05b_garden.jpg',
-    'assets/courtyard/plot2/courtyard_06_complete.jpg',
-  ];
-
-  static const plot2LifeAsset = 'assets/courtyard/plot2/courtyard_07_life.jpg';
-
-  static List<String> assetsFor(int cycle) => cycle == 1 ? plot2Assets : assets;
-
-  static String lifeAssetFor(int cycle) =>
-      cycle == 1 ? plot2LifeAsset : lifeAsset;
-
-  /// Индекс нижней пластины (0–12).
-  final int fromIndex;
-
-  /// Индекс верхней пластины (0–12).
-  final int toIndex;
-
-  /// 0 = только [fromIndex], 1 = только [toIndex].
-  final double blend;
-
-  static CourtyardArtFade fromStep(double step) {
-    final s = step.clamp(0.0, CourtyardSnapshot.maxStep);
-    if (s <= plateSteps.first) {
-      return const CourtyardArtFade(fromIndex: 0, toIndex: 0, blend: 0);
-    }
-    for (var i = 0; i < plateSteps.length - 1; i++) {
-      final start = plateSteps[i];
-      final end = plateSteps[i + 1];
-      if (s <= end) {
-        return CourtyardArtFade(
-          fromIndex: i,
-          toIndex: i + 1,
-          blend: ((s - start) / (end - start)).clamp(0.0, 1.0),
-        );
-      }
-    }
-    final last = assets.length - 1;
-    return CourtyardArtFade(fromIndex: last, toIndex: last, blend: 1);
-  }
+  static String assetOf(CourtyardLayer layer) => switch (layer) {
+    CourtyardLayer.yard => yardAsset,
+    CourtyardLayer.pond => pondAsset,
+    CourtyardLayer.road => roadAsset,
+    CourtyardLayer.house => houseAsset,
+    CourtyardLayer.internet => internetAsset,
+    CourtyardLayer.flowers => flowersAsset,
+  };
 }
 
 const pathStagePhrases = <String>[
@@ -388,16 +365,95 @@ const pathStagePhrases = <String>[
   'The house rose from your wins.',
 ];
 
+const pondStagePhrases = <String>[
+  'A pond will fill this hollow.',
+  'The banks hold the water.',
+  'Reeds take the shore.',
+  'The walkway is down.',
+  'Koi have a home.',
+  'The pond rose from your wins.',
+];
+
+const roadStagePhrases = <String>[
+  'A road will leave this field.',
+  'The trail holds the line.',
+  'Gravel packs the way.',
+  'The stones are set.',
+  'Lanterns mark the road.',
+  'The road rose from your wins.',
+];
+
+const internetStagePhrases = <String>[
+  'A signal will reach this yard.',
+  'The pole holds the line.',
+  'Cable finds the house.',
+  'The dish is up.',
+  'Screens glow in the yard.',
+  'The yard came online from your wins.',
+];
+
 const pathWarmPhrases = <String>[
   'Another step along the path.',
   'The plot is yours now.',
   'The house is a little closer.',
 ];
 
+const pondWarmPhrases = <String>[
+  'The water rose a little.',
+  'The pond is more yours now.',
+  'The banks sit closer.',
+];
+
+const roadWarmPhrases = <String>[
+  'Another length of road.',
+  'The way is more yours now.',
+  'The path sits closer.',
+];
+
+const internetWarmPhrases = <String>[
+  'The signal grew a little.',
+  'The yard is more connected.',
+  'The line sits closer.',
+];
+
 const pathLifePhrase = 'The house feels warmer.';
+const pondLifePhrase = 'The pond feels alive.';
+const roadLifePhrase = 'The road feels warmer.';
+const internetLifePhrase = 'The yard hums a little.';
 
 /// Первая победа: двор в диалоге — не обои, а смысл кампании.
 const firstHomePhrase = 'This house grows as you play.';
+const firstPondPhrase = 'This pond fills as you play.';
+const firstRoadPhrase = 'This road grows as you play.';
+const firstInternetPhrase = 'This yard comes online as you play.';
+
+List<String> stagePhrasesFor(PlotKind kind) => switch (kind) {
+  PlotKind.house => pathStagePhrases,
+  PlotKind.pond => pondStagePhrases,
+  PlotKind.road => roadStagePhrases,
+  PlotKind.internet => internetStagePhrases,
+};
+
+List<String> warmPhrasesFor(PlotKind kind) => switch (kind) {
+  PlotKind.house => pathWarmPhrases,
+  PlotKind.pond => pondWarmPhrases,
+  PlotKind.road => roadWarmPhrases,
+  PlotKind.internet => internetWarmPhrases,
+};
+
+String lifePhraseFor(PlotKind kind) => switch (kind) {
+  PlotKind.house => pathLifePhrase,
+  PlotKind.pond => pondLifePhrase,
+  PlotKind.road => roadLifePhrase,
+  PlotKind.internet => internetLifePhrase,
+};
+
+String firstPhraseFor(PlotKind kind) => switch (kind) {
+  PlotKind.house => firstHomePhrase,
+  PlotKind.pond => firstPondPhrase,
+  PlotKind.road => firstRoadPhrase,
+  PlotKind.internet => firstInternetPhrase,
+};
 
 /// 0 = старт, 1–6 = этапы по 4 уровня.
 int pathBand(double step) {
@@ -411,23 +467,26 @@ int pathBand(double step) {
 }
 
 String pathPhraseForHome(CourtyardSnapshot snapshot) {
+  final phrases = stagePhrasesFor(snapshot.plotKind);
   final band = snapshot.band;
-  if (band <= 0) return pathStagePhrases.first;
-  return pathStagePhrases[band - 1];
+  if (band <= 0) return phrases.first;
+  return phrases[band - 1];
 }
 
 String pathPhraseForWin({
   required CourtyardSnapshot from,
   required CourtyardSnapshot to,
 }) {
+  final phrases = stagePhrasesFor(to.plotKind);
+  final warm = warmPhrasesFor(to.plotKind);
   final fromBand = from.band;
   final toBand = to.band;
   if (toBand > fromBand && toBand > 0) {
-    return pathStagePhrases[toBand - 1];
+    return phrases[toBand - 1];
   }
   if (to.step > from.step + 0.01) {
-    return pathWarmPhrases[to.step.floor() % pathWarmPhrases.length];
+    return warm[to.step.floor() % warm.length];
   }
-  if (to.totalStars > from.totalStars) return pathLifePhrase;
-  return pathWarmPhrases.first;
+  if (to.totalStars > from.totalStars) return lifePhraseFor(to.plotKind);
+  return warm.first;
 }

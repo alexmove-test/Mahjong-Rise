@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'dart:math';
 
 /// Случайное имя для рейтинга, пока игрок не задал своё.
 class GuestName {
   const GuestName._();
 
+  /// Firestore `string.size()` в правилах — не больше этого (символы или UTF-8).
   static const maxLength = 20;
 
   static const _enAdjectives = [
@@ -58,6 +60,22 @@ class GuestName {
     'Дракон',
   ];
 
+  /// Имя для Firestore: 1–20 единиц `size()`, иначе правила отклоняют запись.
+  static String clamp(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return 'Player';
+    if (_fitsLimit(trimmed)) return trimmed;
+    var result = trimmed;
+    while (result.isNotEmpty && !_fitsLimit(result)) {
+      result = result.substring(0, result.length - 1).trim();
+    }
+    return result.isEmpty ? 'Player' : result;
+  }
+
+  static bool _fitsLimit(String value) {
+    return value.length <= maxLength && utf8.encode(value).length <= maxLength;
+  }
+
   static String generate({required bool isRu, Random? random}) {
     final rng = random ?? Random();
     final adjectives = isRu ? _ruAdjectives : _enAdjectives;
@@ -66,9 +84,9 @@ class GuestName {
     final noun = nouns[rng.nextInt(nouns.length)];
     final number = rng.nextInt(90) + 10;
     final full = '$adjective $noun $number';
-    if (full.length <= maxLength) return full;
+    if (_fitsLimit(full)) return full;
     final short = '$noun $number';
-    if (short.length <= maxLength) return short;
-    return short.substring(0, maxLength);
+    if (_fitsLimit(short)) return short;
+    return clamp(short);
   }
 }

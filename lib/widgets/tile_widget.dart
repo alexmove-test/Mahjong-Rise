@@ -7,6 +7,8 @@ import '../debug_agent_log.dart';
 import '../models/tile.dart';
 import '../utils/tile_pyramid_position.dart';
 import 'match_particles.dart';
+import 'tile_canvas.dart';
+import 'tile_glyph.dart';
 import 'tile_painter.dart';
 import 'tile_symbol_image.dart';
 
@@ -47,11 +49,22 @@ class TileWidget extends StatefulWidget {
   /// Оборот плитки (нижний перекрытый слой).
   final bool showBack;
 
-  static const removeDuration = Duration(milliseconds: 280);
+  static const removeDuration = Duration(milliseconds: 300);
+  static const removeScale = 0.8;
+  static const removeSlideDuration = Duration(milliseconds: 400);
   static const burstDuration = MatchSparkBurst.duration;
   static const selectDuration = Duration(milliseconds: 80);
+  static const tapPopDuration = Duration(milliseconds: 200);
+  static const tapPopPeak = 1.15;
   static const shuffleFlipDuration = Duration(milliseconds: 480);
   static const shuffleMaxStagger = Duration(milliseconds: 216);
+
+  /// Отказ по перекрытой кости: короткая тряска вместо немого тапа.
+  static const shakeDuration = Duration(milliseconds: 200);
+  static const _shakeAmplitudePx = 6.0;
+
+  /// Свободная кость выступает над стопкой, под пальцем — bounce.
+  static const _freeLiftPx = -1.6;
   static Duration get shufflePlayDuration =>
       shuffleFlipDuration + shuffleMaxStagger;
 
@@ -77,6 +90,8 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
   late final AnimationController _burst;
   late final AnimationController _hintPulse;
   late final AnimationController _shuffleFlip;
+  late final AnimationController _shake;
+  late final AnimationController _pop;
   late String _shownSymbol;
   String? _shuffleFromSymbol;
   int _shuffleDelayMs = 0;
@@ -105,6 +120,14 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
             _shownSymbol = widget.tile.symbol;
           }
         });
+    _shake = AnimationController(
+      vsync: this,
+      duration: TileWidget.shakeDuration,
+    );
+    _pop = AnimationController(
+      vsync: this,
+      duration: TileWidget.tapPopDuration,
+    );
     if (widget.isRemoving) {
       _burst.forward();
     }
@@ -148,6 +171,8 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _shake.dispose();
+    _pop.dispose();
     _shuffleFlip.dispose();
     _hintPulse.dispose();
     _burst.dispose();
@@ -171,8 +196,13 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
     return from;
   }
 
+  void _playTapPop() {
+    if (!widget.isFree || widget.compact || widget.isRemoving) return;
+    _pop.forward(from: 0);
+  }
+
   double _highlightIntensity() {
-    if (widget.isSelected || widget.isHinted) {
+    if (widget.isHinted) {
       return widget.compact ? 0.92 : 1.0;
     }
     return 0.0;
@@ -186,14 +216,20 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
     final isRemoving = widget.isRemoving;
     final showBack = widget.showBack;
 
+    final locked = !widget.isFree && !widget.isSelected;
+    final lifted = widget.isFree || widget.isSelected;
+
     final selectScale = (widget.isSelected || widget.isHinted) ? 1.05 : 1.0;
-    final selectLift = (widget.isSelected || widget.isHinted) ? -2.0 : 0.0;
+    // Свободная кость чуть выступает над стопкой даже без подсказки.
+    final restLift = (lifted && !widget.compact) ? TileWidget._freeLiftPx : 0.0;
+    final selectLift = (widget.isSelected || widget.isHinted) ? -2.0 : restLift;
     final tileSize = Size(width, height);
     final symbolRect = TileBaseLayout.symbolRectOf(tileSize);
     final pyramid = TilePyramidPosition.visuals(
       z: tile.layer,
       tileWidth: width,
       tileHeight: height,
+      lifted: lifted,
     );
     final baseHighlight = _highlightIntensity();
     // #region agent log
@@ -231,14 +267,11 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
           'assetH': 709,
           'engrave': 'raw-color',
           'kIsWeb': kIsWeb,
-          'renderer': 'mapped-sprite',
+          'renderer': 'canvas-drawTile',
         },
       );
     }
     // #endregion
-
-    final locked = !widget.isFree && !widget.isSelected;
-    final lifted = widget.isFree || widget.isSelected;
 
     Widget tileBody = SizedBox(
       width: width,
@@ -248,32 +281,48 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
         children: [
           if (!showBack)
             Stack(
+              fit: StackFit.expand,
               clipBehavior: Clip.none,
               children: [
                 TilePyramidShadowLayer(
                   visuals: pyramid,
                   tileSize: tileSize,
-                  asset: TileBaseLayout.shadowAsset,
                 ),
                 Positioned.fill(
-                  child: _SpriteBone(
-                    tileSize: tileSize,
-                    locked: locked,
-                    lifted: lifted,
-                  ),
-                ),
-                Positioned(
-                  left: symbolRect.left,
-                  top: symbolRect.top,
-                  width: symbolRect.width,
-                  height: symbolRect.height,
-                  child: Opacity(
-                    opacity: lifted ? 1.0 : 0.78,
-                    child: AnimatedBuilder(
-                      animation: _shuffleFlip,
-                      builder: (context, _) =>
-                          _EngravedFace(symbol: _faceSymbol),
-                    ),
+                  child: AnimatedBuilder(
+                    animation: _shuffleFlip,
+                    builder: (context, _) {
+                      final shown = _faceSymbol;
+                      final special = TileCanvas.isSpecialSymbol(shown);
+                      return Stack(
+                        fit: StackFit.expand,
+                        clipBehavior: Clip.none,
+                        children: [
+                          CustomPaint(
+                            size: tileSize,
+                            painter: TileFacePainter(
+                              locked: locked,
+                              lifted: lifted,
+                              isSelected: widget.isSelected,
+                              isSpecial: special,
+                              specialSeed: shown.hashCode,
+                              symbol: shown,
+                            ),
+                          ),
+                          if (!special && !TileGlyph.paints(shown))
+                            Positioned(
+                              left: symbolRect.left,
+                              top: symbolRect.top,
+                              width: symbolRect.width,
+                              height: symbolRect.height,
+                              child: Opacity(
+                                opacity: lifted ? 1.0 : 0.72,
+                                child: _EngravedFace(symbol: shown),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ),
                 if (baseHighlight > 0)
@@ -311,19 +360,22 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
       duration: TileWidget.removeDuration,
       curve: Curves.easeOut,
       child: AnimatedScale(
-        scale: isRemoving ? 0.45 : selectScale,
+        scale: isRemoving ? TileWidget.removeScale : selectScale,
         duration: isRemoving
             ? TileWidget.removeDuration
             : TileWidget.selectDuration,
-        curve: isRemoving ? Curves.easeIn : Curves.easeOut,
+        curve: isRemoving ? Curves.easeOut : Curves.easeOut,
         child: AnimatedSlide(
-          offset: Offset(0, selectLift / height),
+          offset: Offset(
+            0,
+            isRemoving ? 0.22 : selectLift / height,
+          ),
           duration: isRemoving
-              ? TileWidget.removeDuration
+              ? TileWidget.removeSlideDuration
               : TileWidget.selectDuration,
           curve: Curves.easeOut,
           child: AnimatedBuilder(
-            animation: _shuffleFlip,
+            animation: Listenable.merge([_shuffleFlip, _pop]),
             builder: (context, child) {
               final t = _shuffleLocalT;
               final scaleX = (t == 0 || t == 1)
@@ -333,12 +385,15 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
               final lift = -12.0 * bounce;
               final tilt = bounce * 0.14 * (widget.tile.id.isEven ? 1.0 : -1.0);
               final pop = 1.0 + 0.07 * bounce;
+              final tapPop = 1.0 +
+                  (TileWidget.tapPopPeak - 1.0) *
+                      math.sin(_pop.value * math.pi);
               return Transform(
                 alignment: Alignment.center,
                 transform: Matrix4.identity()
                   ..translate(0.0, lift)
                   ..rotateZ(tilt)
-                  ..scale(scaleX * pop, pop),
+                  ..scale(scaleX * pop * tapPop, pop * tapPop),
                 child: child,
               );
             },
@@ -346,6 +401,18 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
           ),
         ),
       ),
+    );
+
+    tileBody = AnimatedBuilder(
+      animation: _shake,
+      builder: (context, child) {
+        final t = _shake.value;
+        if (t == 0 || t == 1) return child!;
+        final dx =
+            math.sin(t * math.pi * 3) * TileWidget._shakeAmplitudePx * (1 - t);
+        return Transform.translate(offset: Offset(dx, 0), child: child);
+      },
+      child: tileBody,
     );
 
     Widget body = SizedBox(
@@ -384,7 +451,11 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
       ignoring: isRemoving || shuffling,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
+        onTapDown: (_) {
+          if (widget.isFree) _playTapPop();
+        },
         onTap: () {
+          if (!widget.isFree) _shake.forward(from: 0);
           final box = context.findRenderObject() as RenderBox?;
           final rect = (box != null && box.hasSize)
               ? box.localToGlobal(Offset.zero) & box.size
@@ -394,39 +465,6 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
         child: body,
       ),
     );
-  }
-}
-
-/// База кости: PNG спрайт, затемнение только тела, fallback на CustomPaint.
-class _SpriteBone extends StatelessWidget {
-  const _SpriteBone({
-    required this.tileSize,
-    required this.locked,
-    required this.lifted,
-  });
-
-  final Size tileSize;
-  final bool locked;
-  final bool lifted;
-
-  static const _lockedTint = ColorFilter.mode(
-    Color(0x59304450),
-    BlendMode.srcATop,
-  );
-
-  @override
-  Widget build(BuildContext context) {
-    Widget sprite = TileMappedSprite(
-      asset: TileBaseLayout.baseAsset,
-      tileSize: tileSize,
-      errorBuilder: (context, error, stackTrace) {
-        return TileFallbackFace(size: tileSize, locked: false, lifted: lifted);
-      },
-    );
-    if (locked) {
-      sprite = ColorFiltered(colorFilter: _lockedTint, child: sprite);
-    }
-    return sprite;
   }
 }
 

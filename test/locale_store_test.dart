@@ -26,10 +26,12 @@ void main() {
     expect(ru.hapticFeedback, 'Тактильный отклик');
     expect(en.sound, 'Sound');
     expect(ru.sound, 'Звук');
-    expect(en.storyTitle(1), 'Sprout');
-    expect(ru.storyTitle(1), 'Росток');
-    expect(en.plot(0), 'Plot 1');
-    expect(ru.plot(0), 'Участок 1');
+    expect(en.plot(0), 'House');
+    expect(ru.plot(0), 'Дом');
+    expect(en.plot(1), 'Pond');
+    expect(ru.plot(1), 'Ставок');
+    expect(en.pet, 'Pet');
+    expect(ru.pet, 'Питомец');
     expect(en.scorePlotsLegend, 'Score : plots');
     expect(ru.scorePlotsLegend, 'Баллы : участки');
     expect(en.thisWeek, 'This week');
@@ -40,6 +42,22 @@ void main() {
     expect(ru.weekEventTitle('garden'), 'Неделя сада');
     expect(en.questTitle('stars8'), 'Earn 8 stars');
     expect(ru.questTitle('stars8'), 'Наберите 8 звёзд');
+    expect(en.questTitle('streak3'), 'Keep three nights lit');
+    expect(ru.questTitle('streak3'), 'Три вечера света');
+    expect(en.streakKept, 'Three nights kept');
+    expect(ru.streakKept, 'Серия сохранена');
+    expect(en.streakNights(2), 'Day 2 of 3');
+    expect(ru.streakNights(2), 'День 2 из 3');
+    expect(
+      en.dailyStreakSubtitle(streak: 2, completedToday: false),
+      'Goes out at midnight',
+    );
+    expect(
+      ru.dailyStreakSubtitle(streak: 2, completedToday: false),
+      'Сгорит в полночь',
+    );
+    expect(en.streakWinSubtitle(3), 'Three nights kept');
+    expect(ru.streakWinSubtitle(1), 'День 1 из 3');
     expect(en.reminders, 'Daily reminders');
     expect(ru.reminders, 'Напоминания');
     expect(en.builtAt('22.08.2026 17:27'), 'Built: 22.08.2026 17:27');

@@ -3,7 +3,9 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-/// Разметка спрайтов плитки: [tile_shadow.png] и [tile_base.png].
+import 'tile_canvas.dart';
+
+/// Разметка кости: геометрия лица, символа и скругления из [TileCanvas].
 class TileBaseLayout {
   TileBaseLayout._();
 
@@ -15,26 +17,14 @@ class TileBaseLayout {
   static const spriteTop = 0.0;
   static const spriteWidth = 1.0;
   static const spriteHeight = 1.0;
+  /// Высота / ширина видимой кости. Физическая плитка ~1.33–1.38, не квадрат.
   static const spriteAspect = 709 / 514;
 
-  /// Отступ символа от краёв белой грани.
-  static const _insetHorizontal = 0.10;
-  static const _insetTop = 0.09;
-  static const _insetBottom = 0.11;
-
-  /// Доля, которую занимают правая и нижняя боковины на [tile_base.png].
-  static const faceInsetRight = 0.105;
-  static const faceInsetBottom = 0.11;
+  static const faceInsetRight = TileCanvas.faceInsetRight;
+  static const faceInsetBottom = TileCanvas.faceInsetBottom;
 
   /// Смещённое вверх-влево лицо: справа и снизу видна толщина тела.
-  static Rect faceRectOf(Size size) {
-    return Rect.fromLTWH(
-      0,
-      0,
-      size.width * (1 - faceInsetRight),
-      size.height * (1 - faceInsetBottom),
-    );
-  }
+  static Rect faceRectOf(Size size) => TileCanvas.faceRectOf(size);
 
   /// Прямоугольник грани внутри спрайта, если спрайт растянут в [size].
   static Rect spriteRectOf(Size size) {
@@ -46,20 +36,9 @@ class TileBaseLayout {
     );
   }
 
-  static Rect symbolRectOf(Size size) {
-    final face = faceRectOf(size);
-    return Rect.fromLTRB(
-      face.left + face.width * _insetHorizontal,
-      face.top + face.height * _insetTop,
-      face.right - face.width * _insetHorizontal,
-      face.bottom - face.height * _insetBottom,
-    );
-  }
+  static Rect symbolRectOf(Size size) => TileCanvas.symbolRectOf(size);
 
-  static double cornerRadius(Size size) {
-    final face = faceRectOf(size);
-    return math.min(14.0, face.shortestSide * 0.16);
-  }
+  static double cornerRadius(Size size) => TileCanvas.cornerRadius(size);
 
   /// Совместимость с расчётом поля.
   static double edgeX(double width) => width * 0.12;
@@ -106,163 +85,139 @@ class TileFallbackFace extends StatelessWidget {
     required this.size,
     this.locked = false,
     this.lifted = false,
+    this.isSelected = false,
+    this.isSpecial = false,
+    this.specialSeed = 0,
+    this.symbol,
   });
 
   final Size size;
   final bool locked;
   final bool lifted;
+  final bool isSelected;
+  final bool isSpecial;
+  final int specialSeed;
+  final String? symbol;
 
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
       size: size,
-      painter: TileFacePainter(locked: locked, lifted: lifted),
+      painter: TileFacePainter(
+        locked: locked,
+        lifted: lifted,
+        isSelected: isSelected,
+        isSpecial: isSpecial,
+        specialSeed: specialSeed,
+        symbol: symbol,
+      ),
     );
   }
 }
 
-/// Ледяная кость: aqua-боковины, ivory-лицо, контактная тень.
+/// Фарфоровая кость: [TileCanvas.drawTile].
 class TileFacePainter extends CustomPainter {
-  const TileFacePainter({this.locked = false, this.lifted = false});
+  const TileFacePainter({
+    this.locked = false,
+    this.lifted = false,
+    this.isSelected = false,
+    this.isSpecial = false,
+    this.specialSeed = 0,
+    this.symbol,
+  });
 
   final bool locked;
   final bool lifted;
-
-  static const _iceHi = Color(0xFFB8EAF6);
-  static const _iceMid = Color(0xFF5BA8C4);
-  static const _iceDeep = Color(0xFF2F6F88);
-  static const _iceLockedHi = Color(0xFF7AA8B6);
-  static const _iceLockedMid = Color(0xFF3E6E82);
-  static const _iceLockedDeep = Color(0xFF244A5A);
-
-  static const _ivoryHi = Color(0xFFFFFDF8);
-  static const _ivoryLo = Color(0xFFF3EEE4);
-  static const _ivoryLockedHi = Color(0xFFE6E3DC);
-  static const _ivoryLockedLo = Color(0xFFD2CEC6);
+  final bool isSelected;
+  final bool isSpecial;
+  final int specialSeed;
+  final String? symbol;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final face = TileBaseLayout.faceRectOf(size);
-    final radius = TileBaseLayout.cornerRadius(size);
-    final body = RRect.fromRectAndRadius(
-      Offset.zero & size,
-      Radius.circular(radius),
-    );
-    final faceRRect = RRect.fromRectAndRadius(face, Radius.circular(radius));
-
-    final iceHi = locked ? _iceLockedHi : _iceHi;
-    final iceMid = locked ? _iceLockedMid : _iceMid;
-    final iceDeep = locked ? _iceLockedDeep : _iceDeep;
-    final ivoryHi = locked
-        ? _ivoryLockedHi
-        : (lifted ? const Color(0xFFFFFFF8) : _ivoryHi);
-    final ivoryLo = locked ? _ivoryLockedLo : _ivoryLo;
-
-    canvas.drawRRect(
-      body.shift(Offset(w * 0.045, h * 0.08)),
-      Paint()
-        ..color = Colors.black.withValues(alpha: locked ? 0.28 : 0.46)
-        ..maskFilter = ui.MaskFilter.blur(BlurStyle.normal, w * 0.10),
-    );
-
-    canvas.drawRRect(
-      body,
-      Paint()
-        ..shader = ui.Gradient.linear(
-          Offset.zero,
-          Offset(w, h),
-          [iceHi, iceMid, iceDeep],
-          const [0.0, 0.42, 1.0],
-        ),
-    );
-
-    canvas.save();
-    canvas.clipRRect(body);
-    canvas.drawRect(
-      Rect.fromLTRB(face.right - 0.5, 0, w, h),
-      Paint()
-        ..shader = ui.Gradient.linear(
-          Offset(face.right, face.top),
-          Offset(w, face.top),
-          [iceMid.withValues(alpha: 0.15), iceDeep.withValues(alpha: 0.72)],
-        ),
-    );
-    canvas.drawRect(
-      Rect.fromLTRB(0, face.bottom - 0.5, w, h),
-      Paint()
-        ..shader = ui.Gradient.linear(Offset(0, face.bottom), Offset(0, h), [
-          iceMid.withValues(alpha: 0.08),
-          const Color(0xFF1E4A5C).withValues(alpha: locked ? 0.55 : 0.62),
-        ]),
-    );
-    canvas.drawRRect(
-      body,
-      Paint()
-        ..shader = ui.Gradient.linear(
-          Offset(w * 0.12, 0),
-          Offset(w * 0.12, h * 0.22),
-          [
-            Colors.white.withValues(alpha: locked ? 0.18 : 0.38),
-            Colors.transparent,
-          ],
-        ),
-    );
-    canvas.restore();
-
-    canvas.drawRRect(
-      faceRRect,
-      Paint()
-        ..shader = ui.Gradient.linear(face.topCenter, face.bottomCenter, [
-          ivoryHi,
-          ivoryLo,
-        ]),
-    );
-
-    canvas.drawRRect(
-      faceRRect,
-      Paint()
-        ..shader = ui.Gradient.radial(
-          face.topLeft + Offset(face.width * 0.18, face.height * 0.16),
-          face.shortestSide * 0.78,
-          [
-            Colors.white.withValues(alpha: locked ? 0.42 : 0.90),
-            Colors.transparent,
-          ],
-        ),
-    );
-
-    canvas.drawRRect(
-      faceRRect,
-      Paint()
-        ..shader = ui.Gradient.linear(
-          face.topLeft,
-          face.bottomRight,
-          [
-            Colors.white.withValues(alpha: locked ? 0.18 : 0.35),
-            Colors.transparent,
-            Colors.black.withValues(alpha: locked ? 0.10 : 0.07),
-          ],
-          const [0.0, 0.45, 1.0],
-        ),
-    );
-
-    canvas.drawRRect(
-      faceRRect.deflate(0.6),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.05
-        ..shader = ui.Gradient.linear(face.topLeft, face.bottomRight, [
-          Colors.white.withValues(alpha: locked ? 0.35 : 0.72),
-          const Color(0xFFC9BFAE).withValues(alpha: 0.55),
-        ]),
+    TileCanvas.drawTile(
+      canvas,
+      size,
+      locked: locked,
+      lifted: lifted,
+      isSelected: isSelected,
+      isSpecial: isSpecial,
+      specialSeed: specialSeed,
+      symbol: symbol,
     );
   }
 
   @override
   bool shouldRepaint(covariant TileFacePainter oldDelegate) {
-    return oldDelegate.locked != locked || oldDelegate.lifted != lifted;
+    return oldDelegate.locked != locked ||
+        oldDelegate.lifted != lifted ||
+        oldDelegate.isSelected != isSelected ||
+        oldDelegate.isSpecial != isSpecial ||
+        oldDelegate.specialSeed != specialSeed ||
+        oldDelegate.symbol != symbol;
+  }
+}
+
+/// Свет на белой грани поверх PNG-кости: блик сверху-слева, диагональный
+/// отлив и светлый кант. Рисуется под символом, чтобы не гасить иконку.
+class TileFaceLightPainter extends CustomPainter {
+  const TileFaceLightPainter({this.locked = false});
+
+  final bool locked;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final face = TileBaseLayout.faceRectOf(size);
+    if (face.isEmpty) return;
+
+    final radius = TileBaseLayout.cornerRadius(size);
+    final faceRRect = RRect.fromRectAndRadius(face, Radius.circular(radius));
+
+    canvas.save();
+    canvas.clipRRect(faceRRect);
+
+    canvas.drawRect(
+      face,
+      Paint()
+        ..shader = ui.Gradient.radial(
+          face.topLeft + Offset(face.width * 0.22, face.height * 0.18),
+          face.shortestSide * 0.86,
+          [
+            Colors.white.withValues(alpha: locked ? 0.10 : 0.30),
+            Colors.transparent,
+          ],
+        ),
+    );
+
+    canvas.drawRect(
+      face,
+      Paint()
+        ..shader = ui.Gradient.linear(
+          face.topLeft,
+          face.bottomRight,
+          [
+            Colors.white.withValues(alpha: locked ? 0.05 : 0.14),
+            Colors.transparent,
+            Colors.black.withValues(alpha: locked ? 0.12 : 0.05),
+          ],
+          const [0.0, 0.48, 1.0],
+        ),
+    );
+
+    canvas.restore();
+
+    canvas.drawRRect(
+      faceRRect.deflate(0.6),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0
+        ..color = Colors.white.withValues(alpha: locked ? 0.18 : 0.42),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant TileFaceLightPainter oldDelegate) {
+    return oldDelegate.locked != locked;
   }
 }
 

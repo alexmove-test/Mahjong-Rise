@@ -65,6 +65,13 @@ class TileIcons {
     'fruit-11',
     'fruit-12',
     'fruit-13',
+    'fruit-14',
+    'fruit-15',
+    'fruit-16',
+    'fruit-17',
+    'fruit-18',
+    'fruit-19',
+    'fruit-20',
   ];
   static const _nature = <String>[
     'flower-01',
@@ -5287,6 +5294,13 @@ class TileIcons {
   };
   static List<String> get shapeIds => _shape;
   static List<String> get numberIds => _number;
+  static List<String> get fruitIds => _fruit;
+
+  /// Простые читаемые лица: фрукты, цифры, геометрические фигуры.
+  static bool isCuteSimple(String symbol) =>
+      symbol.startsWith('fruit-') ||
+      symbol.startsWith('shape-') ||
+      symbol.startsWith('number-');
   static List<String> get mixedIds => ids;
   static const ids = <String>[
     ..._soft,
@@ -5300,20 +5314,51 @@ class TileIcons {
     ..._set1,
     ..._tile,
   ];
+  static const mahjongIds = <String>[
+    ..._classic,
+    'bamboo-01',
+    'bamboo-02',
+    'bamboo-03',
+    'bamboo-04',
+    'bamboo-05',
+    'bamboo-06',
+    'bamboo-07',
+    'bamboo-08',
+    'bamboo-09',
+    'dot-01',
+    'dot-02',
+    'dot-03',
+    'dot-04',
+    'dot-05',
+    'dot-06',
+    'dot-07',
+    'dot-08',
+    'dot-09',
+    'dragon-01',
+    'dragon-02',
+    'dragon-03',
+    'flower-01',
+    'flower-02',
+    'flower-03',
+    'flower-04',
+    'season-01',
+    'season-02',
+    'season-03',
+    'season-04',
+  ];
+
   static List<String> idsForStyle(String style) {
     switch (style) {
-      case 'mixed':
-        return _soft;
       case 'fruit':
-        return _soft;
+        return _fruit;
       case 'nature':
-        return _soft;
+        return _nature;
       case 'court':
-        return _soft;
+        return _court;
       case 'myth':
-        return _soft;
+        return _myth;
       case 'classic':
-        return _soft;
+        return mahjongIds;
       case 'shape':
         return _shape;
       case 'number':
@@ -5321,6 +5366,9 @@ class TileIcons {
           ..._number,
           ..._set1.where((id) => id.startsWith('set1-number')),
         ];
+      case 'mixed':
+        // Фрукты и мягкие 3D — основная колода; китайские кости не смешиваем сюда.
+        return [..._fruit, ..._soft, ..._shape, ..._number];
       default:
         return ids;
     }

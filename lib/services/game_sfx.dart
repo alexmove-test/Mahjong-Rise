@@ -124,16 +124,18 @@ class GameSfx {
     }
   }
 
+  static const _matchVolume = 0.82;
+
   /// Пара снята из лотка.
   Future<void> match() async {
     HapticGate.medium();
-    await _play('sfx/match.mp3', volume: 0.82);
+    await _play('sfx/match.mp3', volume: _matchVolume);
   }
 
-  /// Редкий удар плиток друг о друга.
+  /// Редкий удар плиток друг о друга — обычный матч, на 20% громче.
   Future<void> smash() async {
     HapticGate.heavy();
-    await _play('sfx/smash.wav', volume: 0.92);
+    await _play('sfx/match.mp3', volume: (_matchVolume * 1.2).clamp(0.0, 1.0));
   }
 
   /// Лоток полон — проигрыш.

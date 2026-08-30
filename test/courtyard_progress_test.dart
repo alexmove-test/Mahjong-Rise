@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mahjong/models/plot_kind.dart';
 import 'package:mahjong/widgets/courtyard/courtyard_progress.dart';
 
 void main() {
@@ -80,70 +81,78 @@ void main() {
     });
   });
 
-  group('CourtyardArtFade', () {
-    test('maps campaign steps onto neighboring plates', () {
-      expect(
-        CourtyardArtFade.assets.length,
-        CourtyardArtFade.plateSteps.length,
-      );
-      expect(CourtyardArtFade.plateSteps, [
-        0,
-        2,
-        4,
-        6,
-        8,
-        10,
-        12,
-        14,
-        16,
-        18,
-        20,
-        22,
-        24,
-      ]);
-      final empty = CourtyardArtFade.fromStep(0);
-      expect(empty.fromIndex, 0);
-      expect(empty.toIndex, 0);
-      expect(empty.blend, 0);
-
-      final path = CourtyardArtFade.fromStep(1);
-      expect(path.fromIndex, 0);
-      expect(path.toIndex, 1);
-      expect(path.blend, closeTo(0.5, 0.001));
-
-      final walls = CourtyardArtFade.fromStep(12);
-      expect(walls.fromIndex, 5);
-      expect(walls.toIndex, 6);
-      expect(walls.blend, closeTo(1.0, 0.001));
-
-      final roof = CourtyardArtFade.fromStep(13);
-      expect(roof.fromIndex, 6);
-      expect(roof.toIndex, 7);
-      expect(roof.blend, closeTo(0.5, 0.001));
-
-      final done = CourtyardArtFade.fromStep(24);
-      expect(done.fromIndex, 11);
-      expect(done.toIndex, 12);
-      expect(done.blend, closeTo(1.0, 0.001));
+  group('CourtyardLayers', () {
+    test('empty field is only the yard', () {
+      final empty = CourtyardSnapshot.fromStep(step: 0, totalStars: 0);
+      expect(empty.layerOpacity(CourtyardLayer.yard), 1);
+      expect(empty.layerRoad, 0);
+      expect(empty.layerHouse, 0);
+      expect(empty.layerPond, 0);
+      expect(empty.layerInternet, 0);
+      expect(empty.layerFlowers, 0);
     });
 
-    test('second plot uses the cartoon courtyard plates', () {
-      expect(
-        CourtyardArtFade.plot2Assets.length,
-        CourtyardArtFade.plateSteps.length,
+    test('house plot grows path, house, then flowers', () {
+      final mid = CourtyardSnapshot.fromStep(
+        step: 12,
+        totalStars: 10,
+        plotKind: PlotKind.house,
       );
-      expect(CourtyardArtFade.assetsFor(0), CourtyardArtFade.assets);
-      expect(CourtyardArtFade.assetsFor(1), CourtyardArtFade.plot2Assets);
-      expect(CourtyardArtFade.assetsFor(2), CourtyardArtFade.assets);
-      expect(CourtyardArtFade.lifeAssetFor(1), CourtyardArtFade.plot2LifeAsset);
-      expect(
-        CourtyardArtFade.plot2Assets.first,
-        'assets/courtyard/plot2/courtyard_00_field.jpg',
+      expect(mid.layerRoad, 1);
+      expect(mid.layerHouse, closeTo(0.6, 0.001));
+      expect(mid.layerPond, 0);
+      expect(mid.layerInternet, 0);
+      expect(mid.layerFlowers, 0);
+
+      final done = CourtyardSnapshot.fromStep(
+        step: 24,
+        totalStars: 72,
+        plotKind: PlotKind.house,
       );
-      expect(
-        CourtyardArtFade.plot2Assets.last,
-        'assets/courtyard/plot2/courtyard_06_complete.jpg',
+      expect(done.layerHouse, 1);
+      expect(done.layerFlowers, 1);
+      expect(done.layerPond, 0);
+    });
+
+    test('each plot grows its own feature layer', () {
+      final pond = CourtyardSnapshot.fromStep(
+        step: 16,
+        totalStars: 20,
+        plotKind: PlotKind.pond,
       );
+      expect(pond.layerPond, 1);
+      expect(pond.layerHouse, 0);
+      expect(pond.layerInternet, 0);
+
+      final road = CourtyardSnapshot.fromStep(
+        step: 12,
+        totalStars: 20,
+        plotKind: PlotKind.road,
+      );
+      expect(road.layerRoad, greaterThan(0.5));
+      expect(road.layerHouse, 0);
+      expect(road.layerPond, 0);
+
+      final net = CourtyardSnapshot.fromStep(
+        step: 20,
+        totalStars: 20,
+        plotKind: PlotKind.internet,
+      );
+      expect(net.layerHouse, 1);
+      expect(net.layerInternet, 1);
+      expect(net.layerPond, 0);
+    });
+
+    test('stack order is yard, pond, road, house, internet, flowers', () {
+      expect(CourtyardLayers.stackOrder, [
+        CourtyardLayer.yard,
+        CourtyardLayer.pond,
+        CourtyardLayer.road,
+        CourtyardLayer.house,
+        CourtyardLayer.internet,
+        CourtyardLayer.flowers,
+      ]);
+      expect(CourtyardLayers.allAssets.length, 6);
     });
 
     test('evening overlay waits for a nearly finished house', () {
@@ -167,6 +176,7 @@ void main() {
       expect(festive.birds, greaterThan(plain.birds));
       expect(festive.goldLight, greaterThan(plain.goldLight));
       expect(festive.walls, plain.walls);
+      expect(festive.layerHouse, plain.layerHouse);
     });
   });
 }

@@ -28,9 +28,9 @@ class PlayerProfileStore {
   /// Своё имя, если игрок его задал, иначе случайное гостевое.
   String get displayName {
     final custom = _customName;
-    if (custom != null) return custom;
+    if (custom != null) return GuestName.clamp(custom);
     final guest = _prefs.getString(_kGuestName)?.trim();
-    if (guest != null && guest.isNotEmpty) return guest;
+    if (guest != null && guest.isNotEmpty) return GuestName.clamp(guest);
     return 'You';
   }
 
@@ -56,7 +56,7 @@ class PlayerProfileStore {
       await _prefs.remove(_kDisplayName);
       return;
     }
-    await _prefs.setString(_kDisplayName, trimmed);
+    await _prefs.setString(_kDisplayName, GuestName.clamp(trimmed));
   }
 
   Future<void> markSynced({required int rating, required String name}) async {
@@ -76,7 +76,13 @@ class PlayerProfileStore {
 
   Future<void> _ensureGuestName() async {
     final existing = _prefs.getString(_kGuestName)?.trim();
-    if (existing != null && existing.isNotEmpty) return;
+    if (existing != null && existing.isNotEmpty) {
+      final clamped = GuestName.clamp(existing);
+      if (clamped != existing) {
+        await _prefs.setString(_kGuestName, clamped);
+      }
+      return;
+    }
     await _prefs.setString(
       _kGuestName,
       GuestName.generate(isRu: _preferRussian),

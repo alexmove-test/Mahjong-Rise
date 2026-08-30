@@ -7,10 +7,12 @@ import '../debug_agent_log.dart';
 import '../debug_boot_timer.dart';
 import '../models/board.dart';
 import '../models/tile.dart';
+import '../utils/layouts.dart';
 import '../utils/tile_pyramid_position.dart';
+import 'tile_painter.dart';
 import 'tile_widget.dart';
 
-/// Поле: исходная раскладка вписывается в экран и не масштабируется по ходу игры.
+/// Поле: общая сцена 6×5, масштаб плитки не зависит от числа слоёв.
 class GameBoard extends StatefulWidget {
   const GameBoard({
     super.key,
@@ -33,17 +35,17 @@ class GameBoard extends StatefulWidget {
   /// Меняется при перемешивании — плитки переворачиваются волной.
   final int shuffleToken;
 
-  /// Почти квадратная кость референса.
-  static const tileAspect = 1.15;
-  static const moveDuration = Duration(milliseconds: 180);
+  /// Стандартная кость: выше, чем шире (как физическая плитка / спрайт 709×514).
+  static const tileAspect = TileBaseLayout.spriteAspect;
+  static const moveDuration = Duration(milliseconds: 400);
 
-  /// Зазор между соседними плитками (1.0 — вплотную).
+  /// Соседние стопки вплотную: дыры даёт силуэт раскладки, не пустой зазор.
   static const tileGapFactor = 1.0;
 
-  /// Слот лотка — компактнее полевых плиток.
+  /// Слот лотка — компактнее полевых плиток, то же соотношение сторон.
   static const traySlotW = 46.0;
-  static const traySlotH = 54.0;
-  static const trayBarH = 64.0;
+  static const traySlotH = traySlotW * tileAspect;
+  static const trayBarH = traySlotH + 10.0;
 
   @override
   State<GameBoard> createState() => GameBoardState();
@@ -77,6 +79,9 @@ class _BoardLayoutMetrics {
 
 class GameBoardState extends State<GameBoard> {
   static const _refTileW = 80.0;
+
+  /// Запас под подъём стопок. Не растёт с maxLayer — иначе поле сжимается.
+  static const _liftPadLayers = 4;
   static int _layoutLogs = 0;
   final GlobalKey _stackKey = GlobalKey();
   _BoardLayoutMetrics? _lastMetrics;
@@ -119,45 +124,6 @@ class GameBoardState extends State<GameBoard> {
     );
   }
 
-  ({double minLeft, double minTop, double visualW, double visualH})
-  _visualBounds(_BoardLayoutMetrics metrics, List<Tile> tiles) {
-    var minLeft = double.infinity;
-    var minTop = double.infinity;
-    var maxRight = double.negativeInfinity;
-    var maxBottom = double.negativeInfinity;
-
-    for (final tile in tiles) {
-      final origin = _tileOrigin(metrics, tile);
-      final v = TilePyramidPosition.visuals(
-        z: tile.layer,
-        tileWidth: metrics.tileW,
-        tileHeight: metrics.tileH,
-      );
-      final shadowPad = v.shadowOffset.dx + v.shadowBlur * 2.5;
-      final shadowPadY = v.shadowOffset.dy + v.shadowBlur * 2.5;
-      minLeft = math.min(minLeft, origin.dx);
-      minTop = math.min(minTop, origin.dy);
-      maxRight = math.max(maxRight, origin.dx + metrics.tileW + shadowPad);
-      maxBottom = math.max(maxBottom, origin.dy + metrics.tileH + shadowPadY);
-    }
-
-    if (tiles.isEmpty) {
-      return (
-        minLeft: 0.0,
-        minTop: 0.0,
-        visualW: metrics.contentW,
-        visualH: metrics.contentH,
-      );
-    }
-
-    return (
-      minLeft: minLeft,
-      minTop: minTop,
-      visualW: maxRight - minLeft,
-      visualH: maxBottom - minTop,
-    );
-  }
-
   _BoardLayoutMetrics _metricsAt({
     required double tileW,
     required int minX,
@@ -170,13 +136,12 @@ class GameBoardState extends State<GameBoard> {
     const step = GameBoard.tileGapFactor;
     final cellW = tileW * step;
     final cellH = tileH * step;
-    final gridW = (maxX - minX + 2).toDouble();
-    final gridH = (maxY - minY + 2).toDouble();
     final scale = TilePyramidPosition.scaleFor(tileW);
     final originX = maxLayer * TilePyramidPosition.liftStepXPx * scale;
     final originY = maxLayer * TilePyramidPosition.liftStepYPx * scale;
-    final boardW = (gridW / 2) * cellW;
-    final boardH = (gridH / 2) * cellH;
+    // Крайняя плитка занимает tileW/tileH, а не ещё одну ячейку с зазором.
+    final boardW = ((maxX - minX) / 2) * cellW + tileW;
+    final boardH = ((maxY - minY) / 2) * cellH + tileH;
 
     return _BoardLayoutMetrics(
       tileW: tileW,
@@ -208,14 +173,10 @@ class GameBoardState extends State<GameBoard> {
       );
     }
 
-    final xs = board.tiles.map((t) => t.x);
-    final ys = board.tiles.map((t) => t.y);
-    final layers = board.tiles.map((t) => t.layer);
-    final minX = xs.reduce(math.min);
-    final maxX = xs.reduce(math.max);
-    final minY = ys.reduce(math.min);
-    final maxY = ys.reduce(math.max);
-    final maxLayer = layers.reduce(math.max);
+    const minX = 0;
+    const minY = 0;
+    const maxX = Layouts.playfieldMaxX;
+    const maxY = Layouts.playfieldMaxY;
 
     final ref = _metricsAt(
       tileW: _refTileW,
@@ -223,17 +184,15 @@ class GameBoardState extends State<GameBoard> {
       minY: minY,
       maxX: maxX,
       maxY: maxY,
-      maxLayer: maxLayer,
+      maxLayer: _liftPadLayers,
     );
-    // Всегда по полной раскладке: иначе поле зумится, когда плиток становится меньше.
-    final bounds = _visualBounds(ref, board.tiles);
     final usableW = math.max(constraints.maxWidth, 1.0);
     final usableH = math.max(constraints.maxHeight, 1.0);
     final fit = math.min(
-      usableW / math.max(bounds.visualW, 1.0),
-      usableH / math.max(bounds.visualH, 1.0),
+      usableW / math.max(ref.contentW, 1.0),
+      usableH / math.max(ref.contentH, 1.0),
     );
-    final tileW = math.max(_refTileW * fit, 24.0);
+    final tileW = math.max(_refTileW * fit, 36.0);
 
     return _metricsAt(
       tileW: tileW,
@@ -241,7 +200,7 @@ class GameBoardState extends State<GameBoard> {
       minY: minY,
       maxX: maxX,
       maxY: maxY,
-      maxLayer: maxLayer,
+      maxLayer: _liftPadLayers,
     );
   }
 
@@ -259,7 +218,12 @@ class GameBoardState extends State<GameBoard> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final metrics = _computeMetrics(constraints, widget.board);
-        final bounds = _visualBounds(metrics, widget.board.tiles);
+        final bounds = (
+          minLeft: 0.0,
+          minTop: 0.0,
+          visualW: metrics.contentW,
+          visualH: metrics.contentH,
+        );
         _lastMetrics = metrics;
         _lastBounds = bounds;
         // #region agent log
@@ -292,8 +256,10 @@ class GameBoardState extends State<GameBoard> {
             clipBehavior: Clip.none,
             children: [
               for (final tile in visible)
-                Positioned(
+                AnimatedPositioned(
                   key: ValueKey(tile.id),
+                  duration: GameBoard.moveDuration,
+                  curve: Curves.easeOut,
                   left: _tileOrigin(metrics, tile).dx - bounds.minLeft,
                   top: _tileOrigin(metrics, tile).dy - bounds.minTop,
                   width: metrics.tileW,
@@ -302,7 +268,7 @@ class GameBoardState extends State<GameBoard> {
                     tile: tile,
                     width: metrics.tileW,
                     height: metrics.tileH,
-                    isSelected: false,
+                    isSelected: widget.hintedIds.contains(tile.id),
                     isFree: widget.board.isFree(tile),
                     showBack: false,
                     isHinted: widget.hintedIds.contains(tile.id),
@@ -320,13 +286,9 @@ class GameBoardState extends State<GameBoard> {
           key: ValueKey(widget.board.layoutName),
           width: constraints.maxWidth,
           height: constraints.maxHeight,
-          child: Center(
-            child: FittedBox(
-              fit: BoxFit.contain,
-              alignment: Alignment.center,
-              clipBehavior: Clip.none,
-              child: stack,
-            ),
+          child: FittedBox(
+            fit: BoxFit.contain,
+            child: stack,
           ),
         );
       },

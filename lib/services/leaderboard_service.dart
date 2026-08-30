@@ -1,7 +1,31 @@
+import 'package:flutter/foundation.dart';
+
 import '../models/leaderboard_entry.dart';
 import '../models/levels.dart';
+import 'guest_name.dart';
 import 'player_profile_store.dart';
 import 'progress_store.dart';
+
+/// Результат загрузки одной таблицы. [online] ложный, если сеть/правила отказали.
+class LeaderboardFetch {
+  const LeaderboardFetch({required this.entries, required this.online});
+
+  final List<LeaderboardEntry> entries;
+  final bool online;
+
+  /// Одна упавшая таблица не должна гасить другую.
+  static Future<LeaderboardFetch> guard({
+    required Future<List<LeaderboardEntry>> Function() load,
+    required List<LeaderboardEntry> Function() fallback,
+  }) async {
+    try {
+      return LeaderboardFetch(entries: await load(), online: true);
+    } catch (error) {
+      debugPrint('Leaderboard fetch failed: $error');
+      return LeaderboardFetch(entries: fallback(), online: false);
+    }
+  }
+}
 
 /// Расчёт рейтинга кампании.
 class LeaderboardService {
@@ -43,7 +67,7 @@ class LeaderboardService {
     return [
       LeaderboardEntry(
         id: currentPlayerId,
-        name: profile.displayName,
+        name: GuestName.clamp(profile.displayName),
         rating: ratingFor(progress),
         totalStars: progress.totalStars,
         levelsUnlocked: progress.maxUnlocked,
@@ -52,7 +76,7 @@ class LeaderboardService {
     ];
   }
 
-  /// Сколько участков открыто при данном прогрессе кампании (1–10).
+  /// Сколько участков открыто при данном прогрессе кампании.
   static int plotsOpened(int levelsUnlocked) =>
       Levels.cycleOf(levelsUnlocked) + 1;
 

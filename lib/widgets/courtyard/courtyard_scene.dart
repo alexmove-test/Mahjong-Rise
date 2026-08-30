@@ -54,13 +54,9 @@ class _CourtyardSceneState extends State<CourtyardScene>
   }
 
   void _precacheArt() {
-    for (final asset in CourtyardArtFade.assetsFor(widget.cycle)) {
+    for (final asset in CourtyardLayers.allAssets) {
       precacheImage(AssetImage(asset), context);
     }
-    precacheImage(
-      AssetImage(CourtyardArtFade.lifeAssetFor(widget.cycle)),
-      context,
-    );
   }
 
   @override
@@ -120,8 +116,6 @@ class _CourtyardSceneState extends State<CourtyardScene>
         animation: Listenable.merge([_idle, _grow]),
         builder: (context, _) {
           final snapshot = _snapshot;
-          final fade = snapshot.artFade;
-          final plates = CourtyardArtFade.assetsFor(widget.cycle);
           final breath = widget.idle
               ? 1.0 + 0.01 * (0.5 - 0.5 * math.cos(_idle.value * 2 * math.pi))
               : 1.0;
@@ -136,17 +130,25 @@ class _CourtyardSceneState extends State<CourtyardScene>
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  _plate(plates[fade.fromIndex]),
-                  if (fade.blend > 0.01)
-                    Opacity(
-                      opacity: fade.blend,
-                      child: _plate(plates[fade.toIndex]),
-                    ),
+                  for (final layer in CourtyardLayers.stackOrder)
+                    if (snapshot.layerOpacity(layer) > 0.01)
+                      Opacity(
+                        opacity: snapshot.layerOpacity(layer).clamp(0.0, 1.0),
+                        child: _plate(CourtyardLayers.assetOf(layer)),
+                      ),
                   if (life > 0.01)
-                    Opacity(
-                      opacity: life,
-                      child: _plate(
-                        CourtyardArtFade.lifeAssetFor(widget.cycle),
+                    IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Color(0xFFFFCC80).withValues(alpha: 0.14 * life),
+                              Color(0xFF2A160C).withValues(alpha: 0.18 * life),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   if (snapshot.festival > 0.02 || snapshot.streakLife > 0.08)

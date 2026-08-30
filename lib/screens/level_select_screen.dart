@@ -5,18 +5,17 @@ import '../debug_boot_timer.dart';
 import '../l10n/l10n.dart';
 import '../models/game_snapshot.dart';
 import '../models/levels.dart';
-import '../models/week_event.dart';
-import '../models/weekly_quests.dart';
 import '../models/weekly_score.dart';
 import '../services/analytics_service.dart';
 import '../services/local_reminder_service.dart';
+import '../services/pet_store.dart';
 import '../services/progress_store.dart';
 import '../services/quest_store.dart';
 import '../widgets/app_settings.dart';
 import '../widgets/courtyard/courtyard_progress.dart';
 import '../widgets/courtyard/courtyard_scene.dart';
-import '../widgets/liveops/week_event_banner.dart';
-import '../widgets/liveops/weekly_quests_strip.dart';
+import '../widgets/pets/pet_sheet.dart';
+import '../widgets/streak_lanterns.dart';
 import 'game_screen.dart';
 import 'leaderboard_screen.dart';
 
@@ -31,6 +30,7 @@ class LevelSelectScreen extends StatefulWidget {
 class _LevelSelectScreenState extends State<LevelSelectScreen> {
   ProgressStore? _store;
   QuestStore? _quests;
+  PetStore? _pets;
   final ScrollController _gridScroll = ScrollController();
   bool _didAutoScroll = false;
   bool _firstSessionCover = false;
@@ -68,14 +68,14 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
     );
     // #endregion
     final store = await ProgressStore.open();
-    final hadBrokenStreak =
-        store.dailyStreak > 0 && store.visibleStreak() == 0;
+    final hadBrokenStreak = store.dailyStreak > 0 && store.visibleStreak() == 0;
     await store.ensureWeek();
     await store.expireStreakIfNeeded();
     if (hadBrokenStreak) {
       await AnalyticsService.log('streak_broken');
     }
     final quests = await QuestStore.open();
+    final pets = await PetStore.open();
     // #region agent log
     agentDbg(
       location: 'level_select_screen.dart:_load',
@@ -91,6 +91,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
       setState(() {
         _store = store;
         _quests = quests;
+        _pets = pets;
         _cycle = 0;
         _firstSessionCover = true;
       });
@@ -110,6 +111,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
     setState(() {
       _store = store;
       _quests = quests;
+      _pets = pets;
       _cycle = Levels.cycleOf(store.lastPlayedLevel);
     });
     _scrollToLevel(store.lastPlayedLevel);
@@ -234,7 +236,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
     final store = _store;
     if (store == null || !store.isCycleUnlocked(cycle)) return;
     setState(() {
-      _cycle = cycle.clamp(0, Levels.cycleCount - 1);
+      _cycle = cycle.clamp(0, Levels.maxCycle);
       _didAutoScroll = false;
     });
     _scrollToLevel(_continueLevel(store).id, force: true);
@@ -288,21 +290,6 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
     setState(() {});
   }
 
-  Future<void> _claimQuest(QuestProgress quest) async {
-    final store = _store;
-    final quests = _quests;
-    if (store == null || quests == null) return;
-    final ok = await quests.claim(quest.def.id, store);
-    if (!ok || !mounted) return;
-    await AnalyticsService.log('quest_claim', {'quest_id': quest.def.id});
-    if (!mounted) return;
-    setState(() {});
-    final l10n = L10n.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.questBonus)),
-    );
-  }
-
   Future<void> _continueGame() async {
     final store = _store;
     if (store == null) return;
@@ -336,6 +323,14 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(builder: (_) => LeaderboardScreen(progress: store)),
     );
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  Future<void> _openPets() async {
+    final pets = _pets;
+    if (pets == null) return;
+    await showPetSheet(context, pets: pets);
     if (!mounted) return;
     setState(() {});
   }
@@ -406,7 +401,6 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
         store.isCycleComplete(_cycle) &&
         _cycle + 1 < Levels.cycleCount &&
         store.isCycleUnlocked(_cycle + 1);
-    final event = WeekEvent.current();
 
     return Scaffold(
       backgroundColor: const Color(0xFF1A3D2E),
@@ -525,15 +519,6 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                         ),
                       ],
                       const SizedBox(height: 10),
-                      WeekEventBanner(event: event, onTap: _openDaily),
-                      if (quests != null) ...[
-                        const SizedBox(height: 8),
-                        WeeklyQuestsStrip(
-                          quests: quests.quests,
-                          onClaim: _claimQuest,
-                        ),
-                      ],
-                      const SizedBox(height: 10),
                       FilledButton.icon(
                         style: FilledButton.styleFrom(
                           backgroundColor: _woodTop,
@@ -571,6 +556,15 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                           ),
                           const SizedBox(width: 10),
                           Expanded(child: _LevelsButton(onTap: _openLevels)),
+                          if (store.hasCompletedAny) ...[
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _PetsButton(
+                                asking: _pets?.anyAsking() ?? false,
+                                onTap: _openPets,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ],
@@ -703,11 +697,10 @@ class _DailyStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = L10n.of(context);
-    final subtitle = completedToday
-        ? l10n.clearedToday
-        : streak > 0
-        ? l10n.streak(streak)
-        : l10n.newTableEveryDay;
+    final subtitle = l10n.dailyStreakSubtitle(
+      streak: streak,
+      completedToday: completedToday,
+    );
 
     return Material(
       color: Colors.transparent,
@@ -720,19 +713,22 @@ class _DailyStrip extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             gradient: const LinearGradient(colors: [_woodTop, _woodDeep]),
             border: Border.all(
-              color: _gold.withValues(alpha: 0.75),
-              width: 1.3,
+              color: _gold.withValues(
+                alpha: completedToday && streak >= 3 ? 0.95 : 0.75,
+              ),
+              width: completedToday && streak >= 3 ? 1.5 : 1.3,
             ),
+            boxShadow: completedToday && streak >= 3
+                ? [
+                    BoxShadow(
+                      color: _gold.withValues(alpha: 0.22),
+                      blurRadius: 10,
+                    ),
+                  ]
+                : null,
           ),
           child: Row(
             children: [
-              Icon(
-                completedToday
-                    ? Icons.check_circle_rounded
-                    : Icons.local_fire_department_rounded,
-                color: completedToday ? _goldSoft : const Color(0xFFFF8A4C),
-              ),
-              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -758,7 +754,14 @@ class _DailyStrip extends StatelessWidget {
                   ],
                 ),
               ),
-              if (streak > 0)
+              const SizedBox(width: 8),
+              StreakLanterns.forDaily(
+                streak: streak,
+                completedToday: completedToday,
+                semanticLabel: subtitle,
+              ),
+              if (streak > 3) ...[
+                const SizedBox(width: 6),
                 Text(
                   '$streak',
                   style: const TextStyle(
@@ -767,6 +770,7 @@ class _DailyStrip extends StatelessWidget {
                     fontSize: 18,
                   ),
                 ),
+              ],
             ],
           ),
         ),
@@ -810,6 +814,85 @@ class _LevelsButton extends StatelessWidget {
               Expanded(
                 child: Text(
                   L10n.of(context).levels,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _ivory,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PetsButton extends StatelessWidget {
+  const _PetsButton({required this.asking, required this.onTap});
+
+  final bool asking;
+  final VoidCallback onTap;
+
+  static const _gold = Color(0xFFD4AF37);
+  static const _goldSoft = Color(0xFFE8C96A);
+  static const _woodTop = Color(0xFF6B3E24);
+  static const _woodDeep = Color(0xFF3A2012);
+  static const _ivory = Color(0xFFF8F1DE);
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            gradient: const LinearGradient(colors: [_woodTop, _woodDeep]),
+            border: Border.all(
+              color: _gold.withValues(alpha: asking ? 0.95 : 0.75),
+              width: asking ? 1.5 : 1.3,
+            ),
+            boxShadow: asking
+                ? [
+                    BoxShadow(
+                      color: _gold.withValues(alpha: 0.22),
+                      blurRadius: 10,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.pets_rounded, color: _goldSoft),
+                  if (asking)
+                    Positioned(
+                      right: -2,
+                      top: -2,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFC45C4A),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  L10n.of(context).pet,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(

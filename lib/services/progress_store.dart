@@ -46,7 +46,7 @@ class ProgressStore {
   /// Максимальный открытый уровень (1-based). Минимум 1.
   int get maxUnlocked {
     final v = _prefs.getInt(_kUnlocked) ?? 1;
-    return v.clamp(1, Levels.all.length);
+    return v.clamp(1, Levels.maxLevelId);
   }
 
   bool isUnlocked(int levelId) => levelId <= maxUnlocked;
@@ -145,7 +145,8 @@ class ProgressStore {
     final date = now ?? DateTime.now();
     final today = dateKey(date);
     final yesterday = dateKey(date.subtract(const Duration(days: 1)));
-    if (lastDailyDate == today || lastDailyDate == yesterday) return dailyStreak;
+    if (lastDailyDate == today || lastDailyDate == yesterday)
+      return dailyStreak;
     return 0;
   }
 
@@ -287,22 +288,22 @@ class ProgressStore {
   }
 
   Future<void> markPlayed(int levelId) async {
-    final id = levelId.clamp(1, Levels.all.length);
+    final id = levelId.clamp(1, Levels.maxLevelId);
     await _prefs.setInt(_kLastPlayed, id);
   }
 
   int get totalStars {
     var sum = 0;
-    for (final level in Levels.all) {
-      sum += stars(level.id);
+    for (var id = 1; id <= maxUnlocked; id++) {
+      sum += stars(id);
     }
     return sum;
   }
 
   int get sumBestScores {
     var sum = 0;
-    for (final level in Levels.all) {
-      sum += bestScore(level.id);
+    for (var id = 1; id <= maxUnlocked; id++) {
+      sum += bestScore(id);
     }
     return sum;
   }
@@ -345,7 +346,11 @@ class ProgressStore {
       bool isNewBest,
     })
   >
-  recordWin({required LevelDef level, required int score, DateTime? now}) async {
+  recordWin({
+    required LevelDef level,
+    required int score,
+    DateTime? now,
+  }) async {
     await ensureWeek(now);
     final earned = level.starsForScore(score);
     final prevStars = stars(level.id);
@@ -363,7 +368,7 @@ class ProgressStore {
 
     var unlockedNext = false;
     final nextId = level.id + 1;
-    if (nextId <= Levels.all.length && nextId > maxUnlocked) {
+    if (nextId <= Levels.maxLevelId && nextId > maxUnlocked) {
       await _prefs.setInt(_kUnlocked, nextId);
       unlockedNext = true;
     }

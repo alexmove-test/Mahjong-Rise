@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/l10n.dart';
 import '../../models/weekly_quests.dart';
+import '../streak_lanterns.dart';
 
 class WeeklyQuestsStrip extends StatelessWidget {
   const WeeklyQuestsStrip({
@@ -43,6 +44,8 @@ class _QuestCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = L10n.of(context);
+    final isStreak = quest.def.kind == QuestKind.streakHold;
+    final glow = isStreak && (quest.canClaim || quest.claimed);
     return SizedBox(
       width: 168,
       child: DecoratedBox(
@@ -52,9 +55,19 @@ class _QuestCard extends StatelessWidget {
             colors: [WeeklyQuestsStrip._woodTop, Color(0xFF3A2012)],
           ),
           border: Border.all(
-            color: WeeklyQuestsStrip._gold.withValues(alpha: 0.7),
-            width: 1.2,
+            color: WeeklyQuestsStrip._gold.withValues(
+              alpha: glow ? 0.95 : 0.7,
+            ),
+            width: glow ? 1.5 : 1.2,
           ),
+          boxShadow: glow
+              ? [
+                  BoxShadow(
+                    color: WeeklyQuestsStrip._gold.withValues(alpha: 0.28),
+                    blurRadius: 10,
+                  ),
+                ]
+              : null,
         ),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
@@ -63,7 +76,7 @@ class _QuestCard extends StatelessWidget {
             children: [
               Text(
                 l10n.questTitle(quest.def.id),
-                maxLines: 2,
+                maxLines: isStreak ? 1 : 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: WeeklyQuestsStrip._ivory,
@@ -75,14 +88,24 @@ class _QuestCard extends StatelessWidget {
               const Spacer(),
               Row(
                 children: [
-                  Text(
-                    '${quest.current}/${quest.target}',
-                    style: const TextStyle(
-                      color: WeeklyQuestsStrip._goldSoft,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 13,
+                  if (isStreak)
+                    StreakLanterns(
+                      litCount: quest.current.clamp(0, quest.target),
+                      waitingNext: !quest.complete,
+                      celebrate: quest.canClaim || quest.claimed,
+                      size: 15,
+                      gap: 4,
+                      semanticLabel: '${quest.current}/${quest.target}',
+                    )
+                  else
+                    Text(
+                      '${quest.current}/${quest.target}',
+                      style: const TextStyle(
+                        color: WeeklyQuestsStrip._goldSoft,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
                     ),
-                  ),
                   const Spacer(),
                   if (quest.claimed)
                     Text(

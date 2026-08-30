@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100">
+  <defs>
+    <radialGradient id="limeBody" cx="36%" cy="34%" r="70%">
+      <stop stop-color="#dce775"/>
+      <stop offset="1" stop-color="#7cb342"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="40" cy="93" rx="22" ry="4" fill="#000" opacity=".2"/>
+  <path d="M18 52c0-18 10-32 22-34 12-2 24 8 28 24 4 16-2 32-16 38-14 6-28-2-32-16-2-4-2-8-2-12z" fill="url(#limeBody)" stroke="#33691e" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M22 48c6-16 18-24 30-20" fill="none" stroke="#f1f8e9" stroke-width="4" stroke-linecap="round" opacity=".45"/>
+  <circle cx="16" cy="50" r="4" fill="#9ccc65" stroke="#33691e" stroke-width="1.4"/>
+  <circle cx="66" cy="54" r="3.4" fill="#9ccc65" stroke="#33691e" stroke-width="1.4"/>
+  <path d="M40 18c2 6 0 10-4 12 6 0 10-4 10-10 0-4-2-6-6-2z" fill="#43a047" stroke="#1b5e20" stroke-width="1.5"/>
+</svg>

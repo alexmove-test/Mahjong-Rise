@@ -5,11 +5,11 @@ import '../models/leaderboard_entry.dart';
 import '../services/analytics_service.dart';
 import '../services/firebase_bootstrap.dart';
 import '../services/firebase_leaderboard_repository.dart';
+import '../services/guest_name.dart';
 import '../services/leaderboard_service.dart';
 import '../services/player_profile_store.dart';
 import '../services/progress_store.dart';
 import '../services/weekly_leaderboard_repository.dart';
-import '../services/weekly_leaderboard_service.dart';
 import 'game_screen.dart';
 
 /// Общий рейтинг игроков.
@@ -31,8 +31,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   int? _allRank;
   int? _weekRank;
   bool _loading = true;
-  bool _online = false;
-  String? _error;
+  bool _allOnline = false;
+  bool _weekOnline = false;
 
   static const _fieldGreen = Color(0xFFD7EEDC);
   static const _woodTop = Color(0xFF6B3E24);
@@ -66,55 +66,40 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
 
   bool get _weekly => _tabs.index == 0;
 
+  bool get _tabOnline => _weekly ? _weekOnline : _allOnline;
+
+  String? _tabError(L10n l10n) {
+    if (_tabOnline || !FirebaseBootstrap.enabled) return null;
+    return l10n.loadRankingFailed;
+  }
+
   Future<void> _load() async {
     setState(() {
       _loading = true;
-      _error = null;
     });
 
     final profile = await PlayerProfileStore.open();
     await widget.progress.ensureWeek();
-    try {
-      final all = await FirebaseLeaderboardRepository.fetchTop(
-        progress: widget.progress,
-        profile: profile,
-      );
-      final week = await WeeklyLeaderboardRepository.fetchTop(
-        progress: widget.progress,
-        profile: profile,
-      );
-      if (!mounted) return;
-      setState(() {
-        _profile = profile;
-        _allEntries = all;
-        _weekEntries = week;
-        _allRank = LeaderboardService.rankOf(all);
-        _weekRank = LeaderboardService.rankOf(week);
-        _loading = false;
-        _online = FirebaseBootstrap.enabled;
-      });
-      AnalyticsService.log('weekly_open');
-    } catch (error) {
-      if (!mounted) return;
-      final allFallback = LeaderboardService.buildLocal(
-        progress: widget.progress,
-        profile: profile,
-      );
-      final weekFallback = WeeklyLeaderboardService.buildLocal(
-        progress: widget.progress,
-        profile: profile,
-      );
-      setState(() {
-        _profile = profile;
-        _allEntries = allFallback;
-        _weekEntries = weekFallback;
-        _allRank = LeaderboardService.rankOf(allFallback);
-        _weekRank = LeaderboardService.rankOf(weekFallback);
-        _loading = false;
-        _online = false;
-        _error = L10n.of(context).loadRankingFailed;
-      });
-    }
+    final all = await FirebaseLeaderboardRepository.fetchTop(
+      progress: widget.progress,
+      profile: profile,
+    );
+    final week = await WeeklyLeaderboardRepository.fetchTop(
+      progress: widget.progress,
+      profile: profile,
+    );
+    if (!mounted) return;
+    setState(() {
+      _profile = profile;
+      _allEntries = all.entries;
+      _weekEntries = week.entries;
+      _allRank = LeaderboardService.rankOf(all.entries);
+      _weekRank = LeaderboardService.rankOf(week.entries);
+      _allOnline = all.online;
+      _weekOnline = week.online;
+      _loading = false;
+    });
+    AnalyticsService.log('weekly_open');
   }
 
   Future<void> _editName() async {
@@ -139,7 +124,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           ),
           content: TextField(
             controller: controller,
-            maxLength: 20,
+            maxLength: GuestName.maxLength,
             autofocus: true,
             style: const TextStyle(color: _ivory),
             decoration: InputDecoration(
@@ -197,6 +182,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     final rank = _weekly ? _weekRank : _allRank;
     final current = entries.where((e) => e.isCurrentPlayer).firstOrNull;
     final l10n = L10n.of(context);
+    final tabError = _tabError(l10n);
 
     return Scaffold(
       backgroundColor: _fieldGreen,
@@ -272,11 +258,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                           ),
                         )
                       else ...[
-                        if (_error != null)
+                        if (tabError != null)
                           Padding(
                             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                             child: Text(
-                              _error!,
+                              tabError,
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 12,
@@ -288,7 +274,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                           child: Text(
-                            _online
+                            _tabOnline
                                 ? l10n.onlineRanking(
                                     _weekly
                                         ? WeeklyLeaderboardRepository.fetchLimit

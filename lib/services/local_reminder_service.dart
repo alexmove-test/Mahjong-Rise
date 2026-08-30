@@ -5,8 +5,10 @@ import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../l10n/l10n.dart';
+import '../models/pet.dart';
 import '../models/week_id.dart';
 import 'analytics_service.dart';
+import 'pet_store.dart';
 import 'progress_store.dart';
 import 'reminder_store.dart';
 
@@ -17,6 +19,10 @@ abstract final class LocalReminderService {
   static const _dailyId = 1001;
   static const _streakId = 1002;
   static const _weekId = 1003;
+  static const _petHungerAskId = 2001;
+  static const _petPlayAskId = 2002;
+  static const _petRestAskId = 2003;
+  static const _petStarveId = 2004;
   static const _channelId = 'courtyard_reminders';
 
   static final _plugin = FlutterLocalNotificationsPlugin();
@@ -111,6 +117,8 @@ abstract final class LocalReminderService {
       streak: progress.visibleStreak(),
       dailyDoneToday: progress.isDailyCompletedOn(DateTime.now()),
     );
+    final pets = await PetStore.open();
+    await schedulePets(l10n: l10n, pets: pets);
   }
 
   static Future<void> schedule({
@@ -178,6 +186,136 @@ abstract final class LocalReminderService {
         payload: 'week',
         matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
       );
+    } catch (_) {}
+  }
+
+  static Future<void> schedulePets({
+    required L10n l10n,
+    required PetStore pets,
+    DateTime? now,
+  }) async {
+    await init();
+    if (!_ready) return;
+    final reminder = await ReminderStore.open();
+    if (!reminder.enabled) {
+      await _cancelPetSlots();
+      return;
+    }
+    if (!pets.hasPet) {
+      await _cancelPetSlots();
+      return;
+    }
+
+    final at = now ?? DateTime.now();
+    final details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        _channelId,
+        l10n.reminders,
+        channelDescription: l10n.reminders,
+        importance: Importance.defaultImportance,
+        priority: Priority.defaultPriority,
+      ),
+      iOS: const DarwinNotificationDetails(),
+    );
+
+    try {
+      await _cancelPetSlots();
+      final hunger = pets.soonestClock(PetNeed.hunger);
+      final play = pets.soonestClock(PetNeed.play);
+      final rest = pets.soonestClock(PetNeed.rest);
+      if (hunger != null) {
+        final name = l10n.petName(hunger.kind);
+        await _slotIfDue(
+          id: _petHungerAskId,
+          last: hunger.last,
+          need: PetNeed.hunger,
+          threshold: PetNeeds.askThreshold,
+          now: at,
+          details: details,
+          title: l10n.reminderPetHungerTitle(name),
+          body: l10n.reminderPetHungerBody,
+          payload: 'pet:hunger',
+        );
+        await _slotIfDue(
+          id: _petStarveId,
+          last: hunger.last,
+          need: PetNeed.hunger,
+          threshold: 0,
+          now: at,
+          details: details,
+          title: l10n.reminderPetStarveTitle(name),
+          body: l10n.reminderPetStarveBody,
+          payload: 'pet:starve',
+        );
+      }
+      if (play != null) {
+        final name = l10n.petName(play.kind);
+        await _slotIfDue(
+          id: _petPlayAskId,
+          last: play.last,
+          need: PetNeed.play,
+          threshold: PetNeeds.askThreshold,
+          now: at,
+          details: details,
+          title: l10n.reminderPetPlayTitle(name),
+          body: l10n.reminderPetPlayBody,
+          payload: 'pet:play',
+        );
+      }
+      if (rest != null) {
+        final name = l10n.petName(rest.kind);
+        await _slotIfDue(
+          id: _petRestAskId,
+          last: rest.last,
+          need: PetNeed.rest,
+          threshold: PetNeeds.askThreshold,
+          now: at,
+          details: details,
+          title: l10n.reminderPetRestTitle(name),
+          body: l10n.reminderPetRestBody,
+          payload: 'pet:rest',
+        );
+      }
+    } catch (_) {}
+  }
+
+  static Future<void> _slotIfDue({
+    required int id,
+    required DateTime? last,
+    required PetNeed need,
+    required double threshold,
+    required DateTime now,
+    required NotificationDetails details,
+    required String title,
+    required String body,
+    required String payload,
+  }) async {
+    if (last == null) return;
+    final when = PetNeeds.nextThreshold(
+      lastSatisfied: last,
+      need: need,
+      threshold: threshold,
+      now: now,
+    );
+    if (when == null) return;
+    await _plugin.zonedSchedule(
+      id: id,
+      scheduledDate: tz.TZDateTime.from(when, tz.local),
+      notificationDetails: details,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      title: title,
+      body: body,
+      payload: payload,
+    );
+  }
+
+  static Future<void> _cancelPetSlots() async {
+    if (!_ready) return;
+    try {
+      await _plugin.cancel(id: _petHungerAskId);
+      await _plugin.cancel(id: _petPlayAskId);
+      await _plugin.cancel(id: _petRestAskId);
+      await _plugin.cancel(id: _petStarveId);
     } catch (_) {}
   }
 

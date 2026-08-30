@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:math' as math show Random, cos, pi, sin;
+import 'dart:math' as math show Random;
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -22,6 +22,7 @@ import '../services/firebase_leaderboard_repository.dart';
 import '../services/game_sfx.dart';
 import '../services/haptic_controller.dart';
 import '../services/local_reminder_service.dart';
+import '../services/pet_store.dart';
 import '../services/player_profile_store.dart';
 import '../services/progress_store.dart';
 import '../services/quest_store.dart';
@@ -32,7 +33,9 @@ import '../services/weekly_leaderboard_repository.dart';
 import '../widgets/app_settings.dart';
 import '../widgets/courtyard/courtyard_progress.dart';
 import '../widgets/courtyard/courtyard_win_overlay.dart';
+import '../widgets/game_action_bar.dart';
 import '../widgets/game_board.dart';
+import '../widgets/game_hud.dart';
 import '../widgets/match_smash.dart';
 import '../widgets/premium_ui.dart';
 import '../widgets/table_coach_banner.dart';
@@ -60,7 +63,22 @@ class MahjongScreenBackdrop extends StatelessWidget {
       return Stack(
         fit: StackFit.expand,
         children: [
-          const ColoredBox(color: _Ui.table),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF052418),
+                  Color(0xFF0B5C40),
+                  Color(0xFF12855A),
+                  Color(0xFF0B5C40),
+                  Color(0xFF041C14),
+                ],
+                stops: [0.0, 0.18, 0.48, 0.78, 1.0],
+              ),
+            ),
+          ),
           const Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -68,9 +86,13 @@ class MahjongScreenBackdrop extends StatelessWidget {
                   image: AssetImage('assets/felt.png'),
                   fit: BoxFit.cover,
                   filterQuality: FilterQuality.medium,
+                  opacity: 0.42,
                 ),
               ),
             ),
+          ),
+          const Positioned.fill(
+            child: CustomPaint(painter: _DamaskPainter(dark: true)),
           ),
           Positioned.fill(
             child: DecoratedBox(
@@ -148,17 +170,21 @@ class MahjongScreenBackdrop extends StatelessWidget {
 }
 
 class _DamaskPainter extends CustomPainter {
-  const _DamaskPainter();
+  const _DamaskPainter({this.dark = false});
+
+  final bool dark;
 
   @override
   void paint(Canvas canvas, Size size) {
     const step = 52.0;
     final stroke = Paint()
-      ..color = const Color(0xFF2F6B4F).withValues(alpha: 0.08)
+      ..color = (dark ? const Color(0xFF1A4A34) : const Color(0xFF2F6B4F))
+          .withValues(alpha: dark ? 0.34 : 0.08)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.9;
     final fill = Paint()
-      ..color = const Color(0xFF4C9A6E).withValues(alpha: 0.06);
+      ..color = (dark ? const Color(0xFF0E3A28) : const Color(0xFF4C9A6E))
+          .withValues(alpha: dark ? 0.22 : 0.06);
 
     for (var row = 0; row < size.height / step + 2; row++) {
       for (var col = 0; col < size.width / step + 2; col++) {
@@ -284,7 +310,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   String? _toast;
   bool _winHandled = false;
   bool _loseHandled = false;
-  int _scoreSparkTick = 0;
 
   late int _shufflesLeft;
   late int _hintsLeft;
@@ -384,7 +409,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     _toast = null;
     _winHandled = false;
     _loseHandled = false;
-    _scoreSparkTick = 0;
     _shufflesLeft = snap.shuffles;
     _hintsLeft = snap.hints;
     _undosLeft = snap.undos;
@@ -455,7 +479,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     _toast = null;
     _winHandled = false;
     _loseHandled = false;
-    _scoreSparkTick = 0;
     _shufflesLeft = _level.shuffles;
     _hintsLeft = _level.hints;
     _undosLeft = _level.undos;
@@ -805,7 +828,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           );
           _combo += pairs;
           _score += pairs * (100 + (_combo - 1) * 25);
-          _scoreSparkTick++;
           _toast = _board.hasUsefulMove()
               ? null
               : L10n.of(context).noMovesShuffle;
@@ -1453,6 +1475,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       firstClear: result.firstClear,
       threeStar: result.earnedStars >= 3,
     );
+    final pets = await PetStore.open();
+    final filled = await pets.satisfyMostUrgent();
     widget.onProgressChanged?.call();
     final courtyardTo = CourtyardSnapshot.fromStore(
       widget.progress,
@@ -1463,13 +1487,16 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     if (!mounted) return;
     final l10n = L10n.of(context);
     final pathPhrase = firstHome
-        ? l10n.firstHomePhrase
+        ? l10n.firstHomePhraseFor(_level.plotKind)
         : l10n.winPathPhrase(from: courtyardFrom, to: courtyardTo);
+    final carePhrase = filled == null
+        ? null
+        : l10n.petCareWinLine(filled.kind, filled.need);
 
     unawaited(_syncLeaderboard());
 
     final stars = result.stars;
-    final hasNext = _level.id < Levels.all.length;
+    final hasNext = _level.id < Levels.maxLevelId;
     final nextUnlocked =
         result.unlockedNext || widget.progress.isUnlocked(_level.id + 1);
 
@@ -1482,6 +1509,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       courtyardTo: courtyardTo,
       pathPhrase: pathPhrase,
       cycle: cycle,
+      carePhrase: carePhrase,
       onMap: () {
         Navigator.of(context).pop();
         Navigator.of(context).pop();
@@ -1533,6 +1561,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       await quests.creditDailyWin(streak: result.streak);
       AnalyticsService.log('daily_win', {'streak': result.streak});
     }
+    final pets = await PetStore.open();
+    final filled = await pets.satisfyMostUrgent();
     widget.onProgressChanged?.call();
     final courtyardTo = CourtyardSnapshot.fromStore(
       widget.progress,
@@ -1544,6 +1574,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
     unawaited(_syncLeaderboard());
     final l10n = L10n.of(context);
+    final carePhrase = filled == null
+        ? null
+        : l10n.petCareWinLine(filled.kind, filled.need);
     await showCourtyardWinOverlay(
       context: context,
       stars: 0,
@@ -1551,14 +1584,18 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       nextUnlocked: false,
       courtyardFrom: courtyardFrom,
       courtyardTo: courtyardTo,
-      pathPhrase: result.rewarded ? l10n.dailyBonus : l10n.winPathPhrase(
-        from: courtyardFrom,
-        to: courtyardTo,
-      ),
+      pathPhrase: result.rewarded
+          ? l10n.dailyBonus
+          : l10n.winPathPhrase(from: courtyardFrom, to: courtyardTo),
       cycle: cycle,
       title: l10n.dailyComplete,
-      subtitle: l10n.streakLabel(result.streak),
+      subtitle: l10n.streakWinSubtitle(result.streak),
+      carePhrase: carePhrase,
       showStars: false,
+      streak: result.streak,
+      streakFrom: result.counted
+          ? (result.streak - 1).clamp(0, 3)
+          : result.streak.clamp(0, 3),
       onMap: () {
         Navigator.of(context).pop();
         Navigator.of(context).pop();
@@ -1633,161 +1670,142 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         clipBehavior: Clip.none,
         children: [
           const Positioned.fill(child: MahjongScreenBackdrop(dark: true)),
-          Positioned.fill(
-            child: MediaQuery.removePadding(
-              context: context,
-              removeTop: true,
-              removeBottom: true,
-              removeLeft: true,
-              removeRight: true,
-              child: Builder(
-                builder: (context) {
-                  final safe = MediaQuery.paddingOf(context);
-                  return Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      0,
-                      safe.top + 136,
-                      0,
-                      safe.bottom + 80,
-                    ),
-                    child: KeyedSubtree(
-                      key: ValueKey(_boardGeneration),
-                      child: GameBoard(
-                        key: _boardViewKey,
-                        introToken: _boardGeneration,
-                        shuffleToken: _shuffleToken,
-                        board: _board,
-                        hintedIds: {..._hintedIds, ..._coach.focusIds(_board)},
-                        onTileTap: _onTileTap,
-                        onTileRemoveComplete: _onTileRemoveComplete,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
           SafeArea(
-            child: Stack(
-              clipBehavior: Clip.none,
+            child: Column(
               children: [
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                GameHud(
+                  onBack: () => Navigator.of(context).maybePop(),
+                  onMenu: _showMenu,
+                  backTooltip: L10n.of(context).courtyard,
+                  menuTooltip: L10n.of(context).menu,
+                ),
+                CompositedTransformTarget(
+                  link: _trayLink,
+                  child: TutorialSpotlight(
+                    active: _lesson?.anchor == TutorialAnchor.tray,
+                    child: _TileTray(
+                      tiles: _board.tray,
+                      slotKeys: _traySlotKeys,
+                      hintedIds: {..._hintedIds, ..._coach.focusIds(_board)},
+                      smashingIds: {
+                        for (final smash in _smashes) ...[
+                          smash.left.id,
+                          smash.right.id,
+                        ],
+                      },
+                      onRemoveComplete: _onTileRemoveComplete,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      _TopBar(
-                        levelId: _level.id,
-                        score: _score,
-                        scoreSparkTick: _scoreSparkTick,
-                        onBack: () => Navigator.of(context).maybePop(),
-                        onMenu: _showMenu,
-                      ),
-                      CompositedTransformTarget(
-                        link: _trayLink,
-                        child: TutorialSpotlight(
-                          active: _lesson?.anchor == TutorialAnchor.tray,
-                          child: _TileTray(
-                            tiles: _board.tray,
-                            slotKeys: _traySlotKeys,
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(2, 0, 2, 0),
+                        child: KeyedSubtree(
+                          key: ValueKey(_boardGeneration),
+                          child: GameBoard(
+                            key: _boardViewKey,
+                            introToken: _boardGeneration,
+                            shuffleToken: _shuffleToken,
+                            board: _board,
                             hintedIds: {
                               ..._hintedIds,
                               ..._coach.focusIds(_board),
                             },
-                            smashingIds: {
-                              for (final smash in _smashes) ...[
-                                smash.left.id,
-                                smash.right.id,
-                              ],
-                            },
-                            onRemoveComplete: _onTileRemoveComplete,
+                            onTileTap: _onTileTap,
+                            onTileRemoveComplete: _onTileRemoveComplete,
                           ),
                         ),
                       ),
+                      if (_coach.active && _lesson == null)
+                        Align(
+                          alignment: _coach.nearTray
+                              ? Alignment.topCenter
+                              : Alignment.bottomCenter,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 8,
+                            ),
+                            child: TableCoachBanner(
+                              text: L10n.of(
+                                context,
+                              ).coachMessage(_coach.step.name),
+                            ),
+                          ),
+                        ),
+                      if (_toast != null)
+                        Align(
+                          alignment: Alignment.topCenter,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+                            child: IgnorePointer(
+                              child: Text(
+                                _toast!,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: _Ui.ivory.withValues(alpha: 0.92),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.45,
+                                      ),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
-                if (_coach.active && _lesson == null)
-                  Positioned(
-                    top: _coach.nearTray ? 108 : null,
-                    bottom: _coach.nearTray ? null : 88,
-                    left: 20,
-                    right: 20,
-                    child: TableCoachBanner(
-                      text: L10n.of(context).coachMessage(_coach.step.name),
-                    ),
-                  ),
-                if (_toast != null)
-                  Positioned(
-                    top: 128,
-                    left: 16,
-                    right: 16,
-                    child: IgnorePointer(
-                      child: Text(
-                        _toast!,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: _Ui.ivory.withValues(alpha: 0.92),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withValues(alpha: 0.45),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: CompositedTransformTarget(
-                    link: _actionsLink,
-                    child: TutorialSpotlight(
-                      active: _lesson?.anchor == TutorialAnchor.actions,
-                      child: _ActionBar(
-                        shufflesLeft: _shufflesLeft,
-                        magnetsLeft: _magnetsLeft,
-                        hintsLeft: _hintsLeft,
-                        undosLeft: _undosLeft,
-                        shufflePlayToken: _shuffleToken,
-                        enabled: !_board.isWon && !_board.isLost,
-                        canUndo:
-                            _flights.isNotEmpty ||
-                            (_undosLeft > 0 && _undoStack.isNotEmpty),
-                        canUndoViaAd:
-                            _flights.isEmpty &&
-                            _undosLeft <= 0 &&
-                            _undoStack.isNotEmpty &&
-                            _adsAvailable,
-                        adsAvailable: _adsAvailable,
-                        onShuffle: _onShuffleTap,
-                        onMagnet: _onMagnetTap,
-                        onHint: _onHintTap,
-                        onUndo: _onUndoTap,
-                      ),
+                CompositedTransformTarget(
+                  link: _actionsLink,
+                  child: TutorialSpotlight(
+                    active: _lesson?.anchor == TutorialAnchor.actions,
+                    child: GameActionBar(
+                      shufflesLeft: _shufflesLeft,
+                      magnetsLeft: _magnetsLeft,
+                      hintsLeft: _hintsLeft,
+                      undosLeft: _undosLeft,
+                      enabled: !_board.isWon && !_board.isLost,
+                      canUndo:
+                          _flights.isNotEmpty ||
+                          (_undosLeft > 0 && _undoStack.isNotEmpty),
+                      canUndoViaAd:
+                          _flights.isEmpty &&
+                          _undosLeft <= 0 &&
+                          _undoStack.isNotEmpty &&
+                          _adsAvailable,
+                      adsAvailable: _adsAvailable,
+                      onShuffle: _onShuffleTap,
+                      onMagnet: _onMagnetTap,
+                      onHint: _onHintTap,
+                      onUndo: _onUndoTap,
                     ),
                   ),
                 ),
-                if (_lesson != null)
-                  Positioned.fill(
-                    child: TutorialCoach(
-                      lesson: _lesson!,
-                      trayLink: _trayLink,
-                      actionsLink: _actionsLink,
-                      onSkip: () => unawaited(_skipTutorial()),
-                      onAcknowledge: () =>
-                          unawaited(_acknowledgeTutorialStep()),
-                    ),
-                  ),
               ],
             ),
           ),
+          if (_lesson != null)
+            Positioned.fill(
+              child: SafeArea(
+                child: TutorialCoach(
+                  lesson: _lesson!,
+                  trayLink: _trayLink,
+                  actionsLink: _actionsLink,
+                  onSkip: () => unawaited(_skipTutorial()),
+                  onAcknowledge: () => unawaited(_acknowledgeTutorialStep()),
+                ),
+              ),
+            ),
           Positioned.fill(
             key: _flightLayerKey,
             child: IgnorePointer(
@@ -1837,233 +1855,6 @@ abstract final class _Ui {
   static const ivory = Color(0xFFF8F1DE);
 }
 
-class _TopBar extends StatefulWidget {
-  const _TopBar({
-    required this.levelId,
-    required this.score,
-    required this.scoreSparkTick,
-    required this.onBack,
-    required this.onMenu,
-  });
-
-  final int levelId;
-  final int score;
-  final int scoreSparkTick;
-  final VoidCallback onBack;
-  final VoidCallback onMenu;
-
-  @override
-  State<_TopBar> createState() => _TopBarState();
-}
-
-class _TopBarState extends State<_TopBar> with SingleTickerProviderStateMixin {
-  static const _sparkCount = 8;
-
-  late final AnimationController _sparkCtrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _sparkCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 460),
-    );
-  }
-
-  @override
-  void didUpdateWidget(_TopBar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.scoreSparkTick != oldWidget.scoreSparkTick &&
-        widget.scoreSparkTick > 0) {
-      _sparkCtrl.forward(from: 0);
-    }
-  }
-
-  @override
-  void dispose() {
-    _sparkCtrl.dispose();
-    super.dispose();
-  }
-
-  TextStyle get _scoreStyle => TextStyle(
-    fontSize: 34,
-    fontWeight: FontWeight.w800,
-    color: _Ui.goldSoft,
-    height: 1.0,
-    letterSpacing: 0.2,
-    shadows: [
-      Shadow(
-        color: Colors.black.withValues(alpha: 0.55),
-        offset: const Offset(0, 2),
-        blurRadius: 4,
-      ),
-      Shadow(color: _Ui.gold.withValues(alpha: 0.55), blurRadius: 14),
-      Shadow(color: _Ui.goldSoft.withValues(alpha: 0.28), blurRadius: 22),
-    ],
-  );
-
-  List<Widget> _sparkParticles(double t) {
-    final fade = (1 - t).clamp(0.0, 1.0);
-    final burst = Curves.easeOutCubic.transform(t);
-    return [
-      for (var i = 0; i < _sparkCount; i++)
-        Builder(
-          builder: (context) {
-            final angle = i / _sparkCount * 2 * math.pi - math.pi / 2;
-            final dist = 18 + 34 * burst;
-            return Transform.translate(
-              offset: Offset(math.cos(angle) * dist, math.sin(angle) * dist),
-              child: Transform.rotate(
-                angle: angle + math.pi / 2,
-                child: Opacity(
-                  opacity: fade * 0.95,
-                  child: Container(
-                    width: 2.4,
-                    height: 7 + 4 * (1 - t),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(2),
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.white.withValues(alpha: 0.95),
-                          _Ui.goldSoft,
-                          _Ui.gold.withValues(alpha: 0.2),
-                        ],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: _Ui.gold.withValues(alpha: 0.55 * fade),
-                          blurRadius: 5,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-    ];
-  }
-
-  Widget _scoreWithSpark() {
-    return AnimatedBuilder(
-      animation: _sparkCtrl,
-      builder: (context, child) {
-        final t = _sparkCtrl.value;
-        final flashIn = Curves.easeOut.transform((t / 0.28).clamp(0.0, 1.0));
-        final flashOut = Curves.easeIn.transform(
-          ((t - 0.28) / 0.72).clamp(0.0, 1.0),
-        );
-        final flash = t > 0 ? flashIn * (1 - flashOut) : 0.0;
-        final glow = (1 - t).clamp(0.0, 1.0);
-
-        return Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.center,
-          children: [
-            if (t > 0)
-              Opacity(
-                opacity: glow * 0.55,
-                child: Container(
-                  width: 96 + 64 * t,
-                  height: 44 + 28 * t,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        _Ui.goldSoft.withValues(alpha: 0.55),
-                        _Ui.gold.withValues(alpha: 0.12),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            if (t > 0) ..._sparkParticles(t),
-            Transform.scale(
-              scale: 1 + 0.08 * flash,
-              child: DefaultTextStyle(
-                style: flash > 0
-                    ? _scoreStyle.copyWith(
-                        shadows: [
-                          ..._scoreStyle.shadows!,
-                          Shadow(
-                            color: _Ui.goldSoft.withValues(
-                              alpha: 0.45 + 0.45 * flash,
-                            ),
-                            blurRadius: 12 + 10 * flash,
-                          ),
-                        ],
-                      )
-                    : _scoreStyle,
-                child: child!,
-              ),
-            ),
-          ],
-        );
-      },
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          '${widget.score}',
-          style: _scoreStyle,
-          textAlign: TextAlign.center,
-          maxLines: 1,
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-      child: SizedBox(
-        height: 56,
-        child: Row(
-          children: [
-            _RoundIconButton(
-              icon: Icons.arrow_back_rounded,
-              tooltip: L10n.of(context).courtyard,
-              onPressed: widget.onBack,
-            ),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(height: 38, child: _scoreWithSpark()),
-                  Text(
-                    L10n.of(context).level(widget.levelId),
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white.withValues(alpha: 0.88),
-                      height: 1.1,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withValues(alpha: 0.35),
-                          blurRadius: 3,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            _RoundIconButton(
-              icon: Icons.menu_rounded,
-              tooltip: L10n.of(context).menu,
-              onPressed: widget.onMenu,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// Лоток с четырьмя вдавленными нишами под плитки.
 class _TileTray extends StatefulWidget {
   const _TileTray({
@@ -2088,6 +1879,8 @@ class _TileTrayState extends State<_TileTray>
     with SingleTickerProviderStateMixin {
   static const _slotW = GameBoard.traySlotW;
   static const _slotH = GameBoard.traySlotH;
+  static const _padX = 8.0;
+  static const _trayW = _padX * 2 + Board.trayCapacity * _slotW;
 
   late final AnimationController _matchPulse;
 
@@ -2135,60 +1928,49 @@ class _TileTrayState extends State<_TileTray>
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
+      padding: const EdgeInsets.fromLTRB(12, 2, 12, 4),
       child: AnimatedBuilder(
         animation: _matchPulse,
         builder: (context, _) {
           final matching = _isMatching;
           final t = matching ? _matchPulse.value : 0.0;
-          final pulseColor = matching
-              ? Color.lerp(
-                  _Ui.gold,
-                  _Ui.goldSoft,
-                  t,
-                )!.withValues(alpha: 0.45 + 0.35 * t)
-              : null;
+          final glow = matching
+              ? Color.lerp(const Color(0xFF5CB0FF), const Color(0xFF9AD4FF), t)!
+              : const Color(0xFF3D9CFF);
 
           return Center(
-            child: Container(
+            child: SizedBox(
+              width: _trayW,
               height: GameBoard.trayBarH,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: _Ui.tableDeep,
-                border: pulseColor == null
-                    ? null
-                    : Border.all(color: pulseColor, width: 1.6),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.28),
-                    offset: const Offset(0, 3),
-                    blurRadius: 8,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  color: const Color(0xFF0A1630),
+                  border: Border.all(
+                    color: glow.withValues(alpha: matching ? 0.95 : 0.85),
+                    width: 1.8,
                   ),
-                  if (matching)
+                  boxShadow: [
                     BoxShadow(
-                      color: Color.lerp(
-                        _Ui.gold,
-                        _Ui.goldSoft,
-                        t,
-                      )!.withValues(alpha: 0.28),
-                      blurRadius: 12,
+                      color: glow.withValues(alpha: matching ? 0.55 : 0.28),
+                      blurRadius: matching ? 16 : 8,
                     ),
-                ],
-              ),
-              child: CustomPaint(
-                painter: const _TrayNichesPainter(),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (var i = 0; i < Board.trayCapacity; i++)
-                      SizedBox(
-                        key: widget.slotKeys[i],
-                        width: _slotW,
-                        height: _slotH,
-                        child: _buildTrayTile(i),
-                      ),
                   ],
+                ),
+                child: CustomPaint(
+                  painter: const _TrayNichesPainter(),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (var i = 0; i < Board.trayCapacity; i++)
+                        SizedBox(
+                          key: widget.slotKeys[i],
+                          width: _slotW,
+                          height: _slotH,
+                          child: _buildTrayTile(i),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -2210,7 +1992,7 @@ class _TileTrayState extends State<_TileTray>
       tile: tile,
       width: _slotW,
       height: _slotH,
-      isSelected: false,
+      isSelected: isHinted,
       isFree: true,
       isHinted: isHinted,
       isRemoving: tile.removing,
@@ -2230,8 +2012,7 @@ class _TrayNichesPainter extends CustomPainter {
     const slotH = GameBoard.traySlotH;
     const count = Board.trayCapacity;
     const gap = 3.0;
-    final totalW = slotW * count;
-    final startX = (size.width - totalW) / 2;
+    final startX = (size.width - count * slotW) / 2;
     final startY = (size.height - slotH) / 2;
 
     for (var i = 0; i < count; i++) {
@@ -2268,181 +2049,4 @@ class _TrayNichesPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _RoundIconButton extends StatelessWidget {
-  const _RoundIconButton({
-    required this.icon,
-    required this.tooltip,
-    this.onPressed,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return PressableEmbossedButton(
-      tooltip: tooltip,
-      onPressed: onPressed,
-      enabled: onPressed != null,
-      size: 44,
-      child: FilledGlyph(icon: icon, size: 22, color: _Ui.ivory),
-    );
-  }
-}
-
-class _ActionBar extends StatelessWidget {
-  const _ActionBar({
-    required this.shufflesLeft,
-    required this.magnetsLeft,
-    required this.hintsLeft,
-    required this.undosLeft,
-    required this.shufflePlayToken,
-    required this.enabled,
-    required this.canUndo,
-    required this.canUndoViaAd,
-    required this.adsAvailable,
-    required this.onShuffle,
-    required this.onMagnet,
-    required this.onHint,
-    required this.onUndo,
-  });
-
-  final int shufflesLeft;
-  final int magnetsLeft;
-  final int hintsLeft;
-  final int undosLeft;
-  final int shufflePlayToken;
-  final bool enabled;
-  final bool canUndo;
-  final bool canUndoViaAd;
-  final bool adsAvailable;
-  final VoidCallback onShuffle;
-  final VoidCallback onMagnet;
-  final VoidCallback onHint;
-  final VoidCallback onUndo;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = L10n.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _ActionButton(
-            shuffle: true,
-            playToken: shufflePlayToken,
-            tooltip: l10n.boostTooltip(
-              l10n.shuffle,
-              shufflesLeft,
-              adsAvailable: adsAvailable,
-            ),
-            badge: shufflesLeft > 0 ? '$shufflesLeft' : '+',
-            enabled: enabled && (shufflesLeft > 0 || adsAvailable),
-            onPressed: onShuffle,
-          ),
-          _ActionButton(
-            magnet: true,
-            tooltip: l10n.boostTooltip(
-              l10n.magnet,
-              magnetsLeft,
-              adsAvailable: adsAvailable,
-            ),
-            badge: magnetsLeft > 0 ? '$magnetsLeft' : '+',
-            enabled: enabled && (magnetsLeft > 0 || adsAvailable),
-            onPressed: onMagnet,
-          ),
-          _ActionButton(
-            hint: true,
-            tooltip: l10n.boostTooltip(
-              l10n.hint,
-              hintsLeft,
-              adsAvailable: adsAvailable,
-            ),
-            badge: hintsLeft > 0 ? '$hintsLeft' : '+',
-            enabled: enabled && (hintsLeft > 0 || adsAvailable),
-            onPressed: onHint,
-          ),
-          _ActionButton(
-            undo: true,
-            tooltip: canUndo
-                ? l10n.undo
-                : (canUndoViaAd ? l10n.watchAd(l10n.undo) : l10n.noneLeft),
-            badge: undosLeft > 0 ? '$undosLeft' : '+',
-            enabled: enabled && (canUndo || canUndoViaAd),
-            onPressed: onUndo,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    this.icon,
-    this.magnet = false,
-    this.shuffle = false,
-    this.hint = false,
-    this.undo = false,
-    this.playToken = 0,
-    required this.tooltip,
-    required this.badge,
-    required this.enabled,
-    required this.onPressed,
-  }) : assert(magnet || shuffle || hint || undo || icon != null);
-
-  final IconData? icon;
-  final bool magnet;
-  final bool shuffle;
-  final bool hint;
-  final bool undo;
-  final int playToken;
-  final String tooltip;
-  final String badge;
-  final bool enabled;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final exhausted = !enabled && badge == '+';
-    final iconColor = enabled
-        ? _Ui.ivory
-        : (exhausted ? Colors.white38 : _Ui.ivory.withValues(alpha: 0.35));
-    final glyph = magnet
-        ? MagnetGlyph(size: 26, color: iconColor)
-        : shuffle
-        ? PlayingShuffleGlyph(playToken: playToken, size: 28, color: iconColor)
-        : hint
-        ? HintGlyph(size: 28, color: iconColor)
-        : undo
-        ? UndoGlyph(size: 28, color: iconColor)
-        : FilledGlyph(icon: icon!, size: 28, color: iconColor);
-
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        PressableEmbossedButton(
-          tooltip: tooltip,
-          onPressed: enabled ? onPressed : null,
-          enabled: enabled,
-          exhausted: exhausted,
-          size: 58,
-          child: glyph,
-        ),
-        Positioned(
-          right: -2,
-          top: -2,
-          child: BoostCountBadge(
-            label: badge,
-            enabled: enabled,
-            color: _Ui.badge,
-          ),
-        ),
-      ],
-    );
-  }
 }

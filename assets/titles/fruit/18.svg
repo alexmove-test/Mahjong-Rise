@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100">
+  <defs>
+    <radialGradient id="pomBody" cx="38%" cy="40%" r="70%">
+      <stop stop-color="#ef9a9a"/>
+      <stop offset="1" stop-color="#b71c1c"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="40" cy="93" rx="22" ry="4" fill="#000" opacity=".2"/>
+  <path d="M28 24l6-10h12l6 10z" fill="#c62828" stroke="#7f0000" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M32 18l8-8 8 8" fill="none" stroke="#7f0000" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M16 42c0-14 10-22 24-22s24 8 24 22c4 16 2 32-8 40-8 8-16 10-16 10s-8-2-16-10c-10-8-12-24-8-40z" fill="url(#pomBody)" stroke="#7f0000" stroke-width="2.4" stroke-linejoin="round"/>
+  <g fill="#ffcdd2">
+    <circle cx="32" cy="48" r="3.2"/>
+    <circle cx="44" cy="46" r="3"/>
+    <circle cx="38" cy="58" r="3.4"/>
+    <circle cx="50" cy="58" r="2.8"/>
+    <circle cx="28" cy="62" r="2.8"/>
+  </g>
+  <ellipse cx="28" cy="44" rx="7" ry="10" fill="#fff" opacity=".22"/>
+</svg>

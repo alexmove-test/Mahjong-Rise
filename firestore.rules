@@ -2,77 +2,126 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function validName(name) {
+      return name is string
+        && name.size() >= 1
+        && name.size() <= 40;
+    }
+
+    // Flutter web пишет числа как float (3.0), Android — как int.
+    function wholeNum(value) {
+      return value is int || (value is float && value == int(value));
+    }
+
+    function inRange(value, min, max) {
+      return wholeNum(value) && value >= min && value <= max;
+    }
+
+    function nameOnlyUpdate() {
+      return request.resource.data.diff(resource.data)
+        .affectedKeys()
+        .hasOnly(['name', 'updatedAt'])
+        && validName(request.resource.data.name);
+    }
+
+    function hasWeeklyFields() {
+      return request.resource.data.keys().hasAll([
+        'name',
+        'rating',
+        'weeklyStars',
+        'weeklyClears',
+        'weeklyDailies',
+      ]);
+    }
+
+    function weeklyScoreOk() {
+      return validName(request.resource.data.name)
+        && inRange(request.resource.data.rating, 0, 2207000)
+        && inRange(request.resource.data.weeklyStars, 0, 200)
+        && inRange(request.resource.data.weeklyClears, 0, 80)
+        && inRange(request.resource.data.weeklyDailies, 0, 7)
+        && request.resource.data.rating ==
+             request.resource.data.weeklyStars * 10000 +
+             request.resource.data.weeklyClears * 2500 +
+             request.resource.data.weeklyDailies * 1000;
+    }
+
+    function isoWeekId(weekId) {
+      return weekId.matches('[0-9]{4}-W[0-9]{2}');
+    }
+
     match /leaderboard/{userId} {
       allow read: if true;
 
-      allow create, update: if request.auth != null
+      allow create: if request.auth != null
         && request.auth.uid == userId
-        && request.resource.data.keys().hasOnly([
+        && request.resource.data.keys().hasAll([
           'name',
           'rating',
           'totalStars',
           'levelsUnlocked',
           'sumBestScores',
-          'updatedAt',
         ])
-        && request.resource.data.name is string
-        && request.resource.data.name.size() >= 1
-        && request.resource.data.name.size() <= 20
-        && request.resource.data.rating is int
-        && request.resource.data.rating >= 0
-        && request.resource.data.rating <= 100000000
-        && request.resource.data.totalStars is int
-        && request.resource.data.totalStars >= 0
-        && request.resource.data.totalStars <= 720
-        && request.resource.data.levelsUnlocked is int
-        && request.resource.data.levelsUnlocked >= 1
-        && request.resource.data.levelsUnlocked <= 240
-        && request.resource.data.sumBestScores is int
-        && request.resource.data.sumBestScores >= 0
-        && request.resource.data.sumBestScores <= 20000000
+        && validName(request.resource.data.name)
+        && inRange(request.resource.data.rating, 0, 100000000)
+        && inRange(request.resource.data.totalStars, 0, 720)
+        && inRange(request.resource.data.levelsUnlocked, 1, 240)
+        && inRange(request.resource.data.sumBestScores, 0, 20000000)
         && request.resource.data.rating ==
              request.resource.data.totalStars * 100000 +
              request.resource.data.sumBestScores +
              request.resource.data.levelsUnlocked * 500;
 
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        && (
+          nameOnlyUpdate()
+          || (
+            request.resource.data.keys().hasAll([
+              'name',
+              'rating',
+              'totalStars',
+              'levelsUnlocked',
+              'sumBestScores',
+            ])
+            && validName(request.resource.data.name)
+            && inRange(request.resource.data.rating, 0, 100000000)
+            && inRange(request.resource.data.totalStars, 0, 720)
+            && inRange(request.resource.data.levelsUnlocked, 1, 240)
+            && inRange(request.resource.data.sumBestScores, 0, 20000000)
+            && request.resource.data.rating ==
+                 request.resource.data.totalStars * 100000 +
+                 request.resource.data.sumBestScores +
+                 request.resource.data.levelsUnlocked * 500
+          )
+        );
+
       allow delete: if false;
     }
 
-    match /weekly/{weekId}/players/{userId} {
+    match /weekly/{weekId} {
       allow read: if true;
+      allow write: if false;
 
-      allow create, update: if request.auth != null
-        && request.auth.uid == userId
-        && weekId.matches('^[0-9]{4}-W[0-9]{2}$')
-        && request.resource.data.keys().hasOnly([
-          'name',
-          'rating',
-          'weeklyStars',
-          'weeklyClears',
-          'weeklyDailies',
-          'updatedAt',
-        ])
-        && request.resource.data.name is string
-        && request.resource.data.name.size() >= 1
-        && request.resource.data.name.size() <= 20
-        && request.resource.data.rating is int
-        && request.resource.data.rating >= 0
-        && request.resource.data.rating <= 2207000
-        && request.resource.data.weeklyStars is int
-        && request.resource.data.weeklyStars >= 0
-        && request.resource.data.weeklyStars <= 200
-        && request.resource.data.weeklyClears is int
-        && request.resource.data.weeklyClears >= 0
-        && request.resource.data.weeklyClears <= 80
-        && request.resource.data.weeklyDailies is int
-        && request.resource.data.weeklyDailies >= 0
-        && request.resource.data.weeklyDailies <= 7
-        && request.resource.data.rating ==
-             request.resource.data.weeklyStars * 10000 +
-             request.resource.data.weeklyClears * 2500 +
-             request.resource.data.weeklyDailies * 1000;
+      match /players/{userId} {
+        allow read: if true;
 
-      allow delete: if false;
+        allow create: if request.auth != null
+          && request.auth.uid == userId
+          && isoWeekId(weekId)
+          && hasWeeklyFields()
+          && weeklyScoreOk();
+
+        allow update: if request.auth != null
+          && request.auth.uid == userId
+          && isoWeekId(weekId)
+          && (
+            nameOnlyUpdate()
+            || (hasWeeklyFields() && weeklyScoreOk())
+          );
+
+        allow delete: if false;
+      }
     }
   }
 }

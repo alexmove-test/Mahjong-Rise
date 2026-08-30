@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100">
+  <defs>
+    <linearGradient id="avoSkin" x1="20" y1="18" x2="62" y2="90" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9ccc65"/>
+      <stop offset="1" stop-color="#33691e"/>
+    </linearGradient>
+    <radialGradient id="avoPit" cx="42%" cy="40%" r="65%">
+      <stop stop-color="#d7ccc8"/>
+      <stop offset="1" stop-color="#6d4c41"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="40" cy="93" rx="22" ry="4" fill="#000" opacity=".2"/>
+  <path d="M40 14c12 2 20 14 20 28 0 10-4 18-2 28 2 14-8 28-18 30-12 2-22-12-22-28 0-10 4-18 4-28 0-14 6-28 18-30z" fill="url(#avoSkin)" stroke="#1b5e20" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M40 22c8 2 14 12 14 22 0 8-2 14-2 22 0 12-6 22-12 22s-12-10-12-22c0-8 2-14 2-22 0-10 4-20 10-22z" fill="#f0f4c3"/>
+  <circle cx="40" cy="56" r="11" fill="url(#avoPit)" stroke="#4e342e" stroke-width="1.6"/>
+  <ellipse cx="36" cy="52" rx="3.4" ry="4.6" fill="#fff" opacity=".3"/>
+</svg>

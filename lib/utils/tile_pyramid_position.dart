@@ -1,9 +1,6 @@
-import 'dart:ui';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import '../debug_agent_log.dart';
+import '../widgets/tile_canvas.dart';
 import '../widgets/tile_painter.dart';
 
 /// Визуальные параметры одной плитки в пирамиде по координатам (x, y, z).
@@ -18,7 +15,7 @@ class TilePyramidVisuals {
   /// Смещение базового спрайта относительно ячейки сетки.
   final Offset baseOffset;
 
-  /// Смещение слоя тени: z × 4 px по X и Y.
+  /// Смещение слоя тени: 4 px + z × 4 px по X и Y.
   final Offset shadowOffset;
 
   /// Прозрачность тени (растёт с z).
@@ -34,16 +31,26 @@ class TilePyramidPosition {
 
   static const shadowStepPx = 4.0;
 
-  /// Подъём одного слоя по Y (~8% высоты плитки при опорной ширине 80).
-  static const liftStepYPx = 7.5;
+  /// Базовый сдвиг тени вниз-вправо, даже у нижнего слоя.
+  static const baseShadowOffsetPx = 4.0;
 
-  /// Лёгкий сдвиг по X: стопка растёт почти строго вверх.
-  static const liftStepXPx = 1.5;
+  /// Подъём одного слоя по Y (~11% высоты плитки при опорной ширине 80).
+  static const liftStepYPx = 9.0;
 
-  static const _baseShadowOpacity = 0.42;
+  /// Сдвиг по X: стопка уходит вглубь влево-вверх.
+  static const liftStepXPx = 2.5;
+
+  static const _baseShadowOpacity = 0.34;
   static const _shadowOpacityPerZ = 0.09;
-  static const _baseShadowBlur = 0.8;
-  static const _shadowBlurPerZ = 2.6;
+  static const _baseShadowBlur = 4.0;
+  static const _shadowBlurPerZ = 1.8;
+
+  /// Перекрытая кость лежит в тени соседей: тень короче, мягче и бледнее.
+  /// Свободная отрывается от стопки — тень плотнее.
+  static const lockedShadowExtent = 0.72;
+  static const lockedShadowOpacityFactor = 0.82;
+  static const lockedShadowBlurFactor = 0.85;
+  static const liftedShadowOpacityFactor = 1.12;
 
   static const _refTileWidth = 80.0;
 
@@ -52,19 +59,28 @@ class TilePyramidPosition {
       (tileWidth / _refTileWidth).clamp(0.55, 2.4);
 
   /// Визуальные параметры для плитки с высотой [z].
+  ///
+  /// [lifted] — кость свободна и читается как «можно взять». Значение по
+  /// умолчанию даёт максимальную тень: расчёт границ поля опирается на него.
   static TilePyramidVisuals visuals({
     required int z,
     required double tileWidth,
     required double tileHeight,
+    bool lifted = true,
   }) {
     final scale = scaleFor(tileWidth);
     final lift = baseOffset(z: z, tileWidth: tileWidth, tileHeight: tileHeight);
+    final extent = lifted ? 1.0 : lockedShadowExtent;
+    final opacityFactor = lifted
+        ? liftedShadowOpacityFactor
+        : lockedShadowOpacityFactor;
+    final blurFactor = lifted ? 1.0 : lockedShadowBlurFactor;
 
     return TilePyramidVisuals(
       baseOffset: lift,
-      shadowOffset: shadowOffset(z: z, scale: scale),
-      shadowOpacity: shadowOpacity(z: z),
-      shadowBlur: shadowBlur(z: z, scale: scale),
+      shadowOffset: shadowOffset(z: z, scale: scale * extent),
+      shadowOpacity: (shadowOpacity(z: z) * opacityFactor).clamp(0.0, 0.97),
+      shadowBlur: shadowBlur(z: z, scale: scale) * blurFactor,
     );
   }
 
@@ -80,9 +96,9 @@ class TilePyramidPosition {
     return Offset(-z * liftStepXPx * scale, -z * liftStepYPx * scale);
   }
 
-  /// shadow.x = shadow.y = z × 4 px.
+  /// shadow.x = shadow.y = 4 px + z × 4 px.
   static Offset shadowOffset({required int z, double scale = 1.0}) {
-    final px = z * shadowStepPx * scale;
+    final px = (baseShadowOffsetPx + z * shadowStepPx) * scale;
     return Offset(px, px);
   }
 
@@ -120,7 +136,7 @@ class TilePyramidPosition {
     final v = visuals(
       z: maxZ,
       tileWidth: tileWidth,
-      tileHeight: tileWidth * 1.15,
+      tileHeight: tileWidth * TileBaseLayout.spriteAspect,
     );
     return Offset(
       v.shadowOffset.dx + v.shadowBlur * 2.5,
@@ -135,45 +151,20 @@ class TilePyramidShadowLayer extends StatelessWidget {
     super.key,
     required this.visuals,
     required this.tileSize,
-    required this.asset,
   });
 
   final TilePyramidVisuals visuals;
   final Size tileSize;
-  final String asset;
 
   @override
   Widget build(BuildContext context) {
-    Widget shadow = Opacity(
-      opacity: visuals.shadowOpacity,
-      child: TileMappedSprite(
-        asset: asset,
-        tileSize: tileSize,
-        filterQuality: FilterQuality.medium,
-        errorBuilder: (context, error, stack) {
-          // #region agent log
-          agentDbg(
-            location: 'tile_pyramid_position.dart:shadow',
-            message: 'tile_shadow failed to decode',
-            hypothesisId: 'B',
-            runId: 'post-fix',
-            data: {'error': error.toString(), 'asset': asset},
-          );
-          // #endregion
-          return const SizedBox.shrink();
-        },
+    Widget shadow = CustomPaint(
+      size: tileSize,
+      painter: TileDropShadowPainter(
+        opacity: visuals.shadowOpacity,
+        blur: visuals.shadowBlur,
       ),
     );
-
-    if (visuals.shadowBlur > 0.35 && !kIsWeb) {
-      shadow = ImageFiltered(
-        imageFilter: ImageFilter.blur(
-          sigmaX: visuals.shadowBlur,
-          sigmaY: visuals.shadowBlur,
-        ),
-        child: shadow,
-      );
-    }
 
     return Positioned(
       left: visuals.shadowOffset.dx,
@@ -190,8 +181,6 @@ extension TilePyramidLayerModifier on Widget {
   Widget withTilePyramidLayers({
     required TilePyramidVisuals visuals,
     required Size tileSize,
-    required String shadowAsset,
-    required String baseAsset,
   }) {
     return Stack(
       clipBehavior: Clip.none,
@@ -199,10 +188,9 @@ extension TilePyramidLayerModifier on Widget {
         TilePyramidShadowLayer(
           visuals: visuals,
           tileSize: tileSize,
-          asset: shadowAsset,
         ),
         Positioned.fill(
-          child: TileMappedSprite(asset: baseAsset, tileSize: tileSize),
+          child: CustomPaint(painter: const TileFacePainter(lifted: true)),
         ),
         this,
       ],

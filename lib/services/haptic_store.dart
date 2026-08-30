@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Saved haptic preference. Enabled by default.
+/// Saved haptic preference. Disabled by default.
 class HapticStore {
   HapticStore._(this._prefs);
 
@@ -15,7 +15,7 @@ class HapticStore {
     return HapticStore._(prefs);
   }
 
-  bool get enabled => _prefs?.getBool(_kPref) ?? true;
+  bool get enabled => _prefs?.getBool(_kPref) ?? false;
 
   Future<void> setEnabled(bool value) async {
     final prefs = _prefs;

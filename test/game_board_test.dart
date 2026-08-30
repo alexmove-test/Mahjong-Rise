@@ -10,7 +10,11 @@ import 'package:mahjong/screens/game_screen.dart';
 import 'package:mahjong/services/progress_store.dart';
 import 'package:mahjong/utils/layouts.dart';
 import 'package:mahjong/utils/tile_pyramid_position.dart';
+import 'package:mahjong/widgets/game_action_bar.dart';
 import 'package:mahjong/widgets/game_board.dart';
+import 'package:mahjong/widgets/game_hud.dart';
+import 'package:mahjong/widgets/tile_canvas.dart';
+import 'package:mahjong/widgets/tile_glyph.dart';
 import 'package:mahjong/widgets/tile_flight.dart';
 import 'package:mahjong/widgets/tile_painter.dart';
 import 'package:mahjong/widgets/tile_symbol_image.dart';
@@ -24,23 +28,33 @@ void main() {
     const names = [
       'petal',
       'seed',
+      'buds',
       'bloom',
+      'glade',
       'meadow',
       'grove',
       'wave',
+      'stream',
       'garden',
       'pyramid',
+      'gazebo',
       'fan',
       'fort',
+      'peacock',
       'lotus',
+      'pond',
       'koi',
+      'lake',
       'vine',
       'tower',
+      'ivy',
       'festival',
-      'temple',
+      'lanterns',
       'pavilion',
+      'temple',
       'dragon',
       'turtle',
+      'sky',
     ];
     for (final name in names) {
       final positions = Layouts.byName(name);
@@ -55,16 +69,27 @@ void main() {
       final maxX = positions.map((p) => p.$1).reduce(max);
       final minY = positions.map((p) => p.$2).reduce(min);
       final maxY = positions.map((p) => p.$2).reduce(max);
-      final widthTiles = (maxX - minX + 2) / 2;
-      final heightTiles = (maxY - minY + 2) / 2;
-      expect(widthTiles, lessThanOrEqualTo(6), reason: '$name width');
-      expect(heightTiles, lessThanOrEqualTo(5), reason: '$name height');
+      expect(minX, greaterThanOrEqualTo(0), reason: name);
+      expect(minY, greaterThanOrEqualTo(0), reason: name);
+      expect(maxX, lessThanOrEqualTo(Layouts.playfieldMaxX), reason: name);
+      expect(maxY, lessThanOrEqualTo(Layouts.playfieldMaxY), reason: name);
+    }
+  });
+
+  test('story layouts each have a distinct silhouette', () {
+    final fingerprints = <String>{};
+    for (final level in Levels.all.take(Levels.storyLength)) {
+      final positions = Layouts.byName(level.layout);
+      final cells = [
+        for (final p in positions) '${p.$1},${p.$2},${p.$3}',
+      ]..sort();
       expect(
-        positions.map((p) => p.$3).reduce(max),
-        greaterThanOrEqualTo(2),
-        reason: '$name should stack in depth',
+        fingerprints.add(cells.join(';')),
+        isTrue,
+        reason: 'level ${level.id} ${level.layout} repeats a silhouette',
       );
     }
+    expect(fingerprints, hasLength(Levels.storyLength));
   });
 
   testWidgets('GameBoard shows tiles on the first frame', (tester) async {
@@ -88,7 +113,12 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.byType(TileWidget), findsNWidgets(board.tiles.length));
-    expect(find.byType(TileMappedSprite), findsWidgets);
+    expect(
+      tester
+          .widgetList<CustomPaint>(find.byType(CustomPaint))
+          .where((paint) => paint.painter is TileFacePainter),
+      isNotEmpty,
+    );
     expect(find.byType(TilePyramidShadowLayer), findsWidgets);
 
     for (final tile in tester.widgetList<TileWidget>(find.byType(TileWidget))) {
@@ -119,8 +149,74 @@ void main() {
 
     expect(find.byType(TileWidget), findsWidgets);
     for (final tile in tester.widgetList<TileWidget>(find.byType(TileWidget))) {
-      expect(tile.width, greaterThan(50));
+      expect(tile.width, greaterThan(62));
     }
+  });
+
+  testWidgets('shallow and deep layouts keep the same tile scale', (
+    tester,
+  ) async {
+    Future<double> widthOf(String layout) async {
+      final board = Board.fromLayout(layout, random: Random(1));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 400,
+              height: 720,
+              child: GameBoard(
+                board: board,
+                onTileTap: (_, _) {},
+                onTileRemoveComplete: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+      return tester.widget<TileWidget>(find.byType(TileWidget).first).width;
+    }
+
+    final petal = await widthOf('petal');
+    final dragon = await widthOf('dragon');
+    expect(dragon, closeTo(petal, 0.5));
+    expect(dragon, greaterThan(62));
+  });
+
+  testWidgets('GameBoard tiles fill the playfield width', (tester) async {
+    final board = Board.fromLayout('garden', random: Random(1));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 400,
+            height: 720,
+            child: GameBoard(
+              board: board,
+              onTileTap: (_, _) {},
+              onTileRemoveComplete: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final tile = tester.widget<TileWidget>(find.byType(TileWidget).first);
+    expect(tile.width, greaterThan(62));
+    expect(tile.width, lessThan(72));
+    expect(tile.height / tile.width, closeTo(GameBoard.tileAspect, 0.01));
+
+    var minLeft = double.infinity;
+    var maxRight = double.negativeInfinity;
+    for (final widget in tester.widgetList<TileWidget>(
+      find.byType(TileWidget),
+    )) {
+      final rect = tester.getRect(find.byWidget(widget));
+      minLeft = min(minLeft, rect.left);
+      maxRight = max(maxRight, rect.right);
+    }
+    expect(maxRight - minLeft, greaterThan(370));
+    expect(maxRight - minLeft, lessThanOrEqualTo(402));
   });
 
   testWidgets('GameBoard scale stays fixed as tiles leave the board', (
@@ -164,6 +260,16 @@ void main() {
     expect(tester.getRect(keepFinder), keepRect);
   });
 
+  test('tiles are rectangular like a standard mahjong bone', () {
+    expect(GameBoard.tileAspect, closeTo(TileBaseLayout.spriteAspect, 0.001));
+    expect(GameBoard.tileAspect, greaterThan(1.3));
+    expect(
+      GameBoard.traySlotH / GameBoard.traySlotW,
+      closeTo(GameBoard.tileAspect, 0.01),
+    );
+    expect(GameBoard.trayBarH, greaterThan(GameBoard.traySlotH));
+  });
+
   test('symbol sits on the ceramic face, not the ice rim', () {
     const size = Size(80, 92);
     final face = TileBaseLayout.faceRectOf(size);
@@ -176,7 +282,54 @@ void main() {
     expect(symbol.bottom, lessThanOrEqualTo(face.bottom));
   });
 
-  testWidgets('TileWidget tints only the locked bone, not the icon', (
+  test('drawTile layout matches the screenshot proportions', () {
+    const size = Size(80, 92);
+    expect(TileCanvas.cornerRadius(size), closeTo(9.6, 0.05));
+    expect(TileCanvas.strokeWidthFactor * size.width, closeTo(1.12, 0.05));
+
+    final face = TileCanvas.faceRectOf(size);
+    expect(face.width / size.width, closeTo(0.93, 0.01));
+    expect(face.height / size.height, closeTo(0.925, 0.01));
+
+    final symbol = TileCanvas.symbolRectOf(size);
+    expect(
+      symbol.width / face.width,
+      closeTo(TileCanvas.symbolFaceFraction, 0.01),
+    );
+    expect(symbol.center.dx, closeTo(face.center.dx, 0.01));
+    expect(
+      (size.width * TileCanvas.shadowOffsetXFactor),
+      closeTo(4.4, 0.1),
+    );
+    expect(TileCanvas.shadowOpacity, closeTo(0.34, 0.001));
+  });
+
+  test('flower and season faces are special tiles', () {
+    expect(TileCanvas.isSpecialSymbol('flower-01'), isFalse);
+    expect(TileCanvas.isSpecialSymbol('season-03'), isTrue);
+    expect(TileCanvas.isSpecialSymbol('set1-season-spring'), isTrue);
+    expect(TileCanvas.isSpecialSymbol('soft-01'), isFalse);
+  });
+
+  test('canvas glyphs cover the screenshot suits', () {
+    expect(TileGlyph.paints('flower-01'), isTrue);
+    expect(TileGlyph.kindOf('flower-01')?.suit, TileSuit.plum);
+    expect(TileGlyph.paints('bamboo-03'), isTrue);
+    expect(TileGlyph.kindOf('bamboo-09')?.rank, 9);
+    expect(TileGlyph.kindOf('character-05')?.suit, TileSuit.character);
+    expect(TileGlyph.kindOf('character-05')?.rank, 5);
+    expect(TileGlyph.paints('dot-08'), isTrue);
+    expect(TileGlyph.kindOf('dragon-03')?.suit, TileSuit.dragon);
+    expect(TileGlyph.paints('wind-01'), isTrue);
+    expect(TileGlyph.paints('season-01'), isFalse);
+    expect(TileGlyph.paints('soft-01'), isFalse);
+    expect(TileGlyph.paints('number-05'), isFalse);
+    expect(TileGlyph.paints('fruit-01'), isFalse);
+    expect(TileGlyph.paints('shape-01'), isFalse);
+    expect(TileGlyph.kindOf('set1-bamboo-03')?.rank, 3);
+  });
+
+  testWidgets('TileWidget paints a locked bone darker than a free one', (
     tester,
   ) async {
     final free = Tile(id: 1, symbol: 'soft-01', layer: 1, x: 0, y: 0);
@@ -209,23 +362,259 @@ void main() {
       ),
     );
 
-    expect(find.byType(TileMappedSprite), findsWidgets);
     expect(find.byType(TilePyramidShadowLayer), findsNWidgets(2));
     expect(find.byType(TileSymbolImage), findsNWidgets(2));
-    expect(
-      find.descendant(
-        of: find.byKey(const Key('locked')),
-        matching: find.byType(ColorFiltered),
+
+    TileFacePainter faceOf(Key key) {
+      final painters = tester
+          .widgetList<CustomPaint>(
+            find.descendant(
+              of: find.byKey(key),
+              matching: find.byType(CustomPaint),
+            ),
+          )
+          .map((paint) => paint.painter)
+          .whereType<TileFacePainter>()
+          .toList();
+      expect(painters, hasLength(1));
+      return painters.single;
+    }
+
+    expect(faceOf(const Key('free')).locked, isFalse);
+    expect(faceOf(const Key('locked')).locked, isTrue);
+    expect(faceOf(const Key('free')).isSelected, isFalse);
+    expect(faceOf(const Key('free')).isSpecial, isFalse);
+  });
+
+  testWidgets('selected and special tiles switch drawTile chrome', (
+    tester,
+  ) async {
+    final selected = Tile(id: 1, symbol: 'soft-01', layer: 1, x: 0, y: 0);
+    final flower = Tile(id: 2, symbol: 'flower-01', layer: 0, x: 2, y: 0);
+    final season = Tile(id: 3, symbol: 'season-01', layer: 0, x: 4, y: 0);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Row(
+            children: [
+              TileWidget(
+                key: const Key('selected'),
+                tile: selected,
+                width: 64,
+                height: 74,
+                isSelected: true,
+                isFree: true,
+              ),
+              TileWidget(
+                key: const Key('flower'),
+                tile: flower,
+                width: 64,
+                height: 74,
+                isSelected: false,
+                isFree: true,
+              ),
+              TileWidget(
+                key: const Key('season'),
+                tile: season,
+                width: 64,
+                height: 74,
+                isSelected: false,
+                isFree: true,
+              ),
+            ],
+          ),
+        ),
       ),
-      findsOneWidget,
     );
+
+    TileFacePainter faceOf(Key key) {
+      return tester
+          .widgetList<CustomPaint>(
+            find.descendant(
+              of: find.byKey(key),
+              matching: find.byType(CustomPaint),
+            ),
+          )
+          .map((paint) => paint.painter)
+          .whereType<TileFacePainter>()
+          .single;
+    }
+
+    expect(faceOf(const Key('selected')).isSelected, isTrue);
+    expect(faceOf(const Key('flower')).isSpecial, isFalse);
+    expect(faceOf(const Key('flower')).symbol, 'flower-01');
+    expect(faceOf(const Key('season')).isSpecial, isTrue);
     expect(
       find.descendant(
-        of: find.byKey(const Key('free')),
-        matching: find.byType(ColorFiltered),
+        of: find.byKey(const Key('flower')),
+        matching: find.byType(TileSymbolImage),
       ),
       findsNothing,
     );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('season')),
+        matching: find.byType(TileSymbolImage),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('tapping a locked tile shakes it, a free tile stays put', (
+    tester,
+  ) async {
+    final free = Tile(id: 1, symbol: 'soft-01', layer: 1, x: 0, y: 0);
+    final locked = Tile(id: 2, symbol: 'soft-01', layer: 0, x: 2, y: 0);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Row(
+            children: [
+              TileWidget(
+                key: const Key('free'),
+                tile: free,
+                width: 64,
+                height: 74,
+                isSelected: false,
+                isFree: true,
+                onTap: (_) {},
+              ),
+              TileWidget(
+                key: const Key('locked'),
+                tile: locked,
+                width: 64,
+                height: 74,
+                isSelected: false,
+                isFree: false,
+                onTap: (_) {},
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    bool shiftedSideways(Key key) {
+      return tester
+          .widgetList<Transform>(
+            find.descendant(
+              of: find.byKey(key),
+              matching: find.byType(Transform),
+            ),
+          )
+          .any((t) => t.transform.getTranslation().x.abs() > 0.5);
+    }
+
+    expect(shiftedSideways(const Key('locked')), isFalse);
+
+    await tester.tap(find.byKey(const Key('locked')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 40));
+    expect(shiftedSideways(const Key('locked')), isTrue);
+
+    await tester.tap(find.byKey(const Key('free')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 40));
+    expect(shiftedSideways(const Key('free')), isFalse);
+
+    await tester.pumpAndSettle();
+    expect(shiftedSideways(const Key('locked')), isFalse);
+  });
+
+  testWidgets('tapping a free tile pops 1.0 → 1.15 → 1.0', (tester) async {
+    final free = Tile(id: 1, symbol: 'soft-01', layer: 1, x: 0, y: 0);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TileWidget(
+            key: const Key('free'),
+            tile: free,
+            width: 64,
+            height: 74,
+            isSelected: false,
+            isFree: true,
+            onTap: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    double maxScaleX() {
+      var peak = 1.0;
+      for (final t in tester.widgetList<Transform>(
+        find.descendant(
+          of: find.byKey(const Key('free')),
+          matching: find.byType(Transform),
+        ),
+      )) {
+        peak = max(peak, t.transform.storage[0]);
+      }
+      return peak;
+    }
+
+    expect(maxScaleX(), closeTo(1.0, 0.02));
+    await tester.tap(find.byKey(const Key('free')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(maxScaleX(), closeTo(TileWidget.tapPopPeak, 0.04));
+    await tester.pump(TileWidget.tapPopDuration);
+    expect(maxScaleX(), closeTo(1.0, 0.02));
+  });
+
+  testWidgets('removing a tile fades out and scales to 0.8', (tester) async {
+    final tile = Tile(id: 1, symbol: 'soft-01', layer: 0, x: 0, y: 0);
+
+    Widget app({required bool removing}) => MaterialApp(
+      home: Scaffold(
+        body: TileWidget(
+          tile: tile,
+          width: 64,
+          height: 74,
+          isSelected: false,
+          isFree: true,
+          isRemoving: removing,
+          onRemoveComplete: () {},
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(app(removing: false));
+    await tester.pumpWidget(app(removing: true));
+
+    final fade = tester.widget<AnimatedOpacity>(find.byType(AnimatedOpacity));
+    expect(fade.opacity, 0);
+    expect(fade.duration, TileWidget.removeDuration);
+
+    final scale = tester.widget<AnimatedScale>(find.byType(AnimatedScale));
+    expect(scale.scale, TileWidget.removeScale);
+    expect(scale.duration, TileWidget.removeDuration);
+
+    final slide = tester.widget<AnimatedSlide>(find.byType(AnimatedSlide));
+    expect(slide.offset.dy, greaterThan(0));
+    expect(slide.duration, TileWidget.removeSlideDuration);
+    expect(slide.curve, Curves.easeOut);
+  });
+
+  test('locked tiles cast a shorter, softer shadow than free ones', () {
+    final free = TilePyramidPosition.visuals(
+      z: 2,
+      tileWidth: 80,
+      tileHeight: 92,
+    );
+    final locked = TilePyramidPosition.visuals(
+      z: 2,
+      tileWidth: 80,
+      tileHeight: 92,
+      lifted: false,
+    );
+
+    expect(locked.shadowOffset.dx, lessThan(free.shadowOffset.dx));
+    expect(locked.shadowOpacity, lessThan(free.shadowOpacity));
+    expect(locked.shadowBlur, lessThan(free.shadowBlur));
+    expect(locked.baseOffset, free.baseOffset);
   });
 
   test('shuffle stagger stays inside the play window', () {
@@ -299,6 +688,95 @@ void main() {
     expect(felt, isTrue);
   });
 
+  testWidgets('GameHud is a copper row of back and menu', (tester) async {
+    var back = 0;
+    var menu = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: GameHud(
+            onBack: () => back++,
+            onMenu: () => menu++,
+            backTooltip: 'Back',
+            menuTooltip: 'Menu',
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(GameHudCircleButton), findsNWidgets(2));
+    expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.menu_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.star_rounded), findsNothing);
+    expect(find.text('40'), findsNothing);
+    expect(find.text('90'), findsNothing);
+    expect(find.text('180'), findsNothing);
+
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.tap(find.byIcon(Icons.menu_rounded));
+    expect(back, 1);
+    expect(menu, 1);
+  });
+
+  testWidgets('GameActionBar is a copper row of four badged buttons', (
+    tester,
+  ) async {
+    var shuffle = 0;
+    var magnet = 0;
+    var hint = 0;
+    var undo = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: GameActionBar(
+            shufflesLeft: 3,
+            magnetsLeft: 5,
+            hintsLeft: 0,
+            undosLeft: 0,
+            enabled: true,
+            canUndo: true,
+            canUndoViaAd: true,
+            adsAvailable: true,
+            onShuffle: () => shuffle++,
+            onMagnet: () => magnet++,
+            onHint: () => hint++,
+            onUndo: () => undo++,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(GameActionButton), findsNWidgets(4));
+    expect(find.byIcon(Icons.shuffle_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.lightbulb_outline_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.undo_rounded), findsOneWidget);
+    expect(find.text('3'), findsOneWidget);
+    expect(find.text('5'), findsOneWidget);
+    expect(find.text('+'), findsNWidgets(2));
+
+    await tester.tap(find.byIcon(Icons.shuffle_rounded));
+    await tester.tap(find.byTooltip('Magnet'));
+    await tester.tap(find.byIcon(Icons.lightbulb_outline_rounded));
+    await tester.tap(find.byIcon(Icons.undo_rounded));
+    expect(shuffle, 1);
+    expect(magnet, 1);
+    expect(hint, 1);
+    expect(undo, 1);
+
+    await tester.tap(find.byIcon(Icons.shuffle_rounded));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    final pressed = tester
+        .widgetList<Transform>(
+          find.descendant(
+            of: find.byType(GameActionButton),
+            matching: find.byType(Transform),
+          ),
+        )
+        .any((t) => t.transform.storage[0] < 0.98);
+    expect(pressed, isTrue);
+  });
+
   testWidgets('GameScreen hosts a visible board', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final progress = await ProgressStore.open();
@@ -318,11 +796,23 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(GameBoard), findsOneWidget);
     expect(find.byType(TileWidget), findsWidgets);
-    expect(find.text('0'), findsWidgets);
-    expect(find.text('Level 1'), findsOneWidget);
+    expect(find.byType(GameHud), findsOneWidget);
+    expect(find.byType(GameActionBar), findsOneWidget);
+    expect(find.text('200'), findsNothing);
+    expect(find.text('350'), findsNothing);
+    expect(find.text('500'), findsNothing);
+    expect(find.text('Level 1'), findsNothing);
     expect(find.text('Take only a free top tile'), findsOneWidget);
     expect(find.text('0/16'), findsNothing);
     expect(find.text('1x'), findsNothing);
+
+    final hud = tester.getRect(find.byType(GameHud));
+    final board = tester.getRect(find.byType(GameBoard));
+    final actions = tester.getRect(find.byType(GameActionBar));
+    expect(hud.bottom, lessThanOrEqualTo(board.top + 1));
+    expect(board.bottom, lessThanOrEqualTo(actions.top + 1));
+    final screen = tester.getRect(find.byType(GameScreen));
+    expect(board.center.dx, closeTo(screen.center.dx, 8));
   });
 
   testWidgets('GameScreen restores a matching snapshot', (tester) async {
@@ -344,7 +834,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('777'), findsOneWidget);
+    expect(find.byType(GameHud), findsOneWidget);
     expect(find.text('keep-me'), findsNothing);
     expect(progress.savedSnapshot?.score, 777);
   });
@@ -559,7 +1049,7 @@ void main() {
         .toSet();
     expect(onBoard, {2});
     expect(progress.savedSnapshot?.magnets, 1);
-    expect(find.text('100'), findsOneWidget);
+    expect(progress.savedSnapshot?.score, 100);
   });
 
   testWidgets('magnet pulls a covered tile that matches the tray', (
@@ -620,17 +1110,24 @@ void main() {
         .toSet();
     expect(onBoard, {2, 3});
     expect(progress.savedSnapshot?.magnets, 1);
-    expect(find.text('100'), findsOneWidget);
+    expect(progress.savedSnapshot?.score, 100);
   });
 
   testWidgets('tapping a free tile flies it into the tray', (tester) async {
-    SharedPreferences.setMockInitialValues({'progress.tableCoachDone': true});
+    SharedPreferences.setMockInitialValues({
+      'progress.tableCoachDone': true,
+      'tutorial.skipped': true,
+      'tutorial.collect': true,
+      'tutorial.match': true,
+      'tutorial.layers': true,
+      'tutorial.boosts': true,
+    });
     final progress = await ProgressStore.open();
     final board = Board(
       tiles: [
-        Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
-        Tile(id: 1, symbol: 'B', layer: 0, x: 4, y: 0),
-        Tile(id: 2, symbol: 'C', layer: 0, x: 8, y: 0),
+        Tile(id: 0, symbol: 'A', layer: 0, x: 4, y: 4),
+        Tile(id: 1, symbol: 'B', layer: 0, x: 6, y: 4),
+        Tile(id: 2, symbol: 'C', layer: 0, x: 8, y: 4),
       ],
       layoutName: 'petal',
     );

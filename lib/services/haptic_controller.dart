@@ -74,7 +74,7 @@ class HapticGate {
 
   static const _channel = MethodChannel('com.rise.mahjong/haptics');
 
-  static bool enabled = true;
+  static bool enabled = false;
 
   static void light() => _pulse(androidMs: 55, androidAmplitude: 255);
   static void medium() => _pulse(androidMs: 90, androidAmplitude: 255);

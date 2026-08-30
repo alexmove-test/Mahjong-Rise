@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mahjong/main.dart';
+import 'package:mahjong/widgets/game_hud.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -14,7 +15,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.byType(MaterialApp), findsOneWidget);
-    expect(find.text('Level 1'), findsOneWidget);
+    expect(find.byType(GameHud), findsOneWidget);
     expect(find.text('Take only a free top tile'), findsOneWidget);
     expect(find.textContaining('MAHJONG RISE'), findsNothing);
   });
@@ -33,9 +34,18 @@ void main() {
 
     expect(find.textContaining('MAHJONG RISE'), findsNothing);
     expect(find.textContaining('Continue'), findsOneWidget);
-    expect(find.text('Plot 1'), findsOneWidget);
+    expect(find.text('House'), findsOneWidget);
     expect(find.text('Today'), findsOneWidget);
     expect(find.text('Levels'), findsOneWidget);
+    expect(find.text('Pet'), findsOneWidget);
+    expect(find.text('Garden week'), findsNothing);
+    expect(find.text('Courtyard week'), findsNothing);
+    expect(find.text('Lantern week'), findsNothing);
+    expect(find.text('Myth week'), findsNothing);
+    expect(find.text('Harvest week'), findsNothing);
+    expect(find.text('Earn 8 stars'), findsNothing);
+    expect(find.text('Clear 4 campaign levels'), findsNothing);
+    expect(find.text('Keep three nights lit'), findsNothing);
     expect(find.text('Sprout'), findsNothing);
     expect(find.text('Bud'), findsNothing);
     expect(find.text('240'), findsNothing);
@@ -45,8 +55,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('Sprout'), findsWidgets);
-    expect(find.text('Bud'), findsOneWidget);
+    expect(find.text('House'), findsWidgets);
   });
 
   testWidgets('finished first plot offers a new courtyard', (tester) async {
@@ -62,20 +71,21 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Plot 1'), findsOneWidget);
+    expect(find.text('House'), findsOneWidget);
     expect(find.text('New plot'), findsOneWidget);
 
     await tester.tap(find.text('New plot'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Plot 2'), findsOneWidget);
-    expect(find.text('A house will stand here.'), findsOneWidget);
+    expect(find.text('Pond'), findsOneWidget);
+    expect(find.text('A pond will fill this hollow.'), findsOneWidget);
     expect(
       find.byWidgetPredicate((widget) {
         if (widget is! Image) return false;
         final image = widget.image;
-        return image is AssetImage && image.assetName.contains('/plot2/');
+        return image is AssetImage &&
+            image.assetName.endsWith('layers/yard.jpg');
       }),
       findsWidgets,
     );
@@ -97,7 +107,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Участок 1'), findsOneWidget);
+    expect(find.text('Дом'), findsOneWidget);
     expect(find.textContaining('Продолжить'), findsOneWidget);
     expect(find.text('Сегодня'), findsOneWidget);
     expect(find.text('Уровни'), findsOneWidget);
@@ -106,7 +116,7 @@ void main() {
     await tester.tap(find.text('Уровни'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('Росток'), findsWidgets);
+    expect(find.text('Дом'), findsWidgets);
   });
 
   testWidgets('language menu can switch the app to Russian', (tester) async {
@@ -133,12 +143,12 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Участок 1'), findsOneWidget);
+    expect(find.text('Дом'), findsOneWidget);
     expect(find.textContaining('Продолжить'), findsOneWidget);
     expect(find.byTooltip('Настройки'), findsOneWidget);
   });
 
-  testWidgets('settings can turn haptic feedback off', (tester) async {
+  testWidgets('settings can turn haptic feedback on', (tester) async {
     SharedPreferences.setMockInitialValues({
       'progress.maxUnlocked': 2,
       'progress.stars.1': 1,
@@ -161,13 +171,13 @@ void main() {
       of: find.widgetWithText(SwitchListTile, 'Haptic feedback'),
       matching: find.byType(Switch),
     );
-    expect(tester.widget<Switch>(hapticToggle).value, isTrue);
+    expect(tester.widget<Switch>(hapticToggle).value, isFalse);
 
     await tester.tap(hapticToggle);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(tester.widget<Switch>(hapticToggle).value, isFalse);
+    expect(tester.widget<Switch>(hapticToggle).value, isTrue);
 
     await tester.tap(find.text('Русский'));
     await tester.pump();

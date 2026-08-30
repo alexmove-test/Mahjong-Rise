@@ -1,5 +1,7 @@
+import 'plot_kind.dart';
 import 'week_event.dart';
 import 'week_id.dart';
+import '../utils/layouts.dart';
 
 /// Определение уровня: раскладка, бусты и «жёсткость» колоды.
 class LevelDef {
@@ -46,6 +48,8 @@ class LevelDef {
   /// Номер в первой сюжетной двадцатичетырёх (раскладка, сложность, тема).
   int get storyId => ((id - 1) % Levels.storyLength) + 1;
 
+  PlotKind get plotKind => Levels.plotKindOf(id);
+
   String get difficultyLabel {
     final n = storyId;
     if (n <= 5) return 'Easy';
@@ -86,32 +90,62 @@ class LevelDef {
     if (n <= 16) return 3;
     return 4;
   }
+
+  /// Доля фруктов в колоде: фруктовые миры гуще, остальные всё равно с большинством фруктов.
+  static const fruitShare = 0.60;
+  static const fruitWorldShare = 0.80;
+
+  double get cuteSimpleShare => style == 'fruit' ? fruitWorldShare : fruitShare;
 }
 
-/// Каталог уровней с нарастающей сложностью.
+/// Кривая бустов и плотности внутри участка из 24.
+typedef _LevelSpec = ({
+  String layout,
+  int shuffles,
+  int hints,
+  int undos,
+  int pairSize,
+  int? uniqueCap,
+  (int, int, int) stars,
+});
+
+/// Каталог уровней: формула участка × круга, без фиксированных 240 карточек.
 abstract final class Levels {
   Levels._();
 
-  /// Уникальные раскладки сюжета; дальше кампания повторяет их циклами.
+  /// Уникальные шаги внутри участка.
   static const storyLength = 24;
 
-  /// Сотни карточек: 10 циклов первой двадцатичетырёх.
-  static const campaignLength = 240;
+  /// Практический потолок бесконечной кампании.
+  static const maxLevelId = 10000;
 
-  static final List<LevelDef> all = List.unmodifiable(_build());
+  static const campaignLength = maxLevelId;
 
-  /// Сколько домов/участков в кампании.
-  static const cycleCount = campaignLength ~/ storyLength;
+  static int get cycleCount => maxLevelId ~/ storyLength;
+
+  static Iterable<LevelDef> get all sync* {
+    for (var i = 1; i <= maxLevelId; i++) {
+      yield byId(i);
+    }
+  }
+
+  static int get maxCycle => cycleCount - 1;
 
   static LevelDef byId(int id) {
-    final i = id - 1;
-    if (i < 0 || i >= all.length) return all.first;
-    return all[i];
+    if (id < 1) return _at(1);
+    if (id > maxLevelId) return _at(maxLevelId);
+    return _at(id);
   }
 
   /// 0-based номер участка для уровня.
-  static int cycleOf(int id) =>
-      ((id - 1) ~/ storyLength).clamp(0, cycleCount - 1);
+  static int cycleOf(int id) => ((id.clamp(1, maxLevelId) - 1) ~/ storyLength);
+
+  static PlotKind plotKindOf(int id) => PlotKind.ofCycle(cycleOf(id));
+
+  static PlotKind plotKindOfCycle(int cycle) => PlotKind.ofCycle(cycle);
+
+  /// Круг из четырёх участков (0 = первый дом–интернет).
+  static int loopOf(int id) => cycleOf(id) ~/ PlotKind.order.length;
 
   /// 1–24 внутри участка.
   static int localId(int id) => ((id - 1) % storyLength) + 1;
@@ -121,11 +155,11 @@ abstract final class Levels {
   static int cycleEndId(int cycle) => (cycle + 1) * storyLength;
 
   static List<LevelDef> cycleLevels(int cycle) {
-    final c = cycle.clamp(0, cycleCount - 1);
-    return all.sublist(c * storyLength, (c + 1) * storyLength);
+    final start = cycleStartId(cycle);
+    return [for (var i = 0; i < storyLength; i++) byId(start + i)];
   }
 
-  static String plotLabel(int cycle) => 'Plot ${cycle + 1}';
+  static String plotLabel(int cycle) => PlotKind.ofCycle(cycle).titleEn;
 
   /// Ежедневный стол: сюжетная раскладка по календарному дню, без прогресса кампании.
   static LevelDef dailyFor(DateTime date, {WeekEvent? event}) {
@@ -148,289 +182,256 @@ abstract final class Levels {
     );
   }
 
-  static List<LevelDef> _build() {
-    const specs =
-        <
-          ({
-            String title,
-            String layout,
-            int shuffles,
-            int hints,
-            int undos,
-            int pairSize,
-            int? uniqueCap,
-            (int, int, int) stars,
-          })
-        >[
-          // 1–5: обучение, маленькие плоские поля
-          (
-            title: 'Sprout',
-            layout: 'petal',
-            shuffles: 5,
-            hints: 5,
-            undos: 5,
-            pairSize: 4,
-            uniqueCap: 6,
-            stars: (200, 350, 500),
-          ),
-          (
-            title: 'Bud',
-            layout: 'petal',
-            shuffles: 4,
-            hints: 4,
-            undos: 4,
-            pairSize: 4,
-            uniqueCap: 8,
-            stars: (220, 380, 520),
-          ),
-          (
-            title: 'Bloom',
-            layout: 'bloom',
-            shuffles: 4,
-            hints: 4,
-            undos: 4,
-            pairSize: 4,
-            uniqueCap: 10,
-            stars: (280, 450, 650),
-          ),
-          (
-            title: 'Glade',
-            layout: 'bloom',
-            shuffles: 4,
-            hints: 3,
-            undos: 3,
-            pairSize: 4,
-            uniqueCap: 12,
-            stars: (300, 480, 700),
-          ),
-          (
-            title: 'Lawn',
-            layout: 'meadow',
-            shuffles: 4,
-            hints: 3,
-            undos: 3,
-            pairSize: 4,
-            uniqueCap: 14,
-            stars: (350, 550, 800),
-          ),
-          // 6–12: нормально
-          (
-            title: 'Grove',
-            layout: 'meadow',
-            shuffles: 3,
-            hints: 3,
-            undos: 3,
-            pairSize: 4,
-            uniqueCap: 16,
-            stars: (380, 600, 850),
-          ),
-          (
-            title: 'Wave',
-            layout: 'wave',
-            shuffles: 3,
-            hints: 2,
-            undos: 3,
-            pairSize: 2,
-            uniqueCap: 18,
-            stars: (400, 650, 900),
-          ),
-          (
-            title: 'Stream',
-            layout: 'wave',
-            shuffles: 3,
-            hints: 3,
-            undos: 3,
-            pairSize: 4,
-            uniqueCap: 18,
-            stars: (450, 700, 1000),
-          ),
-          (
-            title: 'Garden',
-            layout: 'garden',
-            shuffles: 3,
-            hints: 2,
-            undos: 2,
-            pairSize: 4,
-            uniqueCap: 20,
-            stars: (480, 750, 1050),
-          ),
-          (
-            title: 'Gazebo',
-            layout: 'garden',
-            shuffles: 2,
-            hints: 2,
-            undos: 2,
-            pairSize: 2,
-            uniqueCap: 22,
-            stars: (500, 800, 1100),
-          ),
-          (
-            title: 'Fan',
-            layout: 'fan',
-            shuffles: 3,
-            hints: 2,
-            undos: 2,
-            pairSize: 4,
-            uniqueCap: 24,
-            stars: (550, 850, 1200),
-          ),
-          (
-            title: 'Peacock Fan',
-            layout: 'fan',
-            shuffles: 2,
-            hints: 2,
-            undos: 2,
-            pairSize: 2,
-            uniqueCap: 28,
-            stars: (600, 900, 1300),
-          ),
-          // 13–20: сложно
-          (
-            title: 'Lotus',
-            layout: 'lotus',
-            shuffles: 2,
-            hints: 1,
-            undos: 2,
-            pairSize: 2,
-            uniqueCap: 32,
-            stars: (650, 950, 1400),
-          ),
-          (
-            title: 'Pond',
-            layout: 'lotus',
-            shuffles: 3,
-            hints: 2,
-            undos: 2,
-            pairSize: 4,
-            uniqueCap: 30,
-            stars: (700, 1050, 1500),
-          ),
-          (
-            title: 'Carp',
-            layout: 'koi',
-            shuffles: 2,
-            hints: 2,
-            undos: 2,
-            pairSize: 2,
-            uniqueCap: 36,
-            stars: (750, 1100, 1600),
-          ),
-          (
-            title: 'Lake',
-            layout: 'koi',
-            shuffles: 2,
-            hints: 1,
-            undos: 1,
-            pairSize: 2,
-            uniqueCap: 40,
-            stars: (800, 1200, 1700),
-          ),
-          (
-            title: 'Vine',
-            layout: 'vine',
-            shuffles: 1,
-            hints: 1,
-            undos: 1,
-            pairSize: 2,
-            uniqueCap: 42,
-            stars: (850, 1250, 1800),
-          ),
-          (
-            title: 'Ivy',
-            layout: 'vine',
-            shuffles: 3,
-            hints: 2,
-            undos: 2,
-            pairSize: 4,
-            uniqueCap: 40,
-            stars: (900, 1400, 2000),
-          ),
-          (
-            title: 'Festival',
-            layout: 'festival',
-            shuffles: 2,
-            hints: 2,
-            undos: 2,
-            pairSize: 2,
-            uniqueCap: 42,
-            stars: (1000, 1500, 2200),
-          ),
-          (
-            title: 'Lanterns',
-            layout: 'festival',
-            shuffles: 2,
-            hints: 1,
-            undos: 1,
-            pairSize: 2,
-            uniqueCap: 42,
-            stars: (1100, 1600, 2400),
-          ),
-          // 21–24: эксперт
-          (
-            title: 'Pavilion',
-            layout: 'pavilion',
-            shuffles: 1,
-            hints: 1,
-            undos: 1,
-            pairSize: 2,
-            uniqueCap: 48,
-            stars: (1200, 1800, 2600),
-          ),
-          (
-            title: 'Wind Temple',
-            layout: 'pavilion',
-            shuffles: 1,
-            hints: 1,
-            undos: 0,
-            pairSize: 2,
-            uniqueCap: 56,
-            stars: (1300, 1900, 2800),
-          ),
-          (
-            title: 'Dragon',
-            layout: 'dragon',
-            shuffles: 1,
-            hints: 0,
-            undos: 0,
-            pairSize: 2,
-            uniqueCap: 64,
-            stars: (1400, 2000, 3000),
-          ),
-          (
-            title: 'Sky Dragon',
-            layout: 'dragon',
-            shuffles: 0,
-            hints: 0,
-            undos: 0,
-            pairSize: 2,
-            uniqueCap: null,
-            stars: (1500, 2200, 3200),
-          ),
-        ];
-
-    assert(specs.length == storyLength);
-
-    return [
-      for (var i = 0; i < campaignLength; i++)
-        LevelDef(
-          id: i + 1,
-          title: specs[i % specs.length].title,
-          layout: specs[i % specs.length].layout,
-          shuffles: specs[i % specs.length].shuffles,
-          hints: specs[i % specs.length].hints,
-          undos: specs[i % specs.length].undos,
-          style: _styleFor((i % storyLength) + 1),
-          pairSize: specs[i % specs.length].pairSize,
-          uniqueCap: specs[i % specs.length].uniqueCap,
-          starsThresholds: specs[i % specs.length].stars,
-        ),
-    ];
+  static LevelDef _at(int id) {
+    final local = localId(id);
+    final spec = _specs[local - 1];
+    final cycle = cycleOf(id);
+    final loop = cycle ~/ PlotKind.order.length;
+    final variant = (loop + cycle) % 4;
+    final kind = PlotKind.ofCycle(cycle);
+    return LevelDef(
+      id: id,
+      title: kind.titleEn,
+      layout: Layouts.variantName(spec.layout, variant),
+      shuffles: _scaleDown(spec.shuffles, loop),
+      hints: _scaleDown(spec.hints, loop),
+      undos: _scaleDown(spec.undos, loop ~/ 2 + (loop > 0 ? 1 : 0)),
+      style: _styleFor(local),
+      pairSize: loop >= 2 ? 2 : spec.pairSize,
+      uniqueCap: spec.uniqueCap == null ? null : spec.uniqueCap! + loop * 6,
+      starsThresholds: (
+        spec.stars.$1 + loop * 50,
+        spec.stars.$2 + loop * 80,
+        spec.stars.$3 + loop * 100,
+      ),
+    );
   }
 
-  /// «Миры» по 4 уровня в одной теме; дальше — полный микс всех иконок.
-  static String? _styleFor(int id) {
-    const worlds = ['fruit', 'nature', 'court', 'myth', 'classic'];
-    final world = (id - 1) ~/ 4;
+  static int _scaleDown(int value, int cut) => (value - cut).clamp(0, value);
+
+  static const _specs = <_LevelSpec>[
+    (
+      layout: 'petal',
+      shuffles: 5,
+      hints: 5,
+      undos: 5,
+      pairSize: 4,
+      uniqueCap: 6,
+      stars: (200, 350, 500),
+    ),
+    (
+      layout: 'buds',
+      shuffles: 4,
+      hints: 4,
+      undos: 4,
+      pairSize: 4,
+      uniqueCap: 8,
+      stars: (220, 380, 520),
+    ),
+    (
+      layout: 'bloom',
+      shuffles: 4,
+      hints: 4,
+      undos: 4,
+      pairSize: 4,
+      uniqueCap: 10,
+      stars: (280, 450, 650),
+    ),
+    (
+      layout: 'glade',
+      shuffles: 4,
+      hints: 3,
+      undos: 3,
+      pairSize: 4,
+      uniqueCap: 12,
+      stars: (300, 480, 700),
+    ),
+    (
+      layout: 'meadow',
+      shuffles: 4,
+      hints: 3,
+      undos: 3,
+      pairSize: 4,
+      uniqueCap: 14,
+      stars: (350, 550, 800),
+    ),
+    (
+      layout: 'grove',
+      shuffles: 3,
+      hints: 3,
+      undos: 3,
+      pairSize: 4,
+      uniqueCap: 16,
+      stars: (380, 600, 850),
+    ),
+    (
+      layout: 'wave',
+      shuffles: 3,
+      hints: 2,
+      undos: 3,
+      pairSize: 2,
+      uniqueCap: 18,
+      stars: (400, 650, 900),
+    ),
+    (
+      layout: 'stream',
+      shuffles: 3,
+      hints: 3,
+      undos: 3,
+      pairSize: 4,
+      uniqueCap: 18,
+      stars: (450, 700, 1000),
+    ),
+    (
+      layout: 'garden',
+      shuffles: 3,
+      hints: 2,
+      undos: 2,
+      pairSize: 4,
+      uniqueCap: 20,
+      stars: (480, 750, 1050),
+    ),
+    (
+      layout: 'gazebo',
+      shuffles: 2,
+      hints: 2,
+      undos: 2,
+      pairSize: 2,
+      uniqueCap: 22,
+      stars: (500, 800, 1100),
+    ),
+    (
+      layout: 'fan',
+      shuffles: 3,
+      hints: 2,
+      undos: 2,
+      pairSize: 4,
+      uniqueCap: 24,
+      stars: (550, 850, 1200),
+    ),
+    (
+      layout: 'peacock',
+      shuffles: 2,
+      hints: 2,
+      undos: 2,
+      pairSize: 2,
+      uniqueCap: 28,
+      stars: (600, 900, 1300),
+    ),
+    (
+      layout: 'lotus',
+      shuffles: 2,
+      hints: 1,
+      undos: 2,
+      pairSize: 2,
+      uniqueCap: 32,
+      stars: (650, 950, 1400),
+    ),
+    (
+      layout: 'pond',
+      shuffles: 3,
+      hints: 2,
+      undos: 2,
+      pairSize: 4,
+      uniqueCap: 30,
+      stars: (700, 1050, 1500),
+    ),
+    (
+      layout: 'koi',
+      shuffles: 2,
+      hints: 2,
+      undos: 2,
+      pairSize: 2,
+      uniqueCap: 36,
+      stars: (750, 1100, 1600),
+    ),
+    (
+      layout: 'lake',
+      shuffles: 2,
+      hints: 1,
+      undos: 1,
+      pairSize: 2,
+      uniqueCap: 40,
+      stars: (800, 1200, 1700),
+    ),
+    (
+      layout: 'vine',
+      shuffles: 1,
+      hints: 1,
+      undos: 1,
+      pairSize: 2,
+      uniqueCap: 42,
+      stars: (850, 1250, 1800),
+    ),
+    (
+      layout: 'ivy',
+      shuffles: 3,
+      hints: 2,
+      undos: 2,
+      pairSize: 4,
+      uniqueCap: 40,
+      stars: (900, 1400, 2000),
+    ),
+    (
+      layout: 'festival',
+      shuffles: 2,
+      hints: 2,
+      undos: 2,
+      pairSize: 2,
+      uniqueCap: 42,
+      stars: (1000, 1500, 2200),
+    ),
+    (
+      layout: 'lanterns',
+      shuffles: 2,
+      hints: 1,
+      undos: 1,
+      pairSize: 2,
+      uniqueCap: 42,
+      stars: (1100, 1600, 2400),
+    ),
+    (
+      layout: 'pavilion',
+      shuffles: 1,
+      hints: 1,
+      undos: 1,
+      pairSize: 2,
+      uniqueCap: 48,
+      stars: (1200, 1800, 2600),
+    ),
+    (
+      layout: 'temple',
+      shuffles: 1,
+      hints: 1,
+      undos: 0,
+      pairSize: 2,
+      uniqueCap: 56,
+      stars: (1300, 1900, 2800),
+    ),
+    (
+      layout: 'dragon',
+      shuffles: 1,
+      hints: 0,
+      undos: 0,
+      pairSize: 2,
+      uniqueCap: 64,
+      stars: (1400, 2000, 3000),
+    ),
+    (
+      layout: 'sky',
+      shuffles: 0,
+      hints: 0,
+      undos: 0,
+      pairSize: 2,
+      uniqueCap: null,
+      stars: (1500, 2200, 3200),
+    ),
+  ];
+
+  /// «Миры»: фрукты занимают три четвёрки, китайская тема не вытесняет фрукты.
+  static String? _styleFor(int storyId) {
+    const worlds = ['fruit', 'fruit', 'fruit', 'nature', 'myth'];
+    final world = (storyId - 1) ~/ 4;
     if (world >= worlds.length) return 'mixed';
     return worlds[world];
   }

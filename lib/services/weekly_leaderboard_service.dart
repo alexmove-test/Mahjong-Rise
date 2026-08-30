@@ -1,5 +1,6 @@
 import '../models/leaderboard_entry.dart';
 import '../models/weekly_score.dart';
+import 'guest_name.dart';
 import 'player_profile_store.dart';
 import 'progress_store.dart';
 
@@ -22,7 +23,7 @@ abstract final class WeeklyLeaderboardService {
     return [
       LeaderboardEntry(
         id: 'local-player',
-        name: profile.displayName,
+        name: GuestName.clamp(profile.displayName),
         rating: ratingFor(progress),
         totalStars: progress.weeklyStars,
         levelsUnlocked: progress.weeklyClears,

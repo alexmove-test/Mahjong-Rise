@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import '../utils/layouts.dart';
+import 'level_tile.dart';
 import 'tile.dart';
 
 enum MatchResult {
@@ -71,8 +72,29 @@ class Board {
     int? levelId,
     int guestTypes = 0,
   }) {
+    return Board.fromPositions(
+      Layouts.byName(layoutName),
+      layoutName: layoutName,
+      random: random,
+      style: style,
+      pairSize: pairSize,
+      uniqueCap: uniqueCap,
+      levelId: levelId,
+      guestTypes: guestTypes,
+    );
+  }
+
+  factory Board.fromPositions(
+    List<LayoutPos> positions, {
+    String layoutName = 'custom',
+    Random? random,
+    String? style,
+    int pairSize = 4,
+    int? uniqueCap,
+    int? levelId,
+    int guestTypes = 0,
+  }) {
     final rng = random ?? Random();
-    final positions = Layouts.byName(layoutName);
     final symbols = TileSymbols.deckFor(
       positions.length,
       random: rng,
@@ -87,6 +109,30 @@ class Board {
     final board = Board(tiles: tiles, layoutName: layoutName);
     board._ensureVisiblePair(random: rng);
     return board;
+  }
+
+  factory Board.fromLevelFile(
+    LevelFile file, {
+    Random? random,
+    String? style,
+    int pairSize = 4,
+    int? uniqueCap,
+    int? levelId,
+    int guestTypes = 0,
+  }) {
+    final positions = [
+      for (final tile in file.boardTiles) (tile.x, tile.y, tile.layer),
+    ];
+    return Board.fromPositions(
+      positions,
+      layoutName: file.layout,
+      random: random,
+      style: style,
+      pairSize: pairSize,
+      uniqueCap: uniqueCap,
+      levelId: levelId,
+      guestTypes: guestTypes,
+    );
   }
 
   /// Vita-стиль: плитка свободна, если её не накрывает слой выше.

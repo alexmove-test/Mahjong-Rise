@@ -1,0 +1,26 @@
+{
+  "levelId": "vita_screenshot",
+  "layout": "vita",
+  "grid": {
+    "note": "Координаты Rise: x/y в половинах плитки (сосед ±2). Скрин 460×1024: col*2, row как y.",
+    "screenshotPx": { "w": 460, "h": 1024, "originX": 23, "originY": 459, "colPitch": 69, "rowHalf": 41.5 }
+  },
+  "tiles": [
+    { "id": "t01", "type": "flower", "kind": "dots_1", "symbol": "flower-01", "x": 0, "y": 0, "layer": 0, "zone": "board" },
+    { "id": "t02", "type": "bamboo", "kind": "bamboos_2", "symbol": "set1-bamboo-02", "x": 2, "y": 0, "layer": 0, "zone": "board" },
+    { "id": "t03", "type": "hieroglyph", "kind": "characters_5", "symbol": "character-05", "x": 4, "y": 0, "layer": 0, "zone": "board" },
+    { "id": "t04", "type": "special", "kind": "dragon_green", "symbol": "set1-dragon-02", "x": 6, "y": 0, "layer": 0, "zone": "board" },
+    { "id": "t05", "type": "bamboo", "kind": "bamboos_3", "symbol": "set1-bamboo-03", "x": 4, "y": 2, "layer": 0, "zone": "board" },
+    { "id": "t06", "type": "flower", "kind": "flower_orchid", "symbol": "set1-flower-01", "x": 6, "y": 2, "layer": 0, "zone": "board" },
+    { "id": "t07", "type": "flower", "kind": "dots_5", "symbol": "flower-04", "x": 0, "y": 3, "layer": 0, "zone": "board" },
+    { "id": "t09", "type": "bamboo", "kind": "bamboos_9", "symbol": "set1-bamboo-09", "x": 4, "y": 3, "layer": 0, "zone": "board" },
+    { "id": "t10", "type": "hieroglyph", "kind": "characters_9", "symbol": "character-09", "x": 6, "y": 4, "layer": 0, "zone": "board" },
+    { "id": "t11", "type": "flower", "kind": "dots_5", "symbol": "flower-04", "x": 8, "y": 4, "layer": 0, "zone": "board" },
+    { "id": "t12", "type": "flower", "kind": "dots_3", "symbol": "flower-03", "x": 0, "y": 5, "layer": 0, "zone": "board" },
+    { "id": "t13", "type": "hieroglyph", "kind": "characters_9", "symbol": "character-09", "x": 2, "y": 6, "layer": 0, "zone": "board" },
+    { "id": "t14", "type": "flower", "kind": "dots_1", "symbol": "flower-01", "x": 4, "y": 6, "layer": 0, "zone": "board" },
+    { "id": "t15", "type": "flower", "kind": "flower_orchid", "symbol": "set1-flower-01", "x": 6, "y": 6, "layer": 0, "zone": "board" },
+    { "id": "t16", "type": "special", "kind": "dragon_green", "symbol": "set1-dragon-02", "x": 8, "y": 6, "layer": 0, "zone": "board" },
+    { "id": "t17", "type": "bamboo", "kind": "bamboos_7", "symbol": "set1-bamboo-07", "x": 10, "y": 6, "layer": 0, "zone": "board" }
+  ]
+}

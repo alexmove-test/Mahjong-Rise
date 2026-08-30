@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mahjong/models/board.dart';
 import 'package:mahjong/models/levels.dart';
 import 'package:mahjong/models/tile.dart';
+import 'package:mahjong/utils/layouts.dart';
 import 'package:mahjong/utils/tile_icons.dart';
 
 void main() {
@@ -457,15 +458,23 @@ void main() {
       });
     }
 
-    test('campaign repeats the story layouts across hundreds of cards', () {
-      expect(Levels.all, hasLength(Levels.campaignLength));
-      expect(Levels.campaignLength, 240);
+    test('plots cycle house pond road internet with harder loops', () {
+      expect(Levels.maxLevelId, 10000);
+      expect(Levels.cycleCount, greaterThan(10));
       final first = Levels.byId(1);
-      final repeat = Levels.byId(1 + Levels.storyLength);
-      expect(repeat.layout, first.layout);
-      expect(repeat.title, first.title);
-      expect(repeat.storyId, first.storyId);
-      expect(repeat.id, 25);
+      final pond = Levels.byId(25);
+      final road = Levels.byId(49);
+      final net = Levels.byId(73);
+      final house2 = Levels.byId(97);
+      expect(first.title, 'House');
+      expect(pond.title, 'Pond');
+      expect(road.title, 'Road');
+      expect(net.title, 'Internet');
+      expect(house2.title, 'House');
+      expect(first.storyId, house2.storyId);
+      expect(house2.layout, isNot(first.layout));
+      expect(house2.shuffles, lessThan(first.shuffles));
+      expect(house2.uniqueCap, greaterThan(first.uniqueCap!));
     });
 
     test('first story level has no guest tile types', () {
@@ -475,7 +484,6 @@ void main() {
     });
 
     test('campaign is split into named plots of 24', () {
-      expect(Levels.cycleCount, 10);
       expect(Levels.cycleOf(1), 0);
       expect(Levels.cycleOf(24), 0);
       expect(Levels.cycleOf(25), 1);
@@ -483,9 +491,9 @@ void main() {
       expect(Levels.cycleStartId(1), 25);
       expect(Levels.cycleEndId(0), 24);
       expect(Levels.cycleLevels(0), hasLength(24));
-      expect(Levels.cycleLevels(0).first.title, 'Sprout');
-      expect(Levels.plotLabel(0), 'Plot 1');
-      expect(Levels.plotLabel(1), 'Plot 2');
+      expect(Levels.cycleLevels(0).first.title, 'House');
+      expect(Levels.plotLabel(0), 'House');
+      expect(Levels.plotLabel(1), 'Pond');
     });
 
     test('daily table picks a story layout for the local calendar day', () {
@@ -501,17 +509,29 @@ void main() {
   group('vita layouts', () {
     const expected = {
       'petal': 16,
+      'buds': 20,
       'bloom': 24,
-      'meadow': 28,
-      'wave': 30,
-      'garden': 40,
-      'fan': 44,
-      'lotus': 64,
-      'koi': 62,
+      'glade': 28,
+      'meadow': 32,
+      'grove': 36,
+      'wave': 36,
+      'stream': 40,
+      'garden': 44,
+      'gazebo': 48,
+      'fan': 48,
+      'peacock': 52,
+      'lotus': 56,
+      'pond': 60,
+      'koi': 64,
+      'lake': 68,
       'vine': 72,
-      'festival': 72,
-      'pavilion': 88,
-      'dragon': 122,
+      'ivy': 76,
+      'festival': 80,
+      'lanterns': 84,
+      'pavilion': 96,
+      'temple': 104,
+      'dragon': 112,
+      'sky': 128,
     };
 
     for (final entry in expected.entries) {
@@ -522,44 +542,135 @@ void main() {
         expect(maxLayer, greaterThanOrEqualTo(2));
       });
     }
-  });
 
-  test('styled levels keep one shape and one number on the board', () {
-    final level = Levels.byId(1);
-    final board = Board.fromLayout(
-      level.layout,
-      random: Random(level.id),
-      style: level.style,
-      pairSize: level.pairSize,
-      uniqueCap: level.uniqueCap,
-      levelId: level.id,
-      guestTypes: level.guestTileTypes,
+    test('late layouts grow in depth instead of spreading the grid', () {
+      final dragon = Board.fromLayout('dragon', random: Random(1));
+      final sky = Board.fromLayout('sky', random: Random(1));
+      expect(
+        dragon.tiles.map((t) => t.layer).reduce(max),
+        greaterThanOrEqualTo(12),
+      );
+      expect(
+        sky.tiles.map((t) => t.layer).reduce(max),
+        greaterThanOrEqualTo(12),
+      );
+    });
+
+    test(
+      'mirrored and deeper variants stay even and change the silhouette',
+      () {
+        expect(Layouts.campaignLayoutCount, 96);
+        for (final base in Layouts.campaignBases) {
+          for (final variant in [0, 1, 2, 3]) {
+            final name = Layouts.variantName(base, variant);
+            expect(Layouts.tileCount(name).isEven, isTrue, reason: name);
+          }
+          final origin = Layouts.byName(base);
+          final mirrored = Layouts.byName('$base-m');
+          expect(mirrored, isNot(origin), reason: base);
+        }
+      },
     );
-
-    final symbols = board.tiles.map((t) => t.symbol).toSet();
-    final shapes = symbols.where(TileIcons.shapeIds.contains).toList();
-    final numbers = symbols.where(TileIcons.numberIds.contains).toList();
-    final soft = symbols.where((id) => id.startsWith('soft-')).toSet();
-
-    expect(soft, isNotEmpty);
-    expect(shapes, hasLength(1));
-    expect(numbers, hasLength(1));
-    expect(symbols.length, soft.length + 2);
   });
 
-  test('mix levels use mixed style and full icon pool', () {
+  test('all campaign levels are fruit-majority', () {
+    for (var id = 1; id <= Levels.storyLength; id++) {
+      final level = Levels.byId(id);
+      final expected = level.style == 'fruit'
+          ? TileSymbols.fruitWorldShare
+          : TileSymbols.fruitShare;
+      expect(level.cuteSimpleShare, expected, reason: 'level $id share');
+      expect(
+        TileSymbols.cuteSimpleShareFor(id, style: level.style),
+        expected,
+        reason: 'level $id deck share',
+      );
+
+      final board = Board.fromLayout(
+        level.layout,
+        random: Random(level.id),
+        style: level.style,
+        pairSize: level.pairSize,
+        uniqueCap: level.uniqueCap,
+        levelId: level.id,
+        guestTypes: level.guestTileTypes,
+      );
+
+      final fruit = board.tiles.where((t) => t.symbol.startsWith('fruit-'));
+      final share = fruit.length / board.tiles.length;
+      expect(
+        share,
+        greaterThan(0.5),
+        reason: 'level $id fruit share $share of ${board.tiles.length}',
+      );
+      expect(
+        share,
+        inInclusiveRange(expected - 0.08, expected + 0.08),
+        reason: 'level $id fruit share $share expected ~$expected',
+      );
+    }
+  });
+
+  test('easy levels still mix a number and a shape into the fruit deck', () {
+    for (final id in [1, 2, 3, 4, 5]) {
+      final level = Levels.byId(id);
+      final board = Board.fromLayout(
+        level.layout,
+        random: Random(level.id),
+        style: level.style,
+        pairSize: level.pairSize,
+        uniqueCap: level.uniqueCap,
+        levelId: level.id,
+        guestTypes: level.guestTileTypes,
+      );
+      final symbols = board.tiles.map((t) => t.symbol).toSet();
+      expect(
+        symbols.any((s) => s.startsWith('number-')),
+        isTrue,
+        reason: 'level $id missing number',
+      );
+      expect(
+        symbols.any((s) => s.startsWith('shape-')),
+        isTrue,
+        reason: 'level $id missing shape',
+      );
+    }
+  });
+
+  test('mix levels use mixed style without Chinese mahjong faces', () {
     final level = Levels.byId(21);
     expect(level.style, 'mixed');
     expect(level.guestTileTypes, 0);
-    expect(TileIcons.idsForStyle('mixed'), equals(TileIcons.softIds));
+    final mixed = TileIcons.idsForStyle('mixed');
+    expect(mixed, isNot(equals(TileIcons.mahjongIds)));
+    expect(mixed, containsAll(TileIcons.fruitIds));
+    expect(
+      mixed.where(TileIcons.mahjongIds.contains),
+      isEmpty,
+      reason: 'mixed deck should not include Chinese mahjong faces',
+    );
+  });
+
+  test('campaign has more fruit worlds than classic Chinese ones', () {
+    final styles = [
+      for (var id = 1; id <= Levels.storyLength; id++) Levels.byId(id).style,
+    ];
+    final fruit = styles.where((s) => s == 'fruit').length;
+    final classic = styles.where((s) => s == 'classic').length;
+    expect(fruit, greaterThan(classic));
+    expect(fruit, 12);
+    expect(classic, 0);
   });
 
   test('fruit icons map to titles/fruit assets', () {
-    expect(TileIcons.idsForStyle('fruit').length, greaterThan(20));
+    expect(TileIcons.idsForStyle('fruit'), equals(TileIcons.fruitIds));
+    expect(TileIcons.idsForStyle('fruit'), hasLength(20));
+    expect(TileIcons.idsForStyle('classic'), equals(TileIcons.mahjongIds));
     expect(TileIcons.assetFor('soft-01'), 'assets/titles/soft/01.png');
     expect(TileIcons.assetFor('soft-32'), 'assets/titles/soft/32.png');
     expect(TileIcons.assetFor('fruit-01'), 'assets/titles/fruit/01.svg');
     expect(TileIcons.assetFor('fruit-12'), 'assets/titles/fruit/12.svg');
+    expect(TileIcons.assetFor('fruit-20'), 'assets/titles/fruit/20.svg');
     expect(TileIcons.assetFor('shape-01'), 'assets/titles/shape/01.svg');
     expect(TileIcons.assetFor('number-05'), 'assets/titles/number/05.svg');
     expect(
