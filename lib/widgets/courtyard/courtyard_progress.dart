@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import '../../models/levels.dart';
 import '../../models/plot_kind.dart';
 import '../../services/progress_store.dart';
+import 'courtyard_lot_build.dart';
 
 /// Визуальное состояние участка: чистая функция прогресса кампании.
 class CourtyardSnapshot {
@@ -220,36 +221,29 @@ class CourtyardSnapshot {
     return ready * stars;
   }
 
-  double layerOpacity(CourtyardLayer layer) => switch (layer) {
-    CourtyardLayer.yard => 1,
-    CourtyardLayer.pond => layerPond,
-    CourtyardLayer.road => layerRoad,
-    CourtyardLayer.house => layerHouse,
-    CourtyardLayer.internet => layerInternet,
-    CourtyardLayer.flowers => layerFlowers,
-  };
-
   double get layerPond => plotKind == PlotKind.pond ? _rise(step, 4, 16) : 0;
 
-  double get layerRoad =>
-      plotKind == PlotKind.road ? _rise(step, 0.3, 18) : path;
+  double get layerRoad => plotKind == PlotKind.pond ? 0 : path;
 
   double get layerHouse => switch (plotKind) {
     PlotKind.house => _rise(step, 6, 16),
-    PlotKind.internet => _rise(step, 6, 12),
+    PlotKind.guest => _rise(step, 6, 12),
+    PlotKind.pets => _rise(step, 6, 16),
     PlotKind.pond => 0,
-    PlotKind.road => 0,
   };
 
   double get layerInternet =>
-      plotKind == PlotKind.internet ? _rise(step, 12, 20) : 0;
+      plotKind == PlotKind.guest ? _rise(step, 12, 20) : 0;
 
   double get layerFlowers => _rise(step, 17, 23);
 
-  static double _rise(double value, double start, double end) {
+  static double rise(double value, double start, double end) {
     if (end <= start) return value >= start ? 1 : 0;
     return ((value - start) / (end - start)).clamp(0.0, 1.0);
   }
+
+  static double _rise(double value, double start, double end) =>
+      rise(value, start, end);
 
   @override
   bool operator ==(Object other) {
@@ -317,80 +311,10 @@ class CourtyardSnapshot {
   ]);
 }
 
-/// Слои одного кадра двора: поле, затем участки, цветы сверху.
-enum CourtyardLayer { yard, pond, road, house, internet, flowers }
-
-abstract final class CourtyardLayers {
-  static const yardAsset = 'assets/courtyard/layers/yard.jpg';
-  static const pondAsset = 'assets/courtyard/layers/pond.png';
-  static const roadAsset = 'assets/courtyard/layers/road.png';
-  static const houseAsset = 'assets/courtyard/layers/house.png';
-  static const internetAsset = 'assets/courtyard/layers/internet.png';
-  static const flowersAsset = 'assets/courtyard/layers/flowers.png';
-
-  static const stackOrder = [
-    CourtyardLayer.yard,
-    CourtyardLayer.pond,
-    CourtyardLayer.road,
-    CourtyardLayer.house,
-    CourtyardLayer.internet,
-    CourtyardLayer.flowers,
-  ];
-
-  static const allAssets = [
-    yardAsset,
-    pondAsset,
-    roadAsset,
-    houseAsset,
-    internetAsset,
-    flowersAsset,
-  ];
-
-  static String assetOf(CourtyardLayer layer) => switch (layer) {
-    CourtyardLayer.yard => yardAsset,
-    CourtyardLayer.pond => pondAsset,
-    CourtyardLayer.road => roadAsset,
-    CourtyardLayer.house => houseAsset,
-    CourtyardLayer.internet => internetAsset,
-    CourtyardLayer.flowers => flowersAsset,
-  };
-}
-
-const pathStagePhrases = <String>[
-  'A house will stand here.',
-  'The fence holds the plot.',
-  'The walls are yours.',
-  'The roof is on.',
-  'The windows are ready.',
-  'The house rose from your wins.',
-];
-
-const pondStagePhrases = <String>[
-  'A pond will fill this hollow.',
-  'The banks hold the water.',
-  'Reeds take the shore.',
-  'The walkway is down.',
-  'Koi have a home.',
-  'The pond rose from your wins.',
-];
-
-const roadStagePhrases = <String>[
-  'A road will leave this field.',
-  'The trail holds the line.',
-  'Gravel packs the way.',
-  'The stones are set.',
-  'Lanterns mark the road.',
-  'The road rose from your wins.',
-];
-
-const internetStagePhrases = <String>[
-  'A signal will reach this yard.',
-  'The pole holds the line.',
-  'Cable finds the house.',
-  'The dish is up.',
-  'Screens glow in the yard.',
-  'The yard came online from your wins.',
-];
+const pathStagePhrases = houseEraPhrasesEn;
+const pondStagePhrases = pondEraPhrasesEn;
+const petsStagePhrases = petsEraPhrasesEn;
+const guestStagePhrases = guestEraPhrasesEn;
 
 const pathWarmPhrases = <String>[
   'Another step along the path.',
@@ -404,13 +328,13 @@ const pondWarmPhrases = <String>[
   'The banks sit closer.',
 ];
 
-const roadWarmPhrases = <String>[
-  'Another length of road.',
-  'The way is more yours now.',
-  'The path sits closer.',
+const petsWarmPhrases = <String>[
+  'The pet house grew a little.',
+  'The yard is more theirs now.',
+  'The kennel sits closer.',
 ];
 
-const internetWarmPhrases = <String>[
+const guestWarmPhrases = <String>[
   'The signal grew a little.',
   'The yard is more connected.',
   'The line sits closer.',
@@ -418,44 +342,39 @@ const internetWarmPhrases = <String>[
 
 const pathLifePhrase = 'The house feels warmer.';
 const pondLifePhrase = 'The pond feels alive.';
-const roadLifePhrase = 'The road feels warmer.';
-const internetLifePhrase = 'The yard hums a little.';
+const petsLifePhrase = 'The pet house feels warmer.';
+const guestLifePhrase = 'The yard hums a little.';
 
 /// Первая победа: двор в диалоге — не обои, а смысл кампании.
 const firstHomePhrase = 'This house grows as you play.';
 const firstPondPhrase = 'This pond fills as you play.';
-const firstRoadPhrase = 'This road grows as you play.';
-const firstInternetPhrase = 'This yard comes online as you play.';
+const firstPetsPhrase = 'This pet house grows as you play.';
+const firstGuestPhrase = 'This yard comes online as you play.';
 
-List<String> stagePhrasesFor(PlotKind kind) => switch (kind) {
-  PlotKind.house => pathStagePhrases,
-  PlotKind.pond => pondStagePhrases,
-  PlotKind.road => roadStagePhrases,
-  PlotKind.internet => internetStagePhrases,
-};
+List<String> stagePhrasesFor(PlotKind kind) => eraPhrasesFor(kind, ru: false);
 
 List<String> warmPhrasesFor(PlotKind kind) => switch (kind) {
   PlotKind.house => pathWarmPhrases,
   PlotKind.pond => pondWarmPhrases,
-  PlotKind.road => roadWarmPhrases,
-  PlotKind.internet => internetWarmPhrases,
+  PlotKind.pets => petsWarmPhrases,
+  PlotKind.guest => guestWarmPhrases,
 };
 
 String lifePhraseFor(PlotKind kind) => switch (kind) {
   PlotKind.house => pathLifePhrase,
   PlotKind.pond => pondLifePhrase,
-  PlotKind.road => roadLifePhrase,
-  PlotKind.internet => internetLifePhrase,
+  PlotKind.pets => petsLifePhrase,
+  PlotKind.guest => guestLifePhrase,
 };
 
 String firstPhraseFor(PlotKind kind) => switch (kind) {
   PlotKind.house => firstHomePhrase,
   PlotKind.pond => firstPondPhrase,
-  PlotKind.road => firstRoadPhrase,
-  PlotKind.internet => firstInternetPhrase,
+  PlotKind.pets => firstPetsPhrase,
+  PlotKind.guest => firstGuestPhrase,
 };
 
-/// 0 = старт, 1–6 = этапы по 4 уровня.
+/// 0 = старт, 1–6 = этапы по 4 уровня внутри цикла из 24.
 int pathBand(double step) {
   if (step <= 0) return 0;
   if (step <= 4) return 1;
@@ -466,26 +385,27 @@ int pathBand(double step) {
   return 6;
 }
 
-String pathPhraseForHome(CourtyardSnapshot snapshot) {
+String pathPhraseForHome(CourtyardSnapshot snapshot, {double? stage}) {
   final phrases = stagePhrasesFor(snapshot.plotKind);
-  final band = snapshot.band;
-  if (band <= 0) return phrases.first;
-  return phrases[band - 1];
+  final era = CourtyardLotBuild.eraIndex(stage ?? snapshot.step);
+  return phrases[era];
 }
 
 String pathPhraseForWin({
   required CourtyardSnapshot from,
   required CourtyardSnapshot to,
+  double? fromStage,
+  double? toStage,
 }) {
   final phrases = stagePhrasesFor(to.plotKind);
   final warm = warmPhrasesFor(to.plotKind);
-  final fromBand = from.band;
-  final toBand = to.band;
-  if (toBand > fromBand && toBand > 0) {
-    return phrases[toBand - 1];
-  }
-  if (to.step > from.step + 0.01) {
-    return warm[to.step.floor() % warm.length];
+  final a = fromStage ?? from.step;
+  final b = toStage ?? to.step;
+  final fromEra = CourtyardLotBuild.eraIndex(a);
+  final toEra = CourtyardLotBuild.eraIndex(b);
+  if (toEra > fromEra) return phrases[toEra];
+  if (b > a + 0.01) {
+    return warm[b.floor() % warm.length];
   }
   if (to.totalStars > from.totalStars) return lifePhraseFor(to.plotKind);
   return warm.first;

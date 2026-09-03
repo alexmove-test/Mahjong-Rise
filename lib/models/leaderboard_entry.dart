@@ -7,7 +7,6 @@ class LeaderboardEntry {
     required this.totalStars,
     required this.levelsUnlocked,
     required this.isCurrentPlayer,
-    this.weeklyDailies = 0,
   });
 
   final String id;
@@ -15,6 +14,5 @@ class LeaderboardEntry {
   final int rating;
   final int totalStars;
   final int levelsUnlocked;
-  final int weeklyDailies;
   final bool isCurrentPlayer;
 }

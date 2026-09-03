@@ -6,19 +6,16 @@ void main() {
     test('maps phrase index to numbered clips', () {
       expect(praiseClipAsset('ru', 0), 'sfx/praise/ru_1.mp3');
       expect(praiseClipAsset('ru', 1), 'sfx/praise/ru_2.mp3');
-      expect(praiseClipAsset('ru', 3), 'sfx/praise/ru_4.mp3');
-      expect(praiseClipAsset('ru', 7), 'sfx/praise/ru_8.mp3');
-      expect(praiseClipAsset('ru', 8), 'sfx/praise/ru_1.mp3');
+      expect(praiseClipAsset('ru', 2), 'sfx/praise/ru_1.mp3');
     });
 
     test('unknown language falls back to English', () {
       expect(praiseClipAsset('de', 0), 'sfx/praise/en_1.mp3');
     });
 
-    test('ru and en each have eight clips', () {
-      expect(praiseClipCount('ru'), 8);
+    test('ru has two clips and en has eight', () {
+      expect(praiseClipCount('ru'), 2);
       expect(praiseClipCount('en'), 8);
-      expect(praisePhrases['ru']!.length, praisePhrases['en']!.length);
     });
   });
 
@@ -101,11 +98,11 @@ void main() {
       );
     });
 
-    test('eighth burst wraps back to the first clip', () {
+    test('second burst wraps back to the first clip', () {
       final streak = FastMatchStreak();
       var t = DateTime.utc(2026, 8, 19, 0, 0, 0);
       String? last;
-      for (var i = 0; i < 8; i++) {
+      for (var i = 0; i < 2; i++) {
         streak.registerMatch(now: t, languageCode: 'ru');
         streak.registerMatch(
           now: t.add(const Duration(seconds: 1)),
@@ -117,7 +114,7 @@ void main() {
         );
         t = t.add(const Duration(seconds: 13));
       }
-      expect(last, 'sfx/praise/ru_8.mp3');
+      expect(last, 'sfx/praise/ru_2.mp3');
 
       streak.registerMatch(now: t, languageCode: 'ru');
       streak.registerMatch(

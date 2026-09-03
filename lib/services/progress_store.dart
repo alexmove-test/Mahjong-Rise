@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/game_snapshot.dart';
 import '../models/levels.dart';
+import '../models/plot_kind.dart';
 import '../models/week_id.dart';
 import '../models/weekly_score.dart';
 
@@ -18,6 +19,7 @@ class ProgressStore {
   static const _kStarsPrefix = 'progress.stars.';
   static const _kBestPrefix = 'progress.best.';
   static const _kTableCoachDone = 'progress.tableCoachDone';
+  static const _kCourtyardPanHintDone = 'progress.courtyardPanHintDone';
   static const _kSnapshot = 'progress.snapshot';
   static const _kSnapshotPrefix = 'progress.snapshot.';
   static const _kSnapshotActive = 'progress.snapshotActive';
@@ -25,6 +27,7 @@ class ProgressStore {
   static const _kDailyStreak = 'progress.dailyStreak';
   static const _kBankedHints = 'progress.bankedHints';
   static const _kBankedShuffles = 'progress.bankedShuffles';
+  static const _kHintBalance = 'progress.hintBalance';
   static const _kWeekId = 'progress.weekId';
   static const _kWeeklyStars = 'progress.weeklyStars';
   static const _kWeeklyClears = 'progress.weeklyClears';
@@ -37,6 +40,8 @@ class ProgressStore {
   static const _kPrevWeekDailies = 'progress.prevWeekDailies';
   static const _kPrevWeekRank = 'progress.prevWeekRank';
   static const _kSeasonSheetPending = 'progress.seasonSheetPending';
+  static const _kActivePlot = 'progress.activePlot';
+  static const _kPlotStagePrefix = 'progress.plotStage.';
 
   static Future<ProgressStore> open() async {
     final prefs = await SharedPreferences.getInstance();
@@ -64,6 +69,13 @@ class ProgressStore {
   bool get tableCoachDone => _prefs.getBool(_kTableCoachDone) ?? false;
 
   Future<void> markTableCoachDone() => _prefs.setBool(_kTableCoachDone, true);
+
+  /// Подсказка «можно двигать обзор двора» уже показана.
+  bool get courtyardPanHintDone =>
+      _prefs.getBool(_kCourtyardPanHintDone) ?? false;
+
+  Future<void> markCourtyardPanHintDone() =>
+      _prefs.setBool(_kCourtyardPanHintDone, true);
 
   /// Незавершённая партия, к которой ведёт «Продолжить».
   GameSnapshot? get savedSnapshot {
@@ -139,6 +151,15 @@ class ProgressStore {
 
   int get bankedShuffles => _prefs.getInt(_kBankedShuffles) ?? 0;
 
+  /// Saved leftover hints across campaign levels. Missing until the first table.
+  bool get hasHintBalance => _prefs.containsKey(_kHintBalance);
+
+  int get hintBalance => _prefs.getInt(_kHintBalance) ?? 0;
+
+  Future<void> setHintBalance(int value) async {
+    await _prefs.setInt(_kHintBalance, value.clamp(0, 999));
+  }
+
   bool isDailyCompletedOn(DateTime date) => lastDailyDate == dateKey(date);
 
   int visibleStreak([DateTime? now]) {
@@ -173,8 +194,7 @@ class ProgressStore {
     await _prefs.setString(_kDailyDate, today);
     await _prefs.setInt(_kDailyStreak, streak);
     if (rewarded) {
-      await _prefs.setInt(_kBankedHints, bankedHints + 1);
-      await _prefs.setInt(_kBankedShuffles, bankedShuffles + 1);
+      await addBankedBoosts(hints: 1, shuffles: 1);
     }
     await _prefs.setInt(
       _kWeeklyDailies,
@@ -194,7 +214,11 @@ class ProgressStore {
 
   Future<void> addBankedBoosts({int hints = 0, int shuffles = 0}) async {
     if (hints != 0) {
-      await _prefs.setInt(_kBankedHints, bankedHints + hints);
+      if (hasHintBalance) {
+        await setHintBalance(hintBalance + hints);
+      } else {
+        await _prefs.setInt(_kBankedHints, bankedHints + hints);
+      }
     }
     if (shuffles != 0) {
       await _prefs.setInt(_kBankedShuffles, bankedShuffles + shuffles);
@@ -335,6 +359,55 @@ class ProgressStore {
     return maxUnlocked >= Levels.cycleStartId(cycle);
   }
 
+  /// Ручной выбор участка: победы качают его, пока не выберут другой.
+  PlotKind? get pinnedPlot => PlotKind.tryParse(_prefs.getString(_kActivePlot));
+
+  bool get isPlotPinned => pinnedPlot != null;
+
+  /// Куда сейчас идёт стройка: выбранный участок или следующий по кампании.
+  PlotKind get activePlotKind => pinnedPlot ?? Levels.plotKindOf(maxUnlocked);
+
+  /// Какой участок качает этот уровень: ручной выбор или очередь кампании.
+  PlotKind plotKindForLevel(int id) => pinnedPlot ?? Levels.plotKindOf(id);
+
+  bool get hasPlotStages => PlotKind.order.any(
+    (kind) => _prefs.containsKey('$_kPlotStagePrefix${kind.name}'),
+  );
+
+  int plotStage(PlotKind kind) {
+    final stored = _prefs.getInt('$_kPlotStagePrefix${kind.name}');
+    if (stored != null) return stored.clamp(0, Levels.maxLevelId);
+    return Levels.completedStages(kind, maxUnlocked);
+  }
+
+  bool plotReached(PlotKind kind) {
+    if (activePlotKind == kind) return true;
+    if (Levels.plotReached(kind, maxUnlocked)) return true;
+    return hasPlotStages && plotStage(kind) > 0;
+  }
+
+  Future<void> selectPlot(PlotKind kind) async {
+    await _ensurePlotStages();
+    await _prefs.setString(_kActivePlot, kind.name);
+  }
+
+  Future<void> _ensurePlotStages() async {
+    if (hasPlotStages) return;
+    for (final kind in PlotKind.order) {
+      await _prefs.setInt(
+        '$_kPlotStagePrefix${kind.name}',
+        Levels.completedStages(kind, maxUnlocked),
+      );
+    }
+  }
+
+  Future<void> _creditActivePlot() async {
+    if (!isPlotPinned) return;
+    await _ensurePlotStages();
+    final kind = activePlotKind;
+    await _prefs.setInt('$_kPlotStagePrefix${kind.name}', plotStage(kind) + 1);
+  }
+
   /// Записать победу: звёзды, лучший счёт, разблокировка следующего.
   Future<
     ({
@@ -365,6 +438,9 @@ class ProgressStore {
     if (isNewBest) {
       await _prefs.setInt('$_kBestPrefix${level.id}', score);
     }
+    if (firstClear && isPlotPinned) {
+      await _ensurePlotStages();
+    }
 
     var unlockedNext = false;
     final nextId = level.id + 1;
@@ -384,6 +460,7 @@ class ProgressStore {
         _kWeeklyClears,
         (weeklyClears + 1).clamp(0, WeeklyScore.maxClears),
       );
+      await _creditActivePlot();
     }
 
     await markPlayed(level.id);

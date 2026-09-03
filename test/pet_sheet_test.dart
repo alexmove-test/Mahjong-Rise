@@ -50,6 +50,14 @@ void main() {
 
     expect(find.text('Pet'), findsOneWidget);
     expect(find.text('Cat is content.'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate((widget) {
+        if (widget is! Image) return false;
+        final image = widget.image;
+        return image is AssetImage && image.assetName.endsWith('pets/cat.png');
+      }),
+      findsOneWidget,
+    );
     expect(find.text('Hunger'), findsOneWidget);
     expect(find.text('Play'), findsOneWidget);
     expect(find.text('Rest'), findsOneWidget);
@@ -85,6 +93,8 @@ void main() {
     await tester.pump();
 
     expect(find.text('Pets'), findsOneWidget);
+    expect(find.text('Cat'), findsOneWidget);
+    expect(find.text('Fox'), findsOneWidget);
     expect(find.text('Add a companion'), findsOneWidget);
     await tester.tap(find.text('Add a companion'));
     await tester.pump();

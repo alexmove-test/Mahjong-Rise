@@ -6,13 +6,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   final t0 = DateTime(2026, 8, 30, 10);
 
+  test('each pet has a dedicated portrait asset', () {
+    expect(PetDef.of(PetKind.cat).portrait, 'assets/pets/cat.png');
+    expect(PetDef.of(PetKind.dog).portrait, 'assets/pets/dog.png');
+    expect(PetDef.of(PetKind.raccoon).portrait, 'assets/pets/raccoon.png');
+    expect(PetDef.of(PetKind.hamster).portrait, 'assets/pets/hamster.png');
+    expect(PetDef.of(PetKind.fox).portrait, 'assets/pets/fox.png');
+  });
+
   test('fullness decays to zero across the cycle', () {
     expect(
-      PetNeeds.fullness(
-        lastSatisfied: t0,
-        need: PetNeed.hunger,
-        now: t0,
-      ),
+      PetNeeds.fullness(lastSatisfied: t0, need: PetNeed.hunger, now: t0),
       1,
     );
     expect(
@@ -61,18 +65,9 @@ void main() {
   });
 
   test('mood is starving only when hunger is empty', () {
-    expect(
-      PetNeeds.mood(hunger: 0, play: 1, rest: 1),
-      PetMood.starving,
-    );
-    expect(
-      PetNeeds.mood(hunger: 0.2, play: 1, rest: 1),
-      PetMood.asking,
-    );
-    expect(
-      PetNeeds.mood(hunger: 0.9, play: 0.9, rest: 0.9),
-      PetMood.content,
-    );
+    expect(PetNeeds.mood(hunger: 0, play: 1, rest: 1), PetMood.starving);
+    expect(PetNeeds.mood(hunger: 0.2, play: 1, rest: 1), PetMood.asking);
+    expect(PetNeeds.mood(hunger: 0.9, play: 0.9, rest: 0.9), PetMood.content);
   });
 
   test('nextThreshold is null after the cutoff has passed', () {
@@ -110,12 +105,14 @@ void main() {
     expect(store.owns(PetKind.cat), isTrue);
     expect(store.owns(PetKind.fox), isTrue);
     expect(
-      store.care(kind: PetKind.cat, now: t0.add(const Duration(hours: 5)))!
+      store
+          .care(kind: PetKind.cat, now: t0.add(const Duration(hours: 5)))!
           .of(PetNeed.hunger),
       closeTo(0.5, 0.001),
     );
     expect(
-      store.care(kind: PetKind.fox, now: t0.add(const Duration(hours: 5)))!
+      store
+          .care(kind: PetKind.fox, now: t0.add(const Duration(hours: 5)))!
           .of(PetNeed.hunger),
       1,
     );
@@ -150,7 +147,10 @@ void main() {
     expect(filled.need, PetNeed.hunger);
     expect(store.owned, [PetKind.cat, PetKind.dog]);
     expect(store.care(kind: PetKind.cat, now: later)!.of(PetNeed.hunger), 1);
-    expect(store.care(kind: PetKind.cat, now: later)!.of(PetNeed.play), lessThan(1));
+    expect(
+      store.care(kind: PetKind.cat, now: later)!.of(PetNeed.play),
+      lessThan(1),
+    );
     expect(
       store.care(kind: PetKind.dog, now: later)!.of(PetNeed.hunger),
       lessThan(1),
@@ -166,8 +166,23 @@ void main() {
     });
     final store = await PetStore.open();
     expect(store.owned, [PetKind.fox]);
-    expect(store.care(now: t0.add(const Duration(hours: 5)))!.of(PetNeed.hunger),
-        closeTo(0.5, 0.001));
+    expect(
+      store.care(now: t0.add(const Duration(hours: 5)))!.of(PetNeed.hunger),
+      closeTo(0.5, 0.001),
+    );
+  });
+
+  test('yard hidden flag persists until shown again', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = await PetStore.open();
+    expect(store.yardHidden, isFalse);
+
+    await store.setYardHidden(true);
+    expect(store.yardHidden, isTrue);
+    expect((await PetStore.open()).yardHidden, isTrue);
+
+    await store.setYardHidden(false);
+    expect((await PetStore.open()).yardHidden, isFalse);
   });
 
   test('memory store ignores writes', () async {

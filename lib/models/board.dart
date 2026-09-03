@@ -105,10 +105,10 @@ class Board {
       guestTypes: guestTypes,
     );
 
-    final tiles = _dealSolvable(positions, symbols, rng);
-    final board = Board(tiles: tiles, layoutName: layoutName);
-    board._ensureVisiblePair(random: rng);
-    return board;
+    return Board(
+      tiles: _dealSolvable(positions, symbols, rng),
+      layoutName: layoutName,
+    );
   }
 
   factory Board.fromLevelFile(
@@ -135,24 +135,54 @@ class Board {
     );
   }
 
-  /// Vita-стиль: плитка свободна, если её не накрывает слой выше.
-  /// Соседи на том же слое не блокируют — раскладка плоская и «живая».
+  /// Свободна, если сверху ничего нет и открыт левый или правый край.
+  /// Зажатая с двух сторон на том же слое — закрыта, даже если сверху пусто.
   bool isFree(Tile tile) {
     if (!tile.isOnBoard) return false;
     return _isFreeAmong(tile, tiles);
   }
 
   static bool _isFreeAmong(Tile tile, List<Tile> live) {
+    if (_isCoveredAmong(tile, live)) return false;
+    final left = _sideBlockedAmong(tile, live, left: true);
+    final right = _sideBlockedAmong(tile, live, left: false);
+    return !left || !right;
+  }
+
+  static bool _isCoveredAmong(Tile tile, List<Tile> live) {
     for (final other in live) {
       if (other.id == tile.id) continue;
       if (!other.isOnBoard || other.layer <= tile.layer) continue;
-      if (_overlaps(tile, other)) return false;
+      if (_overlaps(tile, other)) return true;
     }
-    return true;
+    return false;
+  }
+
+  /// Сосед слева/справа на том же слое с пересечением по Y (классический солитер).
+  static bool _sideBlockedAmong(
+    Tile tile,
+    List<Tile> live, {
+    required bool left,
+  }) {
+    for (final other in live) {
+      if (other.id == tile.id) continue;
+      if (!other.isOnBoard || other.layer != tile.layer) continue;
+      if (!_yOverlaps(tile, other)) continue;
+      if (left) {
+        if (other.x < tile.x && other.x + 2 >= tile.x) return true;
+      } else if (other.x > tile.x && other.x <= tile.x + 2) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  static bool _yOverlaps(Tile a, Tile b) {
+    return a.y < b.y + 2 && a.y + 2 > b.y;
   }
 
   static bool _overlaps(Tile a, Tile b) {
-    return a.x < b.x + 2 && a.x + 2 > b.x && a.y < b.y + 2 && a.y + 2 > b.y;
+    return a.x < b.x + 2 && a.x + 2 > b.x && _yOverlaps(a, b);
   }
 
   List<Tile> freeTiles() =>
@@ -202,9 +232,46 @@ class Board {
     return false;
   }
 
-  /// Подсказка: две плитки, которые сейчас можно снять парой.
-  /// [match] — в лотке или вторая свободная на поле.
+  /// Подсказка для кнопки: одинаковые плитки, лучше из закрытого слоя.
+  /// Свободная пара наверху — только если закрытой нет.
+  /// [match] — в лотке или вторая кость на поле.
   ({Tile boardTile, Tile match})? findHint() {
+    if (trayLiveCount >= trayCapacity && !trayHasPair()) return null;
+
+    ({Tile boardTile, Tile match})? best;
+    var bestScore = -1;
+
+    void consider(Tile boardTile, Tile match) {
+      final score = _hintPairScore(boardTile, match);
+      if (score <= bestScore) return;
+      bestScore = score;
+      best = (boardTile: boardTile, match: match);
+    }
+
+    final liveTray = tray.where((t) => !t.removing).toList();
+    final onBoard = tiles.where((t) => t.isOnBoard).toList();
+    if (onBoard.isEmpty) return null;
+
+    for (final boardTile in onBoard) {
+      for (final trayTile in liveTray) {
+        if (TileSymbols.matches(boardTile.symbol, trayTile.symbol)) {
+          consider(boardTile, trayTile);
+        }
+      }
+    }
+
+    for (var i = 0; i < onBoard.length; i++) {
+      for (var j = i + 1; j < onBoard.length; j++) {
+        if (TileSymbols.matches(onBoard[i].symbol, onBoard[j].symbol)) {
+          consider(onBoard[i], onBoard[j]);
+        }
+      }
+    }
+    return best;
+  }
+
+  /// Сейчас доступная пара: свободные кости или совпадение с лотком.
+  ({Tile boardTile, Tile match})? findPlayableHint() {
     if (trayLiveCount >= trayCapacity && !trayHasPair()) return null;
     final free = freeTiles();
     if (free.isEmpty) return null;
@@ -228,6 +295,34 @@ class Board {
     return null;
   }
 
+  /// Закрытая кость (под верхней) важнее свободной наверху;
+  /// из закрытых — та, что ближе к поверхности.
+  int _hintPairScore(Tile boardTile, Tile match) {
+    final trayBonus = match.inTray ? 1000000 : 0;
+    return trayBonus + _hintTileScore(boardTile) + _hintTileScore(match);
+  }
+
+  int _hintTileScore(Tile tile) {
+    if (!tile.isOnBoard) return 0;
+    if (_isCoveredAmong(tile, tiles)) {
+      return 20000 + tile.layer * 100 - _coverCount(tile);
+    }
+    if (!isFree(tile)) {
+      return 10000 + tile.layer * 100;
+    }
+    return tile.layer;
+  }
+
+  int _coverCount(Tile tile) {
+    var n = 0;
+    for (final other in tiles) {
+      if (other.id == tile.id) continue;
+      if (!other.isOnBoard || other.layer <= tile.layer) continue;
+      if (_overlaps(tile, other)) n++;
+    }
+    return n;
+  }
+
   /// Магнит: сначала пара к плитке в лотке (с любого слоя), иначе свободная пара на поле.
   ({Tile boardTile, Tile match})? findMagnetPair() {
     final freeSlots = trayCapacity - trayLiveCount;
@@ -237,7 +332,7 @@ class Board {
       if (pulled != null) return pulled;
     }
 
-    final hint = findHint();
+    final hint = findPlayableHint();
     if (hint == null) return null;
     final needTwoSlots = hint.match.isOnBoard;
     if (needTwoSlots && freeSlots < 2) return null;
@@ -286,15 +381,11 @@ class Board {
     lastMatched = [];
     final cleared = _clearPairsFromTray();
     if (isWon) return MatchResult.win;
-    if (cleared) {
-      _ensureVisiblePair();
-      return MatchResult.matched;
-    }
+    if (cleared) return MatchResult.matched;
     if (trayLiveCount >= trayCapacity && !trayHasPair()) {
       isLost = true;
       return MatchResult.lose;
     }
-    _ensureVisiblePair();
     return MatchResult.collected;
   }
 
@@ -387,68 +478,14 @@ class Board {
     }
   }
 
-  void _ensureVisiblePair({Random? random}) {
-    if (isWon || isLost) return;
-    if (_hasMatchAmongFree()) return;
-    shuffleRemaining(random: random);
-    if (_hasMatchAmongFree()) return;
-    _forceVisiblePair();
-  }
-
-  /// Ставит совпадение на две свободные кости или под лоток.
-  bool _forceVisiblePair() {
-    final free = freeTiles();
-    if (free.isEmpty) return false;
-
-    final liveTray = tray.where((t) => !t.removing).toList();
-    for (final trayTile in liveTray) {
-      Tile? buried;
-      for (final tile in tiles) {
-        if (!tile.isOnBoard) continue;
-        if (!TileSymbols.matches(tile.symbol, trayTile.symbol)) continue;
-        if (isFree(tile)) return true;
-        buried = tile;
-        break;
-      }
-      if (buried == null) continue;
-      final target = free.firstWhere(
-        (tile) => !TileSymbols.matches(tile.symbol, trayTile.symbol),
-        orElse: () => free.first,
-      );
-      _swapSymbols(target, buried);
-      return _hasMatchAmongFree();
-    }
-
-    if (free.length < 2) return false;
-    final groups = <String, List<Tile>>{};
-    for (final tile in tiles) {
-      if (!tile.isOnBoard) continue;
-      groups.putIfAbsent(tile.symbol, () => []).add(tile);
-    }
-    for (final group in groups.values) {
-      if (group.length < 2) continue;
-      _swapSymbols(free[0], group[0]);
-      _swapSymbols(free[1], group[1]);
-      if (_hasMatchAmongFree()) return true;
-    }
-    return _hasMatchAmongFree();
-  }
-
-  static void _swapSymbols(Tile a, Tile b) {
-    if (identical(a, b) || a.id == b.id) return;
-    final tmp = a.symbol;
-    a.symbol = b.symbol;
-    b.symbol = tmp;
-  }
-
-  /// Раскладывает пары на свободные места с конца решения — наверху всегда есть ход.
+  /// Раскладывает пары на свободные места с конца решения — наверху есть ход.
   static List<Tile> _dealSolvable(
     List<LayoutPos> positions,
     List<String> symbols,
     Random rng,
   ) {
     final pairs = _pairQueue(symbols);
-    for (var attempt = 0; attempt < 48; attempt++) {
+    for (var attempt = 0; attempt < 96; attempt++) {
       final shuffled = List<String>.from(pairs)..shuffle(rng);
       final tiles = _tryPairDeal(positions, shuffled, rng);
       if (tiles != null) return tiles;

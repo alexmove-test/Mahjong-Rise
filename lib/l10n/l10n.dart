@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import '../models/levels.dart';
 import '../models/pet.dart';
 import '../models/plot_kind.dart';
+import '../widgets/courtyard/courtyard_lot_build.dart';
 import '../widgets/courtyard/courtyard_progress.dart';
 
 /// UI strings: Russian only when [code] is `ru`, otherwise English.
@@ -27,9 +28,42 @@ class L10n {
   String get newPlot => pick('New plot', 'Новый участок');
   String get previousPlot => pick('Previous plot', 'Предыдущий участок');
   String get nextPlot => pick('Next plot', 'Следующий участок');
-  String plot(int cycle) {
-    final kind = PlotKind.ofCycle(cycle);
-    return isRu ? kind.titleRu : kind.titleEn;
+  String get plotLockedHint => pick(
+    'Next wins will grow this plot',
+    'Следующие победы будут строить этот участок',
+  );
+  String neighborYard(String name) => pick("$name's courtyard", 'Двор: $name');
+  String neighborRating(String name, int rating) =>
+      pick('$name · $rating', '$name · $rating');
+  String get neighboringCourtyard =>
+      pick('A neighboring courtyard', 'Соседский двор');
+  String get courtyardPanHint => pick(
+    'Drag to look around the courtyard',
+    'Потяните, чтобы осмотреть двор',
+  );
+  String plot(int cycle) => plotTitle(PlotKind.ofCycle(cycle));
+
+  String plotTitle(PlotKind kind) => isRu ? kind.titleRu : kind.titleEn;
+
+  String plotEra(PlotKind kind, int era) => isRu
+      ? CourtyardLotBuild.eraNameRu(kind, era)
+      : CourtyardLotBuild.eraNameEn(kind, era);
+
+  String plotLookProgress(PlotKind kind, int remaining) {
+    final name = plotTitle(kind);
+    if (remaining <= 0) {
+      return pick('$name is complete', '$name собран');
+    }
+    if (remaining == 1) {
+      return pick(
+        '1 level until the next $name look',
+        '1 уровень до следующего вида: $name',
+      );
+    }
+    return pick(
+      '$remaining levels until the next $name look',
+      '$remaining ур. до следующего вида: $name',
+    );
   }
 
   String get today => pick('Today', 'Сегодня');
@@ -80,7 +114,16 @@ class L10n {
 
   String get settings => pick('Settings', 'Настройки');
   String get sound => pick('Sound', 'Звук');
+  String get music => pick('Music', 'Музыка');
   String get hapticFeedback => pick('Haptic feedback', 'Тактильный отклик');
+  String get qMode => pick('Q mode', 'Режим Q');
+  String get qModeHint =>
+      pick('Magnet ads grant 50', 'Реклама на магните даёт 50');
+  String get dimCoveredTiles => pick('Dim covered tiles', 'Затемнять закрытые');
+  String get dimCoveredTilesHint => pick(
+    'Gray out tiles you cannot pick',
+    'Серым — плитки, которые нельзя взять',
+  );
   String get language => pick('Language', 'Язык');
   String get languageSystem => pick('System', 'Как в системе');
   String get languageEnglish => 'English';
@@ -126,7 +169,8 @@ class L10n {
   String get hint => pick('Hint', 'Подсказка');
   String get undo => pick('Undo', 'Отмена');
   String watchAd(String name) => pick('Watch ad → $name', 'Реклама → $name');
-  String boostEarned(String name) => pick('+1 $name', '+1 $name');
+  String boostEarned(String name, {int count = 1}) =>
+      pick('+$count $name', '+$count $name');
   String get noneLeft => pick('none left', 'нет использований');
 
   String boostTooltip(String name, int left, {required bool adsAvailable}) {
@@ -135,8 +179,10 @@ class L10n {
     return noneLeft;
   }
 
-  String get coachTapFree =>
-      pick('Take only a free top tile', 'Бери только верхнюю плитку');
+  String get coachTapFree => pick(
+    'Take a free tile — open on top and one side',
+    'Бери свободную: сверху и сбоку открыта',
+  );
   String get coachMatchPair =>
       pick('A pair in the tray clears', 'Пара в лотке снимается');
   String get coachTrayLimit => pick(
@@ -184,9 +230,10 @@ class L10n {
     }
   }
 
-  String levelTitle(LevelDef level) {
+  String levelTitle(LevelDef level, {PlotKind? plotKind}) {
     if (level.title == 'Today') return today;
-    return isRu ? level.plotKind.titleRu : level.plotKind.titleEn;
+    final kind = plotKind ?? level.plotKind;
+    return isRu ? kind.titleRu : kind.titleEn;
   }
 
   String storyTitle(int storyId) {
@@ -298,11 +345,11 @@ class L10n {
       'This pond fills as you play.',
       'Этот ставок наполняется, пока ты играешь.',
     ),
-    PlotKind.road => pick(
-      'This road grows as you play.',
-      'Эта дорога растёт, пока ты играешь.',
+    PlotKind.pets => pick(
+      'This pet house grows as you play.',
+      'Этот домик питомца растёт, пока ты играешь.',
     ),
-    PlotKind.internet => pick(
+    PlotKind.guest => pick(
       'This yard comes online as you play.',
       'Этот двор выходит в сеть, пока ты играешь.',
     ),
@@ -310,61 +357,8 @@ class L10n {
 
   String get firstHomePhrase => firstHomePhraseFor(PlotKind.house);
 
-  List<String> pathStagePhrasesFor(PlotKind kind) {
-    switch (kind) {
-      case PlotKind.pond:
-        return isRu
-            ? const [
-                'Здесь нальётся ставок.',
-                'Берега держат воду.',
-                'Камыш взял кромку.',
-                'Мостки легли.',
-                'Карпам есть дом.',
-                'Ставок собрался из пройденного.',
-              ]
-            : pondStagePhrases;
-      case PlotKind.road:
-        return isRu
-            ? const [
-                'Отсюда уйдёт дорога.',
-                'Тропа держит линию.',
-                'Щебень лёг в путь.',
-                'Камни легли.',
-                'Фонари стоят вдоль.',
-                'Дорога собралась из пройденного.',
-              ]
-            : roadStagePhrases;
-      case PlotKind.internet:
-        return isRu
-            ? const [
-                'Сюда дойдёт сигнал.',
-                'Столб держит линию.',
-                'Кабель нашёл дом.',
-                'Тарелка стоит.',
-                'Экраны светятся во дворе.',
-                'Двор вышел в сеть из пройденного.',
-              ]
-            : internetStagePhrases;
-      case PlotKind.house:
-        return isRu
-            ? const [
-                'Здесь будет дом.',
-                'Забор держит участок.',
-                'Стены уже свои.',
-                'Крыша легла.',
-                'В окнах можно жить.',
-                'Дом собрался из пройденного.',
-              ]
-            : const [
-                'A house will stand here.',
-                'The fence holds the plot.',
-                'The walls are yours.',
-                'The roof is on.',
-                'The windows are ready.',
-                'The house rose from your wins.',
-              ];
-    }
-  }
+  List<String> pathStagePhrasesFor(PlotKind kind) =>
+      eraPhrasesFor(kind, ru: isRu);
 
   List<String> get pathStagePhrases => pathStagePhrasesFor(PlotKind.house);
 
@@ -378,14 +372,18 @@ class L10n {
                 'Берега ближе.',
               ]
             : pondWarmPhrases;
-      case PlotKind.road:
+      case PlotKind.pets:
         return isRu
-            ? const ['Ещё кусок дороги.', 'Путь стал своим.', 'Тропа ближе.']
-            : roadWarmPhrases;
-      case PlotKind.internet:
+            ? const [
+                'Домик чуть уютнее.',
+                'Питомцам просторнее.',
+                'Двор стал своим.',
+              ]
+            : petsWarmPhrases;
+      case PlotKind.guest:
         return isRu
             ? const ['Сигнал чуть сильнее.', 'Двор связаннее.', 'Линия ближе.']
-            : internetWarmPhrases;
+            : guestWarmPhrases;
       case PlotKind.house:
         return isRu
             ? const [
@@ -406,22 +404,15 @@ class L10n {
   String pathLifePhraseFor(PlotKind kind) => switch (kind) {
     PlotKind.house => pick('The house feels warmer.', 'В доме стало теплее.'),
     PlotKind.pond => pick('The pond feels alive.', 'Ставок ожил.'),
-    PlotKind.road => pick('The road feels warmer.', 'Дороге теплее.'),
-    PlotKind.internet => pick('The yard hums a little.', 'Двор чуть гудит.'),
+    PlotKind.pets => pick(
+      'The pet house feels warmer.',
+      'В домике стало теплее.',
+    ),
+    PlotKind.guest => pick('The yard hums a little.', 'Двор чуть гудит.'),
   };
 
   String get pathLifePhrase => pathLifePhraseFor(PlotKind.house);
 
-  String get thisWeek => pick('This week', 'Эта неделя');
-  String get allTime => pick('All-time', 'Всегда');
-  String get weeklyFormula => pick(
-    'This week: stars × 10,000 + new clears × 2,500 + daily wins × 1,000.',
-    'Эта неделя: звёзды × 10 000 + новые уровни × 2 500 + daily × 1 000.',
-  );
-  String weeklyStarsClearsDailies(int stars, int clears, int dailies) => pick(
-    '$stars ★ · $clears lv · $dailies daily',
-    '$stars ★ · $clears ур. · $dailies daily',
-  );
   String get weeklyQuests => pick('Weekly quests', 'Задания недели');
   String get claim => pick('Claim', 'Забрать');
   String get claimed => pick('Claimed', 'Получено');
@@ -472,6 +463,8 @@ class L10n {
   String petsTitle(int count) => count > 1 ? pets : pet;
   String get chooseAPet => pick('Choose a companion', 'Выберите питомца');
   String get addPet => pick('Add a companion', 'Добавить питомца');
+  String get petInviteAdopt => pick('A friend is waiting', 'Друг ждёт тебя');
+  String get petInviteShow => pick('Show pets', 'Показать питомцев');
   String get petCareHint => pick(
     'Clear a table to help whoever needs you most.',
     'Пройдите уровень — помощь тому, кому сейчас нужнее.',
@@ -542,26 +535,27 @@ class L10n {
   String get reminderPetStarveBody =>
       pick('Clear a table to feed them.', 'Пройдите стол, чтобы покормить.');
 
-  String homePathPhrase(CourtyardSnapshot snapshot) {
+  String homePathPhrase(CourtyardSnapshot snapshot, {double? stage}) {
     final phrases = pathStagePhrasesFor(snapshot.plotKind);
-    final band = snapshot.band;
-    if (band <= 0) return phrases.first;
-    return phrases[band - 1];
+    final era = CourtyardLotBuild.eraIndex(stage ?? snapshot.step);
+    return phrases[era];
   }
 
   String winPathPhrase({
     required CourtyardSnapshot from,
     required CourtyardSnapshot to,
+    double? fromStage,
+    double? toStage,
   }) {
     final phrases = pathStagePhrasesFor(to.plotKind);
     final warm = pathWarmPhrasesFor(to.plotKind);
-    final fromBand = from.band;
-    final toBand = to.band;
-    if (toBand > fromBand && toBand > 0) {
-      return phrases[toBand - 1];
-    }
-    if (to.step > from.step + 0.01) {
-      return warm[to.step.floor() % warm.length];
+    final a = fromStage ?? from.step;
+    final b = toStage ?? to.step;
+    final fromEra = CourtyardLotBuild.eraIndex(a);
+    final toEra = CourtyardLotBuild.eraIndex(b);
+    if (toEra > fromEra) return phrases[toEra];
+    if (b > a + 0.01) {
+      return warm[b.floor() % warm.length];
     }
     if (to.totalStars > from.totalStars) {
       return pathLifePhraseFor(to.plotKind);
@@ -571,5 +565,179 @@ class L10n {
       return pathLifePhraseFor(to.plotKind);
     }
     return warm.first;
+  }
+
+  String get boardSemantic => pick('Board', 'Поле');
+
+  String traySemantic(int filled, int capacity) =>
+      pick('Tray, $filled of $capacity', 'Лоток, $filled из $capacity');
+
+  String get trayEmptySlot => pick('Empty slot', 'Пустой слот');
+
+  String courtyardSemantic(int cycle) =>
+      courtyardSemanticKind(PlotKind.ofCycle(cycle));
+
+  String courtyardSemanticKind(PlotKind kind) =>
+      pick('${plotTitle(kind)} courtyard', 'Двор: ${plotTitle(kind)}');
+
+  String petsButtonSemantic({required bool asking}) {
+    if (asking) return pick('Pets, need care', 'Питомцы, нужна забота');
+    return pets;
+  }
+
+  String dailyButtonSemantic({
+    required int streak,
+    required bool completedToday,
+  }) {
+    final status = dailyStreakSubtitle(
+      streak: streak,
+      completedToday: completedToday,
+    );
+    return '$today. $status';
+  }
+
+  String levelCardSemantic({
+    required int localId,
+    required String title,
+    required bool unlocked,
+    required int stars,
+    required bool inProgress,
+  }) {
+    if (!unlocked) {
+      return pick('Level $localId, locked', 'Уровень $localId, закрыт');
+    }
+    final star = stars == 0
+        ? pick('no stars', 'без звёзд')
+        : pick('$stars stars', '$stars ★');
+    final progress = inProgress ? pick(', in progress', ', партия начата') : '';
+    return pick(
+      'Level $localId, $title, $star$progress',
+      'Уровень $localId, $title, $star$progress',
+    );
+  }
+
+  String boostSemantic(String name, int left, {required bool adsAvailable}) {
+    if (left > 0) {
+      return pick('$name, $left left', '$name, осталось $left');
+    }
+    if (adsAvailable) return watchAd(name);
+    return pick('$name, none left', '$name, нет использований');
+  }
+
+  String tileFamilyName(String family) {
+    switch (family) {
+      case 'fruit':
+        return pick('Fruit', 'Фрукт');
+      case 'flower':
+        return pick('Flower', 'Цветок');
+      case 'animal':
+        return pick('Animal', 'Животное');
+      case 'bamboo':
+        return pick('Bamboo', 'Бамбук');
+      case 'character':
+        return pick('Character', 'Иероглиф');
+      case 'dot':
+      case 'dots':
+        return pick('Dot', 'Точка');
+      case 'dragon':
+        return pick('Dragon', 'Дракон');
+      case 'wind':
+        return pick('Wind', 'Ветер');
+      case 'season':
+        return pick('Season', 'Сезон');
+      case 'number':
+        return pick('Number', 'Цифра');
+      case 'shape':
+        return pick('Shape', 'Фигура');
+      case 'soft':
+      case 'tile':
+        return pick('Tile', 'Плитка');
+      case 'art':
+        return pick('Art', 'Узор');
+      case 'clown':
+        return pick('Clown', 'Клоун');
+      case 'emperor':
+        return pick('Emperor', 'Император');
+      case 'joker':
+        return pick('Joker', 'Джокер');
+      case 'profession':
+        return pick('Profession', 'Профессия');
+      case 'queen':
+        return pick('Queen', 'Королева');
+      case 'east':
+        return pick('East', 'Восток');
+      case 'south':
+        return pick('South', 'Юг');
+      case 'west':
+        return pick('West', 'Запад');
+      case 'north':
+        return pick('North', 'Север');
+      case 'spring':
+        return pick('Spring', 'Весна');
+      case 'summer':
+        return pick('Summer', 'Лето');
+      case 'fall':
+      case 'autumn':
+        return pick('Autumn', 'Осень');
+      case 'winter':
+        return pick('Winter', 'Зима');
+      default:
+        if (family.isEmpty) return family;
+        return '${family[0].toUpperCase()}${family.substring(1)}';
+    }
+  }
+
+  String tileSymbolName(String symbol) {
+    var s = symbol.toLowerCase().trim();
+    if (s.startsWith('set1-')) s = s.substring(5);
+    switch (s) {
+      case 'wind-east':
+        return pick('East wind', 'Восточный ветер');
+      case 'wind-south':
+        return pick('South wind', 'Южный ветер');
+      case 'wind-west':
+        return pick('West wind', 'Западный ветер');
+      case 'wind-north':
+        return pick('North wind', 'Северный ветер');
+    }
+    final parts = s
+        .split(RegExp(r'[-_/]+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) return symbol;
+    final family = tileFamilyName(parts.first);
+    if (parts.length == 1) return family;
+    final rest = parts
+        .skip(1)
+        .map((part) {
+          final n = int.tryParse(part);
+          if (n != null) return '$n';
+          return tileFamilyName(part);
+        })
+        .join(' ');
+    return '$family $rest';
+  }
+
+  String tileSemanticLabel({
+    required String symbol,
+    required bool free,
+    required bool hinted,
+    required bool inTray,
+    required bool removing,
+  }) {
+    final name = tileSymbolName(symbol);
+    if (removing) {
+      return pick('$name, matching', '$name, снятие пары');
+    }
+    if (inTray) {
+      return hinted
+          ? pick('$name in tray, hinted', '$name в лотке, подсказка')
+          : pick('$name in tray', '$name в лотке');
+    }
+    final state = free ? pick('free', 'свободна') : pick('locked', 'закрыта');
+    if (hinted) {
+      return pick('$name, $state, hinted', '$name, $state, подсказка');
+    }
+    return '$name, $state';
   }
 }

@@ -4,8 +4,6 @@ import 'package:mahjong/models/week_event.dart';
 import 'package:mahjong/models/week_id.dart';
 import 'package:mahjong/models/weekly_score.dart';
 import 'package:mahjong/services/progress_store.dart';
-import 'package:mahjong/services/weekly_leaderboard_service.dart';
-import 'package:mahjong/services/player_profile_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -24,12 +22,12 @@ void main() {
     expect(progress.weeklyClears, 1);
     expect(progress.weeklyDailies, 1);
     expect(
-      WeeklyLeaderboardService.ratingFor(progress),
       WeeklyScore.ratingFrom(
-        weeklyStars: 3,
-        weeklyClears: 1,
-        weeklyDailies: 1,
+        weeklyStars: progress.weeklyStars,
+        weeklyClears: progress.weeklyClears,
+        weeklyDailies: progress.weeklyDailies,
       ),
+      3 * 10000 + 1 * 2500 + 1 * 1000,
     );
 
     await progress.ensureWeek(DateTime(2026, 8, 31));
@@ -46,18 +44,6 @@ void main() {
     final consumed = await progress.consumeSeasonSheet();
     expect(consumed?.weekId, '2026-W35');
     expect(progress.pendingSeasonSummary, isNull);
-  });
-
-  test('weekly local table uses the display name', () async {
-    SharedPreferences.setMockInitialValues({});
-    final progress = await ProgressStore.open();
-    final profile = await PlayerProfileStore.open();
-    final entries = WeeklyLeaderboardService.buildLocal(
-      progress: progress,
-      profile: profile,
-    );
-    expect(entries.single.isCurrentPlayer, isTrue);
-    expect(entries.single.name, profile.displayName);
   });
 
   test('daily table uses the week event style and extra boosts', () {

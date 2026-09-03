@@ -1,6 +1,4 @@
-/// Сгенерировано при Android-сборке. Не править вручную.
-const appVersionName = '1.0.2';
-const appBuildNumber = 93;
-const appBuildTime = '30.08.2026 13:52';
+// Публичные константы версии. Значения подставляет Android-сборка в app_version.g.dart.
+part 'app_version.g.dart';
 
 String get appVersionLabel => 'v$appVersionName+$appBuildNumber';

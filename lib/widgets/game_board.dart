@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../debug_agent_log.dart';
 import '../debug_boot_timer.dart';
+import '../l10n/l10n.dart';
 import '../models/board.dart';
 import '../models/tile.dart';
 import '../utils/layouts.dart';
@@ -208,6 +209,9 @@ class GameBoardState extends State<GameBoard> {
   Widget build(BuildContext context) {
     final visible = widget.board.tiles.where((t) => t.isOnBoard).toList()
       ..sort((a, b) {
+        final hintedA = widget.hintedIds.contains(a.id);
+        final hintedB = widget.hintedIds.contains(b.id);
+        if (hintedA != hintedB) return hintedA ? 1 : -1;
         final layer = a.layer.compareTo(b.layer);
         if (layer != 0) return layer;
         final y = a.y.compareTo(b.y);
@@ -282,13 +286,14 @@ class GameBoardState extends State<GameBoard> {
           ),
         );
 
-        return SizedBox(
-          key: ValueKey(widget.board.layoutName),
-          width: constraints.maxWidth,
-          height: constraints.maxHeight,
-          child: FittedBox(
-            fit: BoxFit.contain,
-            child: stack,
+        return Semantics(
+          container: true,
+          label: L10n.of(context).boardSemantic,
+          child: SizedBox(
+            key: ValueKey(widget.board.layoutName),
+            width: constraints.maxWidth,
+            height: constraints.maxHeight,
+            child: FittedBox(fit: BoxFit.contain, child: stack),
           ),
         );
       },

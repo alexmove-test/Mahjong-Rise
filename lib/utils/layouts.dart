@@ -5,8 +5,8 @@ import 'tile_icons.dart';
 /// Позиция плитки в раскладке: [x, y, layer].
 typedef LayoutPos = (int x, int y, int layer);
 
-/// Раскладки на общей сцене 6×5 клеток. Сложность — в силуэте и в слоях,
-/// не в сжатии плиток.
+/// Раскладки на общей сцене 6×5 клеток. Нижний слой стоит в клетках сетки;
+/// лишние кости стопки садятся на швы — как в Vita Mahjong.
 ///
 /// Координаты — в половинах размера плитки. Соседняя клетка сетки — ±2.
 class Layouts {
@@ -35,7 +35,8 @@ class Layouts {
     return positions;
   }
 
-  /// 5 рядов × 6 столбцов. `.` — пусто, число — высота стопки.
+  /// 5 рядов × 6 столбцов. `.` — пусто, число — высота стопки в клетке.
+  /// Стопки ещё не разнесены на швы — это делает [_spreadOntoSeams].
   static List<LayoutPos> _grid(String name, List<String> rows) {
     assert(rows.length == 5, '$name must span the 5-row playfield');
     final p = <LayoutPos>[];
@@ -49,224 +50,84 @@ class Layouts {
         _stack(p, c * 2, r * 2, h);
       }
     }
-    return _done(p, name);
+    assert(
+      p.length.isEven && p.isNotEmpty,
+      '$name must have even tile count, got ${p.length}',
+    );
+    return p;
   }
 
-  /// Уголки поля и сердцевина (16).
-  static List<LayoutPos> petal() => _grid('petal', const [
-    '2 . . . . 2',
-    '. . . . . .',
-    '. . 4 4 . .',
-    '. . . . . .',
-    '2 . . . . 2',
-  ]);
+  /// Короткий ряд и две стопки (16).
+  static List<LayoutPos> petal() => byName('petal');
 
-  /// Пять бутонов (20).
-  static List<LayoutPos> buds() => _grid('buds', const [
-    '. 2 . . 2 .',
-    '. . 4 . . .',
-    '. 2 . 2 . .',
-    '. . 4 . . .',
-    '. 2 . . 2 .',
-  ]);
+  /// Бутон: два сомкнутых ряда (20).
+  static List<LayoutPos> buds() => byName('buds');
 
-  /// Крест (24).
-  static List<LayoutPos> bloom() => _grid('bloom', const [
-    '. . 2 . . .',
-    '. . 3 . . .',
-    '2 3 4 3 2 .',
-    '. . 3 . . .',
-    '. . 2 . . .',
-  ]);
+  /// Крест, собранный вплотную (24).
+  static List<LayoutPos> bloom() => byName('bloom');
 
-  /// Редкие поляны (28).
-  static List<LayoutPos> glade() => _grid('glade', const [
-    '2 . 2 . 2 .',
-    '. 2 . . . 2',
-    '2 . 4 . 2 .',
-    '. 2 . 2 . .',
-    '2 . 2 . 2 .',
-  ]);
+  /// Поляна без дыр в рядах (28).
+  static List<LayoutPos> glade() => byName('glade');
 
-  /// Два холма (32).
-  static List<LayoutPos> meadow() => _grid('meadow', const [
-    '. . 2 2 . .',
-    '2 . . . . 2',
-    '4 4 . . 4 4',
-    '2 . . . . 2',
-    '. . 2 2 . .',
-  ]);
+  /// Два холма, соединённые хребтом (32).
+  static List<LayoutPos> meadow() => byName('meadow');
 
-  /// Роща колонн (36).
-  static List<LayoutPos> grove() => _grid('grove', const [
-    '2 . 2 . 2 .',
-    '. 3 . 4 . 2',
-    '2 . 4 . 3 .',
-    '. 3 . 3 . .',
-    '2 . 2 . 2 .',
-  ]);
+  /// Роща: широкая крона (36).
+  static List<LayoutPos> grove() => byName('grove');
 
-  /// Диагональный гребень (36).
-  static List<LayoutPos> wave() => _grid('wave', const [
-    '. . . . 3 4',
-    '. . . 4 4 .',
-    '. . 4 3 . .',
-    '. 4 3 . . .',
-    '3 4 . . . .',
-  ]);
+  /// Диагональный гребень без разрывов (36).
+  static List<LayoutPos> wave() => byName('wave');
 
   /// Извилистый ручей (40).
-  static List<LayoutPos> stream() => _grid('stream', const [
-    '3 3 3 2 . .',
-    '. . . 3 3 2',
-    '. . 3 3 . .',
-    '2 3 3 . . .',
-    '2 2 3 . . .',
-  ]);
+  static List<LayoutPos> stream() => byName('stream');
 
-  /// Кольцо с пустым двором (44).
-  static List<LayoutPos> garden() => _grid('garden', const [
-    '2 3 2 2 3 2',
-    '3 . . . . 3',
-    '2 . . . . 2',
-    '3 . . . . 3',
-    '2 3 2 2 3 2',
-  ]);
+  /// Кольцо с островом во дворе (44).
+  static List<LayoutPos> garden() => byName('garden');
 
-  /// Беседка: стены и две башни (48).
-  static List<LayoutPos> gazebo() => _grid('gazebo', const [
-    '2 2 2 2 2 2',
-    '2 . . . . 2',
-    '2 . 6 6 . 2',
-    '2 . . . . 2',
-    '2 2 2 2 2 2',
-  ]);
+  /// Беседка: толстые стены и две башни (48).
+  static List<LayoutPos> gazebo() => byName('gazebo');
 
   /// Веер от низа (48).
-  static List<LayoutPos> fan() => _grid('fan', const [
-    '4 . . . . 4',
-    '3 4 . . 4 3',
-    '. 3 4 4 3 .',
-    '. . 3 3 . .',
-    '. . 3 3 . .',
-  ]);
+  static List<LayoutPos> fan() => byName('fan');
 
-  /// Павлиний хвост с «глазами» (52).
-  static List<LayoutPos> peacock() => _grid('peacock', const [
-    '5 . . . . 5',
-    '4 4 . . 4 4',
-    '. 3 3 3 3 .',
-    '. . 4 4 . .',
-    '. . 3 3 . .',
-  ]);
+  /// Павлиний хвост (52).
+  static List<LayoutPos> peacock() => byName('peacock');
 
-  /// Ромб лотоса (56).
-  static List<LayoutPos> lotus() => _grid('lotus', const [
-    '. . 3 3 . .',
-    '. 3 4 4 3 .',
-    '. 4 4 4 4 .',
-    '. 3 4 4 3 .',
-    '. . 3 3 . .',
-  ]);
+  /// Ромб лотоса, широкие ряды (56).
+  static List<LayoutPos> lotus() => byName('lotus');
 
-  /// Пруд: берег и остров (60).
-  static List<LayoutPos> pond() => _grid('pond', const [
-    '2 3 3 3 3 2',
-    '3 . . . . 3',
-    '3 . 5 5 . 3',
-    '3 . . . . 3',
-    '2 3 3 3 3 2',
-  ]);
+  /// Пруд: сплошной берег и остров (60).
+  static List<LayoutPos> pond() => byName('pond');
 
-  /// Два карпа (64).
-  static List<LayoutPos> koi() => _grid('koi', const [
-    '4 5 3 . . .',
-    '3 4 4 . . 2',
-    '. 3 2 . 4 5',
-    '2 . . 3 4 4',
-    '. . . 3 5 4',
-  ]);
+  /// Два карпа вплотную (64).
+  static List<LayoutPos> koi() => byName('koi');
 
   /// Широкая чаша озера (68).
-  static List<LayoutPos> lake() => _grid('lake', const [
-    '2 3 3 3 3 2',
-    '3 4 . . 4 3',
-    '4 . . . . 4',
-    '3 4 . . 4 3',
-    '2 3 3 3 3 2',
-  ]);
+  static List<LayoutPos> lake() => byName('lake');
 
-  /// Зигзаг лозы (72).
-  static List<LayoutPos> vine() => _grid('vine', const [
-    '5 5 4 . . .',
-    '. . 4 5 5 .',
-    '6 6 4 . . .',
-    '. . 4 5 5 .',
-    '5 5 4 . . .',
-  ]);
+  /// Зигзаг лозы без разрывов (72).
+  static List<LayoutPos> vine() => byName('vine');
 
-  /// Лестницы плюща (76).
-  static List<LayoutPos> ivy() => _grid('ivy', const [
-    '3 . . . . 7',
-    '4 4 . . 6 5',
-    '. 4 5 5 4 .',
-    '5 6 . . 4 4',
-    '7 . . . . 3',
-  ]);
+  /// Лестницы плюща, ступени сомкнуты (76).
+  static List<LayoutPos> ivy() => byName('ivy');
 
   /// Врата праздника (80).
-  static List<LayoutPos> festival() => _grid('festival', const [
-    '6 2 2 2 2 6',
-    '6 . . . . 6',
-    '6 . 2 2 . 6',
-    '6 . . . . 6',
-    '6 2 2 2 2 6',
-  ]);
+  static List<LayoutPos> festival() => byName('festival');
 
-  /// Три фонарные башни (84).
-  static List<LayoutPos> lanterns() => _grid('lanterns', const [
-    '. 8 . 8 . 8',
-    '. 6 . 6 . 6',
-    '. 5 . 5 . 5',
-    '. 4 . 4 . 4',
-    '2 3 2 3 2 3',
-  ]);
+  /// Три фонаря, связанные рядами (84).
+  static List<LayoutPos> lanterns() => byName('lanterns');
 
   /// Двор с высокой цитаделью (96).
-  static List<LayoutPos> pavilion() => _grid('pavilion', const [
-    '4 4 4 4 4 4',
-    '4 . . . . 4',
-    '4 . 12 12 . 4',
-    '4 . . . . 4',
-    '4 4 4 4 4 4',
-  ]);
+  static List<LayoutPos> pavilion() => byName('pavilion');
 
   /// Храм: широкое основание и пик (104).
-  static List<LayoutPos> temple() => _grid('temple', const [
-    '2 3 3 3 3 2',
-    '3 4 4 4 4 3',
-    '4 5 5 5 5 4',
-    '3 4 4 4 4 3',
-    '2 3 3 3 3 2',
-  ]);
+  static List<LayoutPos> temple() => byName('temple');
 
-  /// Хребет дракона — поле целиком, пик уходит в слои (112).
-  static List<LayoutPos> dragon() => _grid('dragon', const [
-    '. 3 . 3 . 3',
-    '2 5 4 6 4 2',
-    '3 6 15 15 6 3',
-    '2 5 4 6 4 2',
-    '. 3 . 3 . 3',
-  ]);
+  /// Хребет дракона — сплошные ряды, пик в слоях (112).
+  static List<LayoutPos> dragon() => byName('dragon');
 
   /// Небесный дракон: две глубокие вершины (128).
-  static List<LayoutPos> sky() => _grid('sky', const [
-    '. 4 . 4 . 4',
-    '3 6 5 6 5 3',
-    '4 7 13 13 7 4',
-    '3 6 5 6 5 3',
-    '. 4 . 4 . 4',
-  ]);
+  static List<LayoutPos> sky() => byName('sky');
 
   /// Поле со скрина Vita: 16 плиток, координаты Rise (половины ширины/высоты).
   static List<LayoutPos> vita() {
@@ -346,40 +207,210 @@ class Layouts {
       deep = true;
     }
 
-    var positions = _baseByName(base);
+    var positions = _baseStacks(base);
     if (mirror) positions = _mirrorX(positions);
     if (deep) positions = _deeper(positions);
+    if (base != 'vita') {
+      positions = _spreadOntoSeams(positions);
+    }
     return _done(positions, name);
   }
 
-  static List<LayoutPos> _baseByName(String name) {
+  static List<LayoutPos> _baseStacks(String name) {
     return switch (name) {
-      'petal' || 'seed' => petal(),
-      'buds' => buds(),
-      'bloom' => bloom(),
-      'glade' => glade(),
-      'meadow' => meadow(),
-      'grove' => grove(),
-      'wave' => wave(),
-      'stream' => stream(),
-      'garden' || 'pyramid' => garden(),
-      'gazebo' => gazebo(),
-      'fan' || 'fort' => fan(),
-      'peacock' => peacock(),
-      'lotus' => lotus(),
-      'pond' => pond(),
-      'koi' => koi(),
-      'lake' => lake(),
-      'vine' || 'tower' => vine(),
-      'ivy' => ivy(),
-      'festival' => festival(),
-      'lanterns' => lanterns(),
-      'pavilion' => pavilion(),
-      'temple' => temple(),
-      'dragon' || 'turtle' => dragon(),
-      'sky' => sky(),
-      'vita' => vita(),
-      _ => bloom(),
+      'petal' || 'seed' => _grid('petal', const [
+        '. . . . . .',
+        '. 2 2 2 2 .',
+        '. . 4 4 . .',
+        '. . . . . .',
+        '. . . . . .',
+      ]),
+      'buds' => _grid('buds', const [
+        '. . . . . .',
+        '. 2 2 2 2 .',
+        '. 2 3 3 2 .',
+        '. . 1 1 . .',
+        '. . . . . .',
+      ]),
+      'bloom' => _grid('bloom', const [
+        '. . 2 2 . .',
+        '. 2 2 2 2 .',
+        '. 2 3 3 2 .',
+        '. . 1 1 . .',
+        '. . . . . .',
+      ]),
+      'glade' => _grid('glade', const [
+        '. . . . . .',
+        '. 2 2 2 2 .',
+        '2 2 3 3 2 .',
+        '. 2 2 2 2 .',
+        '. . . . . .',
+      ]),
+      'meadow' => _grid('meadow', const [
+        '. . . . . .',
+        '. 2 2 2 2 .',
+        '2 3 3 3 3 2',
+        '. 2 2 2 2 .',
+        '. . . . . .',
+      ]),
+      'grove' => _grid('grove', const [
+        '. . . . . .',
+        '2 2 2 2 2 2',
+        '. 3 4 4 3 .',
+        '. 2 3 3 2 .',
+        '. . . . . .',
+      ]),
+      'wave' => _grid('wave', const [
+        '. . 2 2 3 4',
+        '. 2 3 3 3 .',
+        '2 3 3 2 . .',
+        '2 2 . . . .',
+        '. . . . . .',
+      ]),
+      'stream' => _grid('stream', const [
+        '3 3 3 3 2 .',
+        '. . 2 3 3 2',
+        '. . 3 3 2 .',
+        '2 3 3 . . .',
+        '. . . . . .',
+      ]),
+      'garden' || 'pyramid' => _grid('garden', const [
+        '2 2 2 2 2 2',
+        '2 . . . . 2',
+        '2 . 4 4 . 2',
+        '2 . . . . 2',
+        '2 2 2 2 2 2',
+      ]),
+      'gazebo' => _grid('gazebo', const [
+        '2 2 2 2 2 2',
+        '2 2 . . 2 2',
+        '2 . 4 4 . 2',
+        '2 . . . . 2',
+        '2 2 2 2 2 2',
+      ]),
+      'fan' || 'fort' => _grid('fan', const [
+        '3 2 . . 2 3',
+        '3 4 2 2 4 3',
+        '. 3 4 4 3 .',
+        '. . 3 3 . .',
+        '. . . . . .',
+      ]),
+      'peacock' => _grid('peacock', const [
+        '5 2 2 2 2 5',
+        '4 4 2 2 4 4',
+        '. 3 3 3 3 .',
+        '. . 1 1 . .',
+        '. . . . . .',
+      ]),
+      'lotus' => _grid('lotus', const [
+        '. 2 3 3 2 .',
+        '2 3 4 4 3 2',
+        '. 3 4 4 3 .',
+        '. 2 3 3 2 .',
+        '. . 2 2 . .',
+      ]),
+      'pond' => _grid('pond', const [
+        '2 2 2 2 2 2',
+        '3 2 . . 2 3',
+        '3 . 5 5 . 3',
+        '3 2 . . 2 3',
+        '2 2 2 2 2 2',
+      ]),
+      'koi' => _grid('koi', const [
+        '4 5 4 2 . .',
+        '3 4 4 . . .',
+        '. . 2 2 4 5',
+        '. . 2 3 4 4',
+        '. . . 3 5 4',
+      ]),
+      'lake' => _grid('lake', const [
+        '2 3 3 3 3 2',
+        '3 4 2 2 4 3',
+        '3 . . . . 3',
+        '3 3 . . 3 3',
+        '2 3 3 3 3 2',
+      ]),
+      'vine' || 'tower' => _grid('vine', const [
+        '4 5 4 2 . .',
+        '. 2 4 5 5 .',
+        '5 5 4 2 . .',
+        '. . 4 5 5 .',
+        '4 4 3 . . .',
+      ]),
+      'ivy' => _grid('ivy', const [
+        '3 2 . . . 4',
+        '4 4 2 2 4 4',
+        '. 4 5 5 4 .',
+        '4 4 2 2 4 4',
+        '4 . . . 2 3',
+      ]),
+      'festival' => _grid('festival', const [
+        '5 2 2 2 2 5',
+        '5 2 . . 2 5',
+        '5 . 3 3 . 5',
+        '5 2 . . 2 5',
+        '5 2 2 2 2 5',
+      ]),
+      'lanterns' => _grid('lanterns', const [
+        '2 5 2 5 2 5',
+        '2 5 2 5 2 5',
+        '2 4 2 4 2 4',
+        '. 3 . 3 . 3',
+        '2 3 2 3 2 3',
+      ]),
+      'pavilion' => _grid('pavilion', const [
+        '3 3 3 3 3 3',
+        '3 2 . . 2 3',
+        '4 2 12 12 2 4',
+        '3 2 . . 2 3',
+        '4 4 3 3 4 4',
+      ]),
+      'temple' => _grid('temple', const [
+        '2 3 3 3 3 2',
+        '3 4 4 4 4 3',
+        '4 5 5 5 5 4',
+        '3 4 4 4 4 3',
+        '2 3 3 3 3 2',
+      ]),
+      'dragon' || 'turtle' => _grid('dragon', const [
+        '2 2 2 2 2 2',
+        '3 4 4 4 4 3',
+        '3 5 14 14 5 3',
+        '3 4 4 4 4 3',
+        '2 2 2 2 2 2',
+      ]),
+      'sky' => _grid('sky', const [
+        '2 3 2 3 2 3',
+        '4 5 5 5 5 4',
+        '2 6 13 13 6 2',
+        '4 5 5 5 5 4',
+        '2 3 2 3 2 3',
+      ]),
+      'vita' => [
+        _p(0, 0),
+        _p(2, 0),
+        _p(4, 0),
+        _p(6, 0),
+        _p(4, 2),
+        _p(6, 2),
+        _p(0, 3),
+        _p(4, 3),
+        _p(6, 4),
+        _p(8, 4),
+        _p(0, 5),
+        _p(2, 6),
+        _p(4, 6),
+        _p(6, 6),
+        _p(8, 6),
+        _p(10, 6),
+      ],
+      _ => _grid('bloom', const [
+        '. . 2 2 . .',
+        '. 2 2 2 2 .',
+        '. 2 3 3 2 .',
+        '. . 1 1 . .',
+        '. . . . . .',
+      ]),
     };
   }
 
@@ -412,6 +443,133 @@ class Layouts {
     return out;
   }
 
+  static bool _footprintOverlaps(int ax, int ay, int bx, int by) {
+    return ax < bx + 2 && ax + 2 > bx && ay < by + 2 && ay + 2 > by;
+  }
+
+  /// Лишние кости стопки садятся на швы соседей: стык четырёх, затем ряд, затем столбец.
+  static List<LayoutPos> _spreadOntoSeams(List<LayoutPos> stacks) {
+    if (stacks.isEmpty) return stacks;
+    final heights = <(int, int), int>{};
+    for (final p in stacks) {
+      final key = (p.$1, p.$2);
+      final h = p.$3 + 1;
+      final prev = heights[key] ?? 0;
+      if (h > prev) heights[key] = h;
+    }
+    final cells = heights.keys.toList()
+      ..sort((a, b) {
+        final dy = a.$2.compareTo(b.$2);
+        if (dy != 0) return dy;
+        return a.$1.compareTo(b.$1);
+      });
+    final occupied = cells.toSet();
+
+    bool has(int x, int y) => occupied.contains((x, y));
+
+    final placed = <LayoutPos>[
+      for (final cell in cells) _p(cell.$1, cell.$2, 0),
+    ];
+
+    int layerAt(int x, int y) {
+      var maxL = -1;
+      for (final p in placed) {
+        if (_footprintOverlaps(x, y, p.$1, p.$2) && p.$3 > maxL) {
+          maxL = p.$3;
+        }
+      }
+      return maxL + 1;
+    }
+
+    int capsAt(int x, int y) {
+      var n = 0;
+      for (final p in placed) {
+        if (p.$1 == x && p.$2 == y) n++;
+      }
+      return n;
+    }
+
+    List<({int x, int y, int kind, int support})> junctionsFor(int x, int y) {
+      final out = <({int x, int y, int kind, int support})>[];
+      void add(int jx, int jy, int kind, List<(int, int)> supportCells) {
+        if (jx < 0 || jy < 0 || jx > playfieldMaxX || jy > playfieldMaxY) {
+          return;
+        }
+        var support = 0;
+        for (final cell in supportCells) {
+          support += heights[cell] ?? 0;
+        }
+        out.add((x: jx, y: jy, kind: kind, support: support));
+      }
+
+      if (has(x + 2, y) && has(x, y + 2) && has(x + 2, y + 2)) {
+        add(x + 1, y + 1, 3, [(x, y), (x + 2, y), (x, y + 2), (x + 2, y + 2)]);
+      }
+      if (has(x - 2, y) && has(x, y + 2) && has(x - 2, y + 2)) {
+        add(x - 1, y + 1, 3, [(x - 2, y), (x, y), (x - 2, y + 2), (x, y + 2)]);
+      }
+      if (has(x + 2, y) && has(x, y - 2) && has(x + 2, y - 2)) {
+        add(x + 1, y - 1, 3, [(x, y - 2), (x + 2, y - 2), (x, y), (x + 2, y)]);
+      }
+      if (has(x - 2, y) && has(x, y - 2) && has(x - 2, y - 2)) {
+        add(x - 1, y - 1, 3, [(x - 2, y - 2), (x, y - 2), (x - 2, y), (x, y)]);
+      }
+      if (has(x + 2, y)) {
+        add(x + 1, y, 2, [(x, y), (x + 2, y)]);
+      }
+      if (has(x - 2, y)) {
+        add(x - 1, y, 2, [(x - 2, y), (x, y)]);
+      }
+      if (has(x, y + 2)) {
+        add(x, y + 1, 1, [(x, y), (x, y + 2)]);
+      }
+      if (has(x, y - 2)) {
+        add(x, y - 1, 1, [(x, y - 2), (x, y)]);
+      }
+      return out;
+    }
+
+    final jobs = <(int, int)>[];
+    final tallestFirst = [...cells]
+      ..sort((a, b) {
+        final dh = (heights[b] ?? 0).compareTo(heights[a] ?? 0);
+        if (dh != 0) return dh;
+        final dy = a.$2.compareTo(b.$2);
+        if (dy != 0) return dy;
+        return a.$1.compareTo(b.$1);
+      });
+    for (final cell in tallestFirst) {
+      final extras = (heights[cell] ?? 1) - 1;
+      for (var i = 0; i < extras; i++) {
+        jobs.add(cell);
+      }
+    }
+
+    for (final cell in jobs) {
+      final options = junctionsFor(cell.$1, cell.$2);
+      if (options.isEmpty) {
+        placed.add(_p(cell.$1, cell.$2, layerAt(cell.$1, cell.$2)));
+        continue;
+      }
+      options.sort((a, b) {
+        final cmpCaps = capsAt(a.x, a.y).compareTo(capsAt(b.x, b.y));
+        if (cmpCaps != 0) return cmpCaps;
+        final cmpKind = b.kind.compareTo(a.kind);
+        if (cmpKind != 0) return cmpKind;
+        final cmpSup = b.support.compareTo(a.support);
+        if (cmpSup != 0) return cmpSup;
+        final cmpY = a.y.compareTo(b.y);
+        if (cmpY != 0) return cmpY;
+        return a.x.compareTo(b.x);
+      });
+      final best = options.first;
+      placed.add(_p(best.x, best.y, layerAt(best.x, best.y)));
+    }
+
+    assert(placed.length == stacks.length);
+    return placed;
+  }
+
   static int tileCount(String name) => byName(name).length;
 }
 
@@ -420,10 +578,6 @@ class TileSymbols {
   TileSymbols._();
 
   static List<String> get iconIds => TileIcons.ids;
-
-  static const backgroundAsset = 'assets/pack/bg/background_green.png';
-  static const leafBedAsset = 'assets/pack/bg/leaf_bed.png';
-  static const shadowAsset = 'assets/pack/mixed/extra/shadow.png';
 
   static String assetFor(String symbol, {bool selected = false}) {
     return TileIcons.assetFor(symbol);

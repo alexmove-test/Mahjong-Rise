@@ -103,7 +103,64 @@ void main() {
     expect(LeaderboardService.plotsOpened(240), 10);
   });
 
-  test('one table failing does not wipe the other', () async {
+  test('nearbyOthers takes ranks around the current player', () {
+    LeaderboardEntry row({
+      required String id,
+      required int rating,
+      bool me = false,
+    }) {
+      return LeaderboardEntry(
+        id: id,
+        name: id,
+        rating: rating,
+        totalStars: rating,
+        levelsUnlocked: rating,
+        isCurrentPlayer: me,
+      );
+    }
+
+    final top = [
+      row(id: 'me', rating: 500, me: true),
+      row(id: 'a', rating: 400),
+      row(id: 'b', rating: 300),
+      row(id: 'c', rating: 200),
+      row(id: 'd', rating: 100),
+    ];
+    expect(LeaderboardService.nearbyOthers(top).map((e) => e.id).toList(), [
+      'a',
+      'b',
+      'c',
+      'd',
+    ]);
+
+    final mid = [
+      row(id: 'a', rating: 500),
+      row(id: 'b', rating: 400),
+      row(id: 'me', rating: 300, me: true),
+      row(id: 'c', rating: 200),
+      row(id: 'd', rating: 100),
+    ];
+    expect(LeaderboardService.nearbyOthers(mid).map((e) => e.id).toList(), [
+      'b',
+      'c',
+      'a',
+      'd',
+    ]);
+
+    final last = [
+      row(id: 'a', rating: 400),
+      row(id: 'b', rating: 300),
+      row(id: 'c', rating: 200),
+      row(id: 'me', rating: 100, me: true),
+    ];
+    expect(LeaderboardService.nearbyOthers(last).map((e) => e.id).toList(), [
+      'c',
+      'b',
+      'a',
+    ]);
+  });
+
+  test('a failed fetch keeps the local fallback', () async {
     const me = LeaderboardEntry(
       id: 'me',
       name: 'Me',
@@ -112,28 +169,20 @@ void main() {
       levelsUnlocked: 1,
       isCurrentPlayer: true,
     );
-    const localWeek = LeaderboardEntry(
-      id: 'local-player',
-      name: 'Me',
-      rating: 0,
-      totalStars: 0,
-      levelsUnlocked: 0,
-      isCurrentPlayer: true,
-    );
 
     final all = await LeaderboardFetch.guard(
       load: () async => [me],
       fallback: () => const [],
     );
-    final week = await LeaderboardFetch.guard(
+    final down = await LeaderboardFetch.guard(
       load: () async => throw Exception('permission-denied'),
-      fallback: () => const [localWeek],
+      fallback: () => const [me],
     );
 
     expect(all.online, isTrue);
     expect(all.entries, [me]);
-    expect(week.online, isFalse);
-    expect(week.entries, [localWeek]);
+    expect(down.online, isFalse);
+    expect(down.entries, [me]);
   });
 
   test('ranking names stay within Firestore limit', () {

@@ -10,7 +10,7 @@ class FirstTableCoach {
   bool finished = false;
   TableCoachStep step = TableCoachStep.tapFree;
 
-  static const tapFreeText = 'Take only a free top tile';
+  static const tapFreeText = 'Take a free tile — open on top and one side';
   static const matchPairText = 'A pair in the tray clears';
   static const trayLimitText =
       'The tray holds 4 — fill it with no pair and you lose';
@@ -33,7 +33,7 @@ class FirstTableCoach {
         free.sort((a, b) => b.layer.compareTo(a.layer));
         return {free.first.id};
       case TableCoachStep.matchPair:
-        final hint = board.findHint();
+        final hint = board.findPlayableHint();
         if (hint == null) return {};
         return {hint.boardTile.id, hint.match.id};
       case TableCoachStep.trayLimit:

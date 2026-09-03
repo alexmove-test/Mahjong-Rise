@@ -1,4 +1,4 @@
-/// Очки активности текущей ISO-недели. Формула совпадает с `firestore.rules`.
+/// Очки активности текущей ISO-недели (квесты и шит «сезон закрыт»).
 abstract final class WeeklyScore {
   WeeklyScore._();
 
@@ -11,7 +11,9 @@ abstract final class WeeklyScore {
   static const maxDailies = 7;
 
   static const maxRating =
-      maxStars * starWeight + maxClears * clearWeight + maxDailies * dailyWeight;
+      maxStars * starWeight +
+      maxClears * clearWeight +
+      maxDailies * dailyWeight;
 
   static int ratingFrom({
     required int weeklyStars,

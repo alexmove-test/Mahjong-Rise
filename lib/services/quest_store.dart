@@ -82,8 +82,8 @@ class QuestStore {
     }
   }
 
-  Future<void> creditDailyWin({required int streak}) async {
-    await ensureWeek();
+  Future<void> creditDailyWin({required int streak, DateTime? now}) async {
+    await ensureWeek(now);
     await _add(QuestKind.dailyWins, 1);
     await _setAtLeast(QuestKind.streakHold, streak);
   }

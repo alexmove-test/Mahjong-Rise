@@ -50,11 +50,11 @@ void main() {
     await quests.ensureWeek(DateTime(2026, 8, 24));
 
     await progress.recordDailyWin(now: DateTime(2026, 8, 24));
-    await quests.creditDailyWin(streak: 1);
+    await quests.creditDailyWin(streak: 1, now: DateTime(2026, 8, 24));
     await progress.recordDailyWin(now: DateTime(2026, 8, 25));
-    await quests.creditDailyWin(streak: 2);
+    await quests.creditDailyWin(streak: 2, now: DateTime(2026, 8, 25));
     await progress.recordDailyWin(now: DateTime(2026, 8, 26));
-    await quests.creditDailyWin(streak: 3);
+    await quests.creditDailyWin(streak: 3, now: DateTime(2026, 8, 26));
 
     expect(progress.weeklyDailies, 3);
 
@@ -62,9 +62,11 @@ void main() {
       if (quest.def.kind == QuestKind.dailyWins && quest.def.target <= 3) {
         expect(quest.complete, isTrue);
         expect(quest.canClaim, isTrue);
+        final hintsBefore = progress.bankedHints;
+        final shufflesBefore = progress.bankedShuffles;
         expect(await quests.claim(quest.def.id, progress), isTrue);
-        expect(progress.bankedHints, 1);
-        expect(progress.bankedShuffles, 1);
+        expect(progress.bankedHints, hintsBefore + 1);
+        expect(progress.bankedShuffles, shufflesBefore + 1);
         expect(await quests.claim(quest.def.id, progress), isFalse);
       }
       if (quest.def.kind == QuestKind.streakHold && quest.def.target <= 3) {
@@ -77,7 +79,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final quests = await QuestStore.open();
     await quests.ensureWeek(DateTime(2026, 8, 24));
-    await quests.creditDailyWin(streak: 1);
+    await quests.creditDailyWin(streak: 1, now: DateTime(2026, 8, 24));
     expect(quests.quests.any((q) => q.current > 0), isTrue);
 
     await quests.ensureWeek(DateTime(2026, 8, 31));

@@ -15,6 +15,12 @@ import 'services/haptic_controller.dart';
 import 'services/haptic_store.dart';
 import 'services/locale_store.dart';
 import 'services/local_reminder_service.dart';
+import 'services/locked_tile_dim_controller.dart';
+import 'services/locked_tile_dim_store.dart';
+import 'services/music_controller.dart';
+import 'services/music_store.dart';
+import 'services/q_mode_controller.dart';
+import 'services/q_mode_store.dart';
 import 'services/sfx_controller.dart';
 import 'services/sfx_store.dart';
 
@@ -92,6 +98,9 @@ class _MahjongAppState extends State<MahjongApp> with WidgetsBindingObserver {
   late final LocaleController _controller;
   late final HapticController _haptic;
   late final SfxController _sfx;
+  late final MusicController _music;
+  late final QModeController _qMode;
+  late final LockedTileDimController _lockedDim;
 
   @override
   void initState() {
@@ -103,7 +112,11 @@ class _MahjongAppState extends State<MahjongApp> with WidgetsBindingObserver {
     );
     _haptic = HapticController(HapticStore.memory());
     _sfx = SfxController(SfxStore.memory());
+    _music = MusicController(MusicStore.memory());
+    _qMode = QModeController(QModeStore.memory());
+    _lockedDim = LockedTileDimController(LockedTileDimStore.memory());
     _controller.addListener(_onLocale);
+    unawaited(_music.init());
     unawaited(_hydratePrefs());
   }
 
@@ -111,10 +124,16 @@ class _MahjongAppState extends State<MahjongApp> with WidgetsBindingObserver {
     final localeStore = await LocaleStore.open();
     final hapticStore = await HapticStore.open();
     final sfxStore = await SfxStore.open();
+    final musicStore = await MusicStore.open();
+    final qModeStore = await QModeStore.open();
+    final lockedDimStore = await LockedTileDimStore.open();
     if (!mounted) return;
     _controller.attachStore(localeStore);
     _haptic.attachStore(hapticStore);
     _sfx.attachStore(sfxStore);
+    _music.attachStore(musicStore);
+    _qMode.attachStore(qModeStore);
+    _lockedDim.attachStore(lockedDimStore);
   }
 
   void _onLocale() {
@@ -135,7 +154,23 @@ class _MahjongAppState extends State<MahjongApp> with WidgetsBindingObserver {
     _controller.dispose();
     _haptic.dispose();
     _sfx.dispose();
+    _music.dispose();
+    _qMode.dispose();
+    _lockedDim.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _music.resumeFromBackground();
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+        _music.pauseForBackground();
+    }
   }
 
   @override
@@ -146,26 +181,35 @@ class _MahjongAppState extends State<MahjongApp> with WidgetsBindingObserver {
         controller: _haptic,
         child: SfxScope(
           controller: _sfx,
-          child: MaterialApp(
-            title: 'Mahjong Rise',
-            locale: _controller.locale,
-            supportedLocales: const [Locale('en'), Locale('ru')],
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            localeResolutionCallback: (_, _) => _controller.locale,
-            debugShowCheckedModeBanner: false,
-            theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFF2F6B4F),
-                brightness: Brightness.dark,
+          child: MusicScope(
+            controller: _music,
+            child: QModeScope(
+              controller: _qMode,
+              child: LockedTileDimScope(
+                controller: _lockedDim,
+                child: MaterialApp(
+                  title: 'Mahjong Rise',
+                  locale: _controller.locale,
+                  supportedLocales: const [Locale('en'), Locale('ru')],
+                  localizationsDelegates: const [
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                  ],
+                  localeResolutionCallback: (_, _) => _controller.locale,
+                  debugShowCheckedModeBanner: false,
+                  theme: ThemeData(
+                    colorScheme: ColorScheme.fromSeed(
+                      seedColor: const Color(0xFF2F6B4F),
+                      brightness: Brightness.dark,
+                    ),
+                    useMaterial3: true,
+                    fontFamily: 'Segoe UI',
+                  ),
+                  home: const LevelSelectScreen(),
+                ),
               ),
-              useMaterial3: true,
-              fontFamily: 'Segoe UI',
             ),
-            home: const LevelSelectScreen(),
           ),
         ),
       ),

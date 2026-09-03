@@ -80,6 +80,32 @@ class LeaderboardService {
   static int plotsOpened(int levelsUnlocked) =>
       Levels.cycleOf(levelsUnlocked) + 1;
 
+  /// Соседи вокруг текущего игрока в уже отсортированной таблице.
+  static List<LeaderboardEntry> nearbyOthers(
+    List<LeaderboardEntry> entries, {
+    int count = 4,
+  }) {
+    if (count <= 0) return const [];
+    final me = entries.indexWhere((entry) => entry.isCurrentPlayer);
+    if (me < 0) {
+      return entries
+          .where((entry) => !entry.isCurrentPlayer)
+          .take(count)
+          .toList();
+    }
+
+    final picked = <LeaderboardEntry>[];
+    for (var radius = 1; picked.length < count; radius++) {
+      final above = me - radius;
+      final below = me + radius;
+      if (above < 0 && below >= entries.length) break;
+      if (above >= 0) picked.add(entries[above]);
+      if (picked.length >= count) break;
+      if (below < entries.length) picked.add(entries[below]);
+    }
+    return picked;
+  }
+
   static int? rankOf(List<LeaderboardEntry> entries) {
     final index = entries.indexWhere((e) => e.isCurrentPlayer);
     if (index < 0) return null;

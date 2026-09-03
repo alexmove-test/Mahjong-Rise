@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mahjong/models/board.dart';
 import 'package:mahjong/models/game_snapshot.dart';
+import 'package:mahjong/models/levels.dart';
+import 'package:mahjong/models/plot_kind.dart';
 import 'package:mahjong/models/tile.dart';
 import 'package:mahjong/services/progress_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +15,7 @@ void main() {
     final store = await ProgressStore.open();
     expect(store.hasCompletedAny, isFalse);
     expect(store.tableCoachDone, isFalse);
+    expect(store.courtyardPanHintDone, isFalse);
     expect(store.maxUnlocked, 1);
   });
 
@@ -33,21 +36,78 @@ void main() {
     expect(store.tableCoachDone, isTrue);
   });
 
-  test('cycle helpers follow the current plot not the whole campaign', () async {
+  test('courtyard pan hint starts unseen and persists after mark', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = await ProgressStore.open();
+    expect(store.courtyardPanHintDone, isFalse);
+    await store.markCourtyardPanHintDone();
+    expect(store.courtyardPanHintDone, isTrue);
+  });
+
+  test('campaign wins grow plots in house-pond-guest-pets order', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = await ProgressStore.open();
+    expect(store.activePlotKind, PlotKind.house);
+    expect(store.plotReached(PlotKind.house), isTrue);
+    expect(store.plotReached(PlotKind.pond), isFalse);
+
+    final first = Levels.byId(1);
+    await store.recordWin(level: first, score: first.starsThresholds.$1);
+    expect(store.maxUnlocked, 2);
+    expect(store.plotStage(PlotKind.house), 1);
+    expect(store.activePlotKind, PlotKind.house);
+  });
+
+  test('manual plot stays the build target until the next switch', () async {
     SharedPreferences.setMockInitialValues({
-      'progress.maxUnlocked': 25,
+      'progress.maxUnlocked': 3,
       'progress.stars.1': 1,
-      'progress.stars.24': 2,
-      'progress.best.24': 900,
+      'progress.stars.2': 1,
     });
     final store = await ProgressStore.open();
-    expect(store.isCycleComplete(0), isTrue);
-    expect(store.isCycleUnlocked(1), isTrue);
-    expect(store.unlockedInCycle(0), 24);
-    expect(store.unlockedInCycle(1), 1);
-    expect(store.starsInCycle(0), 3);
-    expect(store.starsInCycle(1), 0);
+    expect(store.plotStage(PlotKind.house), 2);
+    expect(store.plotReached(PlotKind.pond), isFalse);
+
+    await store.selectPlot(PlotKind.pond);
+    expect(store.isPlotPinned, isTrue);
+    expect(store.activePlotKind, PlotKind.pond);
+    expect(store.plotReached(PlotKind.pond), isTrue);
+    expect(store.plotStage(PlotKind.house), 2);
+    expect(store.plotStage(PlotKind.pond), 0);
+
+    final level = Levels.byId(3);
+    await store.recordWin(level: level, score: level.starsThresholds.$1);
+    expect(store.plotStage(PlotKind.house), 2);
+    expect(store.plotStage(PlotKind.pond), 1);
+    expect(store.activePlotKind, PlotKind.pond);
+
+    await store.selectPlot(PlotKind.guest);
+    expect(store.activePlotKind, PlotKind.guest);
+    final next = Levels.byId(4);
+    await store.recordWin(level: next, score: next.starsThresholds.$1);
+    expect(store.plotStage(PlotKind.pond), 1);
+    expect(store.plotStage(PlotKind.guest), 1);
+    expect(store.plotStage(PlotKind.house), 2);
   });
+
+  test(
+    'cycle helpers follow the current plot not the whole campaign',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'progress.maxUnlocked': 25,
+        'progress.stars.1': 1,
+        'progress.stars.24': 2,
+        'progress.best.24': 900,
+      });
+      final store = await ProgressStore.open();
+      expect(store.isCycleComplete(0), isTrue);
+      expect(store.isCycleUnlocked(1), isTrue);
+      expect(store.unlockedInCycle(0), 24);
+      expect(store.unlockedInCycle(1), 1);
+      expect(store.starsInCycle(0), 3);
+      expect(store.starsInCycle(1), 0);
+    },
+  );
 
   test('snapshot round-trips through prefs', () async {
     SharedPreferences.setMockInitialValues({});
@@ -153,6 +213,20 @@ void main() {
     expect(spent.shuffles, 2);
     expect(store.bankedHints, 0);
     expect(store.bankedShuffles, 0);
+  });
+
+  test('hint balance survives across campaign levels', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = await ProgressStore.open();
+    expect(store.hasHintBalance, isFalse);
+
+    await store.setHintBalance(3);
+    expect(store.hasHintBalance, isTrue);
+    expect(store.hintBalance, 3);
+
+    await store.addBankedBoosts(hints: 2);
+    expect(store.hintBalance, 5);
+    expect(store.bankedHints, 0);
   });
 }
 

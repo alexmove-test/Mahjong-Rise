@@ -6,17 +6,42 @@ enum PetNeed { hunger, play, rest }
 enum PetMood { content, asking, starving }
 
 class PetDef {
-  const PetDef({required this.kind, required this.symbol});
+  const PetDef({
+    required this.kind,
+    required this.symbol,
+    required this.portrait,
+  });
 
   final PetKind kind;
   final String symbol;
+  final String portrait;
 
   static const all = [
-    PetDef(kind: PetKind.cat, symbol: 'animal-01'),
-    PetDef(kind: PetKind.dog, symbol: 'animal-02'),
-    PetDef(kind: PetKind.raccoon, symbol: 'animal-12'),
-    PetDef(kind: PetKind.hamster, symbol: 'animal-07'),
-    PetDef(kind: PetKind.fox, symbol: 'animal-16'),
+    PetDef(
+      kind: PetKind.cat,
+      symbol: 'animal-01',
+      portrait: 'assets/pets/cat.png',
+    ),
+    PetDef(
+      kind: PetKind.dog,
+      symbol: 'animal-02',
+      portrait: 'assets/pets/dog.png',
+    ),
+    PetDef(
+      kind: PetKind.raccoon,
+      symbol: 'animal-12',
+      portrait: 'assets/pets/raccoon.png',
+    ),
+    PetDef(
+      kind: PetKind.hamster,
+      symbol: 'animal-07',
+      portrait: 'assets/pets/hamster.png',
+    ),
+    PetDef(
+      kind: PetKind.fox,
+      symbol: 'animal-16',
+      portrait: 'assets/pets/fox.png',
+    ),
   ];
 
   static PetDef of(PetKind kind) => all.firstWhere((d) => d.kind == kind);

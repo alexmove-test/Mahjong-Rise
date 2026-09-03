@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../debug_agent_log.dart';
+import '../l10n/l10n.dart';
 import '../models/tile.dart';
+import '../services/locked_tile_dim_controller.dart';
 import '../utils/tile_pyramid_position.dart';
 import 'match_particles.dart';
 import 'tile_canvas.dart';
@@ -216,7 +218,9 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
     final isRemoving = widget.isRemoving;
     final showBack = widget.showBack;
 
-    final locked = !widget.isFree && !widget.isSelected;
+    final covered = !widget.isFree && !widget.isSelected;
+    final dimCovered = LockedTileDimScope.maybeOf(context)?.enabled ?? false;
+    final locked = dimCovered && covered;
     final lifted = widget.isFree || widget.isSelected;
 
     final selectScale = (widget.isSelected || widget.isHinted) ? 1.05 : 1.0;
@@ -267,7 +271,7 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
           'assetH': 709,
           'engrave': 'raw-color',
           'kIsWeb': kIsWeb,
-          'renderer': 'canvas-drawTile',
+          'renderer': 'png-tile-base',
         },
       );
     }
@@ -284,10 +288,7 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
               fit: StackFit.expand,
               clipBehavior: Clip.none,
               children: [
-                TilePyramidShadowLayer(
-                  visuals: pyramid,
-                  tileSize: tileSize,
-                ),
+                TilePyramidShadowLayer(visuals: pyramid, tileSize: tileSize),
                 Positioned.fill(
                   child: AnimatedBuilder(
                     animation: _shuffleFlip,
@@ -298,25 +299,34 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
                         fit: StackFit.expand,
                         clipBehavior: Clip.none,
                         children: [
-                          CustomPaint(
+                          TileBodySprite(
                             size: tileSize,
-                            painter: TileFacePainter(
-                              locked: locked,
-                              lifted: lifted,
-                              isSelected: widget.isSelected,
-                              isSpecial: special,
-                              specialSeed: shown.hashCode,
-                              symbol: shown,
-                            ),
+                            locked: locked,
+                            lifted: lifted,
+                            isSelected: widget.isSelected,
+                            isSpecial: special,
+                            specialSeed: shown.hashCode,
+                            symbol: shown,
                           ),
-                          if (!special && !TileGlyph.paints(shown))
+                          if (special || TileGlyph.paints(shown))
+                            CustomPaint(
+                              size: tileSize,
+                              painter: TileOverlayArtPainter(
+                                locked: locked,
+                                isSelected: widget.isSelected,
+                                isSpecial: special,
+                                specialSeed: shown.hashCode,
+                                symbol: shown,
+                              ),
+                            )
+                          else
                             Positioned(
                               left: symbolRect.left,
                               top: symbolRect.top,
                               width: symbolRect.width,
                               height: symbolRect.height,
                               child: Opacity(
-                                opacity: lifted ? 1.0 : 0.72,
+                                opacity: locked ? 0.72 : 1.0,
                                 child: _EngravedFace(symbol: shown),
                               ),
                             ),
@@ -366,10 +376,7 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
             : TileWidget.selectDuration,
         curve: isRemoving ? Curves.easeOut : Curves.easeOut,
         child: AnimatedSlide(
-          offset: Offset(
-            0,
-            isRemoving ? 0.22 : selectLift / height,
-          ),
+          offset: Offset(0, isRemoving ? 0.22 : selectLift / height),
           duration: isRemoving
               ? TileWidget.removeSlideDuration
               : TileWidget.selectDuration,
@@ -385,7 +392,8 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
               final lift = -12.0 * bounce;
               final tilt = bounce * 0.14 * (widget.tile.id.isEven ? 1.0 : -1.0);
               final pop = 1.0 + 0.07 * bounce;
-              final tapPop = 1.0 +
+              final tapPop =
+                  1.0 +
                   (TileWidget.tapPopPeak - 1.0) *
                       math.sin(_pop.value * math.pi);
               return Transform(
@@ -443,8 +451,23 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
     );
 
     final shuffling = _shuffleFlip.isAnimating;
+    final l10n = L10n.of(context);
+    final semantic = Semantics(
+      container: true,
+      button: widget.onTap != null,
+      enabled: widget.onTap != null,
+      selected: widget.isHinted || widget.isSelected,
+      label: l10n.tileSemanticLabel(
+        symbol: tile.symbol,
+        free: widget.isFree,
+        hinted: widget.isHinted || widget.isSelected,
+        inTray: widget.compact,
+        removing: isRemoving,
+      ),
+      child: body,
+    );
     if (widget.onTap == null) {
-      return IgnorePointer(ignoring: isRemoving || shuffling, child: body);
+      return IgnorePointer(ignoring: isRemoving || shuffling, child: semantic);
     }
 
     return IgnorePointer(
@@ -462,7 +485,7 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
               : Rect.zero;
           widget.onTap?.call(rect);
         },
-        child: body,
+        child: semantic,
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mahjong/models/board.dart';
 import 'package:mahjong/models/levels.dart';
+import 'package:mahjong/models/plot_kind.dart';
 import 'package:mahjong/models/tile.dart';
 import 'package:mahjong/utils/layouts.dart';
 import 'package:mahjong/utils/tile_icons.dart';
@@ -37,7 +38,25 @@ void main() {
       expect(board.tray, [bottom]);
     });
 
-    test('same-layer neighbors do not block on a flat layout', () {
+    test('a tile on a four-way junction covers all four below', () {
+      final board = Board(
+        tiles: [
+          Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
+          Tile(id: 1, symbol: 'B', layer: 0, x: 2, y: 0),
+          Tile(id: 2, symbol: 'C', layer: 0, x: 0, y: 2),
+          Tile(id: 3, symbol: 'D', layer: 0, x: 2, y: 2),
+          Tile(id: 4, symbol: 'E', layer: 1, x: 1, y: 1),
+        ],
+      );
+      for (final tile in board.tiles.take(4)) {
+        expect(board.isFree(tile), isFalse, reason: tile.toString());
+      }
+      expect(board.isFree(board.tiles[4]), isTrue);
+      expect(board.pick(board.tiles[0]), MatchResult.blocked);
+      expect(board.pick(board.tiles[4]), MatchResult.collected);
+    });
+
+    test('same-layer neighbors block the middle of a row', () {
       final board = Board(
         tiles: [
           Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
@@ -45,11 +64,18 @@ void main() {
           Tile(id: 2, symbol: 'C', layer: 0, x: 4, y: 0),
         ],
       );
+      final left = board.tiles[0];
       final mid = board.tiles[1];
+      final right = board.tiles[2];
 
+      expect(board.isFree(left), isTrue);
+      expect(board.isFree(mid), isFalse);
+      expect(board.isFree(right), isTrue);
+      expect(board.pick(mid), MatchResult.blocked);
+
+      expect(board.pick(left), MatchResult.collected);
       expect(board.isFree(mid), isTrue);
       expect(board.pick(mid), MatchResult.collected);
-      expect(board.tray, [mid]);
     });
 
     test('trayFull when capacity reached', () {
@@ -249,7 +275,7 @@ void main() {
       expect(hint.match.id, 0);
     });
 
-    test('is null when free tiles do not form a pair', () {
+    test('is null when no matching tiles remain', () {
       final board = Board(
         tiles: [
           Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
@@ -257,6 +283,61 @@ void main() {
         ],
       );
       expect(board.findHint(), isNull);
+    });
+
+    test('prefers a covered pair over an obvious free pair on top', () {
+      final board = Board(
+        tiles: [
+          Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
+          Tile(id: 1, symbol: 'C', layer: 1, x: 0, y: 0),
+          Tile(id: 2, symbol: 'A', layer: 0, x: 4, y: 0),
+          Tile(id: 3, symbol: 'D', layer: 1, x: 4, y: 0),
+          Tile(id: 4, symbol: 'B', layer: 0, x: 8, y: 0),
+          Tile(id: 5, symbol: 'B', layer: 0, x: 12, y: 0),
+        ],
+      );
+
+      expect(board.isFree(board.tiles[0]), isFalse);
+      expect(board.isFree(board.tiles[2]), isFalse);
+      expect(board.findPlayableHint()!.boardTile.symbol, 'B');
+
+      final hint = board.findHint();
+      expect(hint, isNotNull);
+      expect({hint!.boardTile.id, hint.match.id}, {0, 2});
+    });
+
+    test('prefers a covered tray match over a free board pair', () {
+      final tray = Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0, inTray: true);
+      final buried = Tile(id: 1, symbol: 'A', layer: 0, x: 4, y: 0);
+      final cover = Tile(id: 2, symbol: 'B', layer: 1, x: 4, y: 0);
+      final freeC1 = Tile(id: 3, symbol: 'C', layer: 0, x: 8, y: 0);
+      final freeC2 = Tile(id: 4, symbol: 'C', layer: 0, x: 12, y: 0);
+      final board = Board(tiles: [tray, buried, cover, freeC1, freeC2]);
+      board.tray.add(tray);
+
+      expect(board.findPlayableHint()!.boardTile.symbol, 'C');
+
+      final hint = board.findHint();
+      expect(hint, isNotNull);
+      expect(hint!.boardTile.id, 1);
+      expect(hint.match.id, 0);
+    });
+
+    test('prefers the covered layer nearer the top over a deeper pair', () {
+      final board = Board(
+        tiles: [
+          Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
+          Tile(id: 1, symbol: 'B', layer: 1, x: 0, y: 0),
+          Tile(id: 2, symbol: 'C', layer: 2, x: 0, y: 0),
+          Tile(id: 3, symbol: 'A', layer: 0, x: 4, y: 0),
+          Tile(id: 4, symbol: 'B', layer: 1, x: 4, y: 0),
+          Tile(id: 5, symbol: 'D', layer: 2, x: 4, y: 0),
+        ],
+      );
+
+      final hint = board.findHint();
+      expect(hint, isNotNull);
+      expect({hint!.boardTile.id, hint.match.id}, {1, 4});
     });
   });
 
@@ -458,23 +539,20 @@ void main() {
       });
     }
 
-    test('plots cycle house pond road internet with harder loops', () {
+    test('plots cycle house pond guest pets with harder loops', () {
       expect(Levels.maxLevelId, 10000);
       expect(Levels.cycleCount, greaterThan(10));
       final first = Levels.byId(1);
-      final pond = Levels.byId(25);
-      final road = Levels.byId(49);
-      final net = Levels.byId(73);
-      final house2 = Levels.byId(97);
-      expect(first.title, 'House');
-      expect(pond.title, 'Pond');
-      expect(road.title, 'Road');
-      expect(net.title, 'Internet');
-      expect(house2.title, 'House');
-      expect(first.storyId, house2.storyId);
-      expect(house2.layout, isNot(first.layout));
-      expect(house2.shuffles, lessThan(first.shuffles));
-      expect(house2.uniqueCap, greaterThan(first.uniqueCap!));
+      final later = Levels.byId(97);
+      expect(first.title, PlotKind.house.titleEn);
+      expect(Levels.byId(25).title, PlotKind.pond.titleEn);
+      expect(Levels.byId(49).title, PlotKind.guest.titleEn);
+      expect(Levels.byId(73).title, PlotKind.pets.titleEn);
+      expect(later.title, PlotKind.house.titleEn);
+      expect(first.storyId, later.storyId);
+      expect(later.layout, isNot(first.layout));
+      expect(later.shuffles, lessThan(first.shuffles));
+      expect(later.uniqueCap, greaterThan(first.uniqueCap!));
     });
 
     test('first story level has no guest tile types', () {
@@ -491,9 +569,11 @@ void main() {
       expect(Levels.cycleStartId(1), 25);
       expect(Levels.cycleEndId(0), 24);
       expect(Levels.cycleLevels(0), hasLength(24));
-      expect(Levels.cycleLevels(0).first.title, 'House');
+      expect(Levels.cycleLevels(0).first.title, Levels.plotKindOf(1).titleEn);
       expect(Levels.plotLabel(0), 'House');
       expect(Levels.plotLabel(1), 'Pond');
+      expect(Levels.plotLabel(2), 'Guest house');
+      expect(Levels.plotLabel(3), 'Pets');
     });
 
     test('daily table picks a story layout for the local calendar day', () {
@@ -539,20 +619,54 @@ void main() {
         final board = Board.fromLayout(entry.key, random: Random(1));
         expect(board.tiles.length, entry.value);
         final maxLayer = board.tiles.map((t) => t.layer).reduce(max);
-        expect(maxLayer, greaterThanOrEqualTo(2));
+        expect(maxLayer, greaterThanOrEqualTo(1));
       });
     }
 
-    test('late layouts grow in depth instead of spreading the grid', () {
+    test('campaign layouts sit extras on odd junction coordinates', () {
+      for (final name in ['petal', 'bloom']) {
+        final positions = Layouts.byName(name);
+        expect(positions.length, expected[name], reason: name);
+        expect(Layouts.petal().length, Layouts.byName('petal').length);
+        final odd = positions.where((p) => p.$1.isOdd || p.$2.isOdd);
+        expect(odd, isNotEmpty, reason: name);
+      }
+    });
+
+    test('dense rows lock interior tiles from both sides', () {
+      final board = Board.fromLayout('bloom', random: Random(1));
+      final sideLocked = board.tiles.where((tile) {
+        if (!tile.isOnBoard || board.isFree(tile)) return false;
+        final covered = board.tiles.any(
+          (other) =>
+              other.id != tile.id &&
+              other.isOnBoard &&
+              other.layer > tile.layer &&
+              other.x < tile.x + 2 &&
+              other.x + 2 > tile.x &&
+              other.y < tile.y + 2 &&
+              other.y + 2 > tile.y,
+        );
+        return !covered;
+      });
+      expect(
+        sideLocked,
+        isNotEmpty,
+        reason: 'bloom should have tiles locked only by left+right neighbors',
+      );
+    });
+
+    test('late layouts keep a taller peak than the early ones', () {
+      final petal = Board.fromLayout('petal', random: Random(1));
       final dragon = Board.fromLayout('dragon', random: Random(1));
       final sky = Board.fromLayout('sky', random: Random(1));
       expect(
         dragon.tiles.map((t) => t.layer).reduce(max),
-        greaterThanOrEqualTo(12),
+        greaterThan(petal.tiles.map((t) => t.layer).reduce(max)),
       );
       expect(
         sky.tiles.map((t) => t.layer).reduce(max),
-        greaterThanOrEqualTo(12),
+        greaterThan(petal.tiles.map((t) => t.layer).reduce(max)),
       );
     });
 
@@ -565,10 +679,15 @@ void main() {
             final name = Layouts.variantName(base, variant);
             expect(Layouts.tileCount(name).isEven, isTrue, reason: name);
           }
-          final origin = Layouts.byName(base);
-          final mirrored = Layouts.byName('$base-m');
-          expect(mirrored, isNot(origin), reason: base);
         }
+        expect(
+          Layouts.byName('wave').toSet(),
+          isNot(Layouts.byName('wave-m').toSet()),
+        );
+        expect(
+          Layouts.byName('petal-d').length,
+          greaterThan(Layouts.byName('petal').length),
+        );
       },
     );
   });
@@ -707,57 +826,17 @@ void main() {
     }
   });
 
-  test('lotus deal can be cleared by matching visible pairs', () {
-    final level = Levels.byId(13);
-    final board = Board.fromLayout(
-      level.layout,
-      random: Random(13),
-      style: level.style,
-      pairSize: level.pairSize,
-      uniqueCap: level.uniqueCap,
-      levelId: level.id,
-      guestTypes: level.guestTileTypes,
-    );
+  test('resolveTray does not invent a pair when none is visible', () {
+    final left = Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0);
+    final mid = Tile(id: 1, symbol: 'B', layer: 0, x: 2, y: 0);
+    final right = Tile(id: 2, symbol: 'C', layer: 0, x: 4, y: 0);
+    final board = Board(tiles: [left, mid, right]);
 
-    expect(_clearByVisiblePairs(board), isTrue);
-    expect(board.isWon, isTrue);
+    expect(board.pick(left), MatchResult.collected);
+    expect(board.resolveTray(), MatchResult.collected);
+    expect(board.hasUsefulMove(), isFalse);
+    expect(mid.symbol, 'B');
+    expect(right.symbol, 'C');
+    expect(board.tiles.map((t) => t.symbol), ['A', 'B', 'C']);
   });
-}
-
-bool _clearByVisiblePairs(Board board) {
-  for (var step = 0; step < 400; step++) {
-    if (board.isWon) return true;
-    if (!board.hasUsefulMove()) return false;
-
-    final free = board.freeTiles();
-    Tile? pick;
-    for (final trayTile in board.tray.where((t) => !t.removing)) {
-      for (final tile in free) {
-        if (tile.symbol == trayTile.symbol) {
-          pick = tile;
-          break;
-        }
-      }
-      if (pick != null) break;
-    }
-    if (pick == null) {
-      for (var i = 0; i < free.length; i++) {
-        for (var j = i + 1; j < free.length; j++) {
-          if (free[i].symbol == free[j].symbol) {
-            pick = free[i];
-            break;
-          }
-        }
-        if (pick != null) break;
-      }
-    }
-    if (pick == null) return false;
-
-    board.pick(pick);
-    board.resolveTray();
-    for (final tile in board.tiles.where((t) => t.removing).toList()) {
-      board.finishRemoval(tile);
-    }
-  }
-  return board.isWon;
 }

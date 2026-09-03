@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.2+93
+version: 1.0.2+146
 
 environment:
   sdk: ^3.12.2
@@ -95,13 +95,13 @@ flutter:
     - assets/felt.png
     - assets/sfx/
     - assets/sfx/praise/
+    - assets/music/
     - assets/titles/1/
     - assets/titles/soft/
     - assets/titles/animal/
     - assets/titles/art/
     - assets/titles/bamboo/
     - assets/titles/character/
-    - assets/titles/clown/
     - assets/titles/dot/
     - assets/titles/dragon/
     - assets/titles/emperor/
@@ -113,19 +113,14 @@ flutter:
     - assets/titles/queen/
     - assets/titles/season/
     - assets/titles/shape/
-    - assets/titles/tile/00/
-    - assets/titles/tile/01/
-    - assets/titles/tile/02/
-    - assets/titles/tile/03/
     - assets/titles/tile/04/
-    - assets/titles/tile/05/
     - assets/titles/wind/
-    - assets/courtyard/
-    - assets/courtyard/plot2/
-    - assets/courtyard/pond/
-    - assets/courtyard/road/
-    - assets/courtyard/internet/
-    - assets/courtyard/layers/
+    - assets/pets/
+    - assets/courtyard/world/
+    - assets/courtyard/builds/house/
+    - assets/courtyard/builds/pond/
+    - assets/courtyard/builds/pets/
+    - assets/courtyard/builds/internet/
     - assets/levels/
 
   # An image asset can refer to one or more resolution-specific "variants", see

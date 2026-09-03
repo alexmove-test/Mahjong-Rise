@@ -24,8 +24,6 @@ class GameSfx {
   final AudioPlayer _fanfare = AudioPlayer();
   bool _ready = false;
   int _next = 0;
-  int _collectIndex = 0;
-  static int _winIndex = 0;
 
   bool get _voicePlaying => _voice.state == PlayerState.playing;
 
@@ -115,13 +113,7 @@ class GameSfx {
   /// Плитка ушла в лоток.
   Future<void> collect() async {
     HapticGate.light();
-    final useBucket = _collectIndex.isOdd;
-    _collectIndex += 1;
-    if (useBucket) {
-      await _play('sfx/collect2.wav', volume: 0.8);
-    } else {
-      await _play('sfx/collect.wav', volume: 0.85);
-    }
+    await _play('sfx/collect.mp3', volume: 0.85);
   }
 
   static const _matchVolume = 0.82;
@@ -146,16 +138,13 @@ class GameSfx {
 
   Future<void> win() async {
     HapticGate.heavy();
-    final useAlt = _winIndex.isOdd;
-    _winIndex += 1;
     if (!_ready || !SfxGate.enabled) return;
     try {
       if (_fanfare.state == PlayerState.playing) {
         await _fanfare.stop();
       }
       if (!SfxGate.enabled) return;
-      final asset = useAlt ? 'sfx/win2.mp3' : 'sfx/win.mp3';
-      await _fanfare.play(AssetSource(asset), volume: 0.9);
+      await _fanfare.play(AssetSource('sfx/win.mp3'), volume: 0.9);
     } catch (_) {
       // На CI / без аудио-устройства — молча игнорируем.
     }

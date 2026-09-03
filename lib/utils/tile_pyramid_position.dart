@@ -190,7 +190,7 @@ extension TilePyramidLayerModifier on Widget {
           tileSize: tileSize,
         ),
         Positioned.fill(
-          child: CustomPaint(painter: const TileFacePainter(lifted: true)),
+          child: TileBodySprite(size: tileSize, lifted: true),
         ),
         this,
       ],

@@ -26,9 +26,8 @@ android/app/google-services.json
 
 ### Правила Firestore
 - Firebase Console → **Firestore** → **Rules**
-- Вставьте содержимое файла `firestore.rules` из корня репозитория **целиком** (и `leaderboard`, и `weekly/{weekId}/players`)
+- Вставьте содержимое файла `firestore.rules` из корня репозитория
 - Нажмите **Publish**, не Develop and test
-- После добавления недельного рейтинга правила нужно опубликовать **ещё раз** — иначе вкладка «This week» получит permission-denied
 
 Через CLI из корня репозитория:
 
@@ -57,7 +56,6 @@ flutter run
 1. Пройдите уровень — рейтинг отправится в Firestore после победы.
 2. Откройте **Общий рейтинг** на экране уровней.
 3. В Firebase Console → Firestore → коллекция `leaderboard` должны появиться документы.
-4. Недельный рейтинг пишется в `weekly/{weekId}/players/{uid}` (например `weekly/2026-W35/players/...`).
 
 ## Структура данных
 
@@ -76,12 +74,6 @@ flutter run
 
 ```
 rating = totalStars × 100 000 + sumBestScores + maxUnlocked × 500
-```
-
-Недельная таблица: `weekly/{weekId}/players/{uid}`
-
-```
-rating = weeklyStars × 10 000 + weeklyClears × 2 500 + weeklyDailies × 1 000
 ```
 
 ## Офлайн-режим

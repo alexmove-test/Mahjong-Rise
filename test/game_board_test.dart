@@ -7,6 +7,8 @@ import 'package:mahjong/models/game_snapshot.dart';
 import 'package:mahjong/models/levels.dart';
 import 'package:mahjong/models/tile.dart';
 import 'package:mahjong/screens/game_screen.dart';
+import 'package:mahjong/services/locked_tile_dim_controller.dart';
+import 'package:mahjong/services/locked_tile_dim_store.dart';
 import 'package:mahjong/services/progress_store.dart';
 import 'package:mahjong/utils/layouts.dart';
 import 'package:mahjong/utils/tile_pyramid_position.dart';
@@ -80,9 +82,8 @@ void main() {
     final fingerprints = <String>{};
     for (final level in Levels.all.take(Levels.storyLength)) {
       final positions = Layouts.byName(level.layout);
-      final cells = [
-        for (final p in positions) '${p.$1},${p.$2},${p.$3}',
-      ]..sort();
+      final cells = [for (final p in positions) '${p.$1},${p.$2},${p.$3}']
+        ..sort();
       expect(
         fingerprints.add(cells.join(';')),
         isTrue,
@@ -113,12 +114,7 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.byType(TileWidget), findsNWidgets(board.tiles.length));
-    expect(
-      tester
-          .widgetList<CustomPaint>(find.byType(CustomPaint))
-          .where((paint) => paint.painter is TileFacePainter),
-      isNotEmpty,
-    );
+    expect(find.byType(TileBodySprite), findsWidgets);
     expect(find.byType(TilePyramidShadowLayer), findsWidgets);
 
     for (final tile in tester.widgetList<TileWidget>(find.byType(TileWidget))) {
@@ -297,10 +293,7 @@ void main() {
       closeTo(TileCanvas.symbolFaceFraction, 0.01),
     );
     expect(symbol.center.dx, closeTo(face.center.dx, 0.01));
-    expect(
-      (size.width * TileCanvas.shadowOffsetXFactor),
-      closeTo(4.4, 0.1),
-    );
+    expect((size.width * TileCanvas.shadowOffsetXFactor), closeTo(4.4, 0.1));
     expect(TileCanvas.shadowOpacity, closeTo(0.34, 0.001));
   });
 
@@ -329,61 +322,62 @@ void main() {
     expect(TileGlyph.kindOf('set1-bamboo-03')?.rank, 3);
   });
 
-  testWidgets('TileWidget paints a locked bone darker than a free one', (
+  testWidgets('TileWidget does not gray covered tiles unless dimming is on', (
     tester,
   ) async {
     final free = Tile(id: 1, symbol: 'soft-01', layer: 1, x: 0, y: 0);
     final locked = Tile(id: 2, symbol: 'soft-01', layer: 0, x: 2, y: 0);
+    final dim = LockedTileDimController(LockedTileDimStore.memory());
 
-    await tester.pumpWidget(
-      MaterialApp(
+    Widget row() {
+      return MaterialApp(
         home: Scaffold(
-          body: Row(
-            children: [
-              TileWidget(
-                key: const Key('free'),
-                tile: free,
-                width: 64,
-                height: 74,
-                isSelected: false,
-                isFree: true,
-              ),
-              TileWidget(
-                key: const Key('locked'),
-                tile: locked,
-                width: 64,
-                height: 74,
-                isSelected: false,
-                isFree: false,
-              ),
-            ],
+          body: LockedTileDimScope(
+            controller: dim,
+            child: Row(
+              children: [
+                TileWidget(
+                  key: const Key('free'),
+                  tile: free,
+                  width: 64,
+                  height: 74,
+                  isSelected: false,
+                  isFree: true,
+                ),
+                TileWidget(
+                  key: const Key('locked'),
+                  tile: locked,
+                  width: 64,
+                  height: 74,
+                  isSelected: false,
+                  isFree: false,
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
+    }
 
-    expect(find.byType(TilePyramidShadowLayer), findsNWidgets(2));
-    expect(find.byType(TileSymbolImage), findsNWidgets(2));
+    await tester.pumpWidget(row());
 
-    TileFacePainter faceOf(Key key) {
-      final painters = tester
-          .widgetList<CustomPaint>(
-            find.descendant(
-              of: find.byKey(key),
-              matching: find.byType(CustomPaint),
-            ),
-          )
-          .map((paint) => paint.painter)
-          .whereType<TileFacePainter>()
-          .toList();
-      expect(painters, hasLength(1));
-      return painters.single;
+    TileBodySprite faceOf(Key key) {
+      return tester.widget<TileBodySprite>(
+        find.descendant(
+          of: find.byKey(key),
+          matching: find.byType(TileBodySprite),
+        ),
+      );
     }
 
     expect(faceOf(const Key('free')).locked, isFalse);
+    expect(faceOf(const Key('locked')).locked, isFalse);
+
+    await dim.setEnabled(true);
+    await tester.pumpWidget(row());
+
+    expect(faceOf(const Key('free')).locked, isFalse);
     expect(faceOf(const Key('locked')).locked, isTrue);
-    expect(faceOf(const Key('free')).isSelected, isFalse);
-    expect(faceOf(const Key('free')).isSpecial, isFalse);
   });
 
   testWidgets('selected and special tiles switch drawTile chrome', (
@@ -428,17 +422,13 @@ void main() {
       ),
     );
 
-    TileFacePainter faceOf(Key key) {
-      return tester
-          .widgetList<CustomPaint>(
-            find.descendant(
-              of: find.byKey(key),
-              matching: find.byType(CustomPaint),
-            ),
-          )
-          .map((paint) => paint.painter)
-          .whereType<TileFacePainter>()
-          .single;
+    TileBodySprite faceOf(Key key) {
+      return tester.widget<TileBodySprite>(
+        find.descendant(
+          of: find.byKey(key),
+          matching: find.byType(TileBodySprite),
+        ),
+      );
     }
 
     expect(faceOf(const Key('selected')).isSelected, isTrue);
@@ -802,7 +792,10 @@ void main() {
     expect(find.text('350'), findsNothing);
     expect(find.text('500'), findsNothing);
     expect(find.text('Level 1'), findsNothing);
-    expect(find.text('Take only a free top tile'), findsOneWidget);
+    expect(
+      find.text('Take a free tile — open on top and one side'),
+      findsOneWidget,
+    );
     expect(find.text('0/16'), findsNothing);
     expect(find.text('1x'), findsNothing);
 
@@ -999,6 +992,98 @@ void main() {
         .toSet();
     expect(hinted, {0, 1});
     expect(progress.savedSnapshot?.hints, 1);
+  });
+
+  testWidgets('campaign leftover hints carry into a later level', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'progress.tableCoachDone': true,
+      'tutorial.skipped': true,
+      'tutorial.collect': true,
+      'tutorial.match': true,
+      'tutorial.layers': true,
+      'tutorial.boosts': true,
+      'progress.hintBalance': 4,
+    });
+    final progress = await ProgressStore.open();
+    expect(Levels.byId(24).hints, 0);
+
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GameScreen(level: Levels.byId(24), progress: progress),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(
+      tester.widget<GameActionBar>(find.byType(GameActionBar)).hintsLeft,
+      4,
+    );
+  });
+
+  testWidgets('hint highlights a covered pair instead of a free top pair', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'progress.tableCoachDone': true,
+      'tutorial.skipped': true,
+      'tutorial.collect': true,
+      'tutorial.match': true,
+      'tutorial.layers': true,
+      'tutorial.boosts': true,
+    });
+    final progress = await ProgressStore.open();
+    final board = Board(
+      tiles: [
+        Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
+        Tile(id: 1, symbol: 'C', layer: 1, x: 0, y: 0),
+        Tile(id: 2, symbol: 'A', layer: 0, x: 4, y: 0),
+        Tile(id: 3, symbol: 'D', layer: 1, x: 4, y: 0),
+        Tile(id: 4, symbol: 'B', layer: 0, x: 8, y: 0),
+        Tile(id: 5, symbol: 'B', layer: 0, x: 12, y: 0),
+      ],
+      layoutName: 'petal',
+    );
+    await progress.saveSnapshot(
+      GameSnapshot.fromBoard(
+        levelId: 1,
+        board: board,
+        score: 0,
+        combo: 0,
+        shuffles: 1,
+        hints: 2,
+        undos: 1,
+        magnets: 1,
+      ),
+    );
+
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: GameScreen(level: Levels.byId(1), progress: progress),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await tester.tap(find.byTooltip('Hint'));
+    await tester.pump();
+
+    final hinted = tester
+        .widgetList<TileWidget>(find.byType(TileWidget))
+        .where((w) => w.isHinted)
+        .map((w) => w.tile.id)
+        .toSet();
+    expect(hinted, {0, 2});
   });
 
   testWidgets('magnet clears a matching pair from the board', (tester) async {

@@ -6,7 +6,7 @@ import '../../services/analytics_service.dart';
 import '../../services/local_reminder_service.dart';
 import '../../services/pet_store.dart';
 import '../../services/reminder_store.dart';
-import '../tile_symbol_image.dart';
+import 'pet_portrait.dart';
 
 const _gold = Color(0xFFD4AF37);
 const _goldSoft = Color(0xFFE8C96A);
@@ -223,7 +223,7 @@ class _PetSheetState extends State<PetSheet> {
         if (!compact) ..._soloCare(l10n, snapshots.first),
         if (compact)
           for (final snapshot in snapshots) ...[
-            _OwnedPetRow(snapshot: snapshot),
+            OwnedPetCard(snapshot: snapshot),
             const SizedBox(height: 12),
           ],
         Text(
@@ -257,7 +257,7 @@ class _PetSheetState extends State<PetSheet> {
     return [
       SizedBox(
         height: 140,
-        child: TileSymbolImage(symbol: def.symbol),
+        child: PetPortrait(kind: def.kind),
       ),
       const SizedBox(height: 10),
       Text(
@@ -271,7 +271,7 @@ class _PetSheetState extends State<PetSheet> {
       ),
       const SizedBox(height: 16),
       for (final need in PetNeed.values) ...[
-        _NeedBar(
+        PetNeedBar(
           label: l10n.petNeedLabel(need),
           value: snapshot.of(need),
         ),
@@ -282,8 +282,8 @@ class _PetSheetState extends State<PetSheet> {
   }
 }
 
-class _OwnedPetRow extends StatelessWidget {
-  const _OwnedPetRow({required this.snapshot});
+class OwnedPetCard extends StatelessWidget {
+  const OwnedPetCard({super.key, required this.snapshot});
 
   final PetCare snapshot;
 
@@ -304,7 +304,7 @@ class _OwnedPetRow extends StatelessWidget {
             SizedBox(
               width: 72,
               height: 88,
-              child: TileSymbolImage(symbol: def.symbol),
+              child: PetPortrait(kind: def.kind),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -330,7 +330,7 @@ class _OwnedPetRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   for (final need in PetNeed.values) ...[
-                    _NeedBar(
+                    PetNeedBar(
                       label: l10n.petNeedLabel(need),
                       value: snapshot.of(need),
                     ),
@@ -377,7 +377,7 @@ class _PetCard extends StatelessWidget {
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(10, 12, 10, 4),
-                  child: TileSymbolImage(symbol: def.symbol),
+                  child: PetPortrait(kind: def.kind),
                 ),
               ),
               Padding(
@@ -402,8 +402,8 @@ class _PetCard extends StatelessWidget {
   }
 }
 
-class _NeedBar extends StatelessWidget {
-  const _NeedBar({required this.label, required this.value});
+class PetNeedBar extends StatelessWidget {
+  const PetNeedBar({super.key, required this.label, required this.value});
 
   final String label;
   final double value;

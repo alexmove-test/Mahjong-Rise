@@ -24,32 +24,6 @@ service cloud.firestore {
         && validName(request.resource.data.name);
     }
 
-    function hasWeeklyFields() {
-      return request.resource.data.keys().hasAll([
-        'name',
-        'rating',
-        'weeklyStars',
-        'weeklyClears',
-        'weeklyDailies',
-      ]);
-    }
-
-    function weeklyScoreOk() {
-      return validName(request.resource.data.name)
-        && inRange(request.resource.data.rating, 0, 2207000)
-        && inRange(request.resource.data.weeklyStars, 0, 200)
-        && inRange(request.resource.data.weeklyClears, 0, 80)
-        && inRange(request.resource.data.weeklyDailies, 0, 7)
-        && request.resource.data.rating ==
-             request.resource.data.weeklyStars * 10000 +
-             request.resource.data.weeklyClears * 2500 +
-             request.resource.data.weeklyDailies * 1000;
-    }
-
-    function isoWeekId(weekId) {
-      return weekId.matches('[0-9]{4}-W[0-9]{2}');
-    }
-
     match /leaderboard/{userId} {
       allow read: if true;
 
@@ -97,31 +71,6 @@ service cloud.firestore {
         );
 
       allow delete: if false;
-    }
-
-    match /weekly/{weekId} {
-      allow read: if true;
-      allow write: if false;
-
-      match /players/{userId} {
-        allow read: if true;
-
-        allow create: if request.auth != null
-          && request.auth.uid == userId
-          && isoWeekId(weekId)
-          && hasWeeklyFields()
-          && weeklyScoreOk();
-
-        allow update: if request.auth != null
-          && request.auth.uid == userId
-          && isoWeekId(weekId)
-          && (
-            nameOnlyUpdate()
-            || (hasWeeklyFields() && weeklyScoreOk())
-          );
-
-        allow delete: if false;
-      }
     }
   }
 }

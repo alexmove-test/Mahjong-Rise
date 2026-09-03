@@ -14,6 +14,7 @@ class PetStore {
   static const _kPlayAt = 'pet.playAt';
   static const _kRestAt = 'pet.restAt';
   static const _kRemindersPrompted = 'pet.remindersPrompted';
+  static const _kYardHidden = 'pet.yardHidden';
 
   static PetStore memory() => PetStore._(null);
 
@@ -46,8 +47,15 @@ class PetStore {
     return list.isEmpty ? null : list.first;
   }
 
-  bool get remindersPrompted =>
-      _prefs?.getBool(_kRemindersPrompted) ?? false;
+  bool get remindersPrompted => _prefs?.getBool(_kRemindersPrompted) ?? false;
+
+  bool get yardHidden => _prefs?.getBool(_kYardHidden) ?? false;
+
+  Future<void> setYardHidden(bool value) async {
+    final prefs = _prefs;
+    if (prefs == null) return;
+    await prefs.setBool(_kYardHidden, value);
+  }
 
   bool anyAsking({DateTime? now}) =>
       allCare(now: now).any((care) => care.asking);
@@ -143,10 +151,7 @@ class PetStore {
     final snapshot = mostUrgentCare(now: at);
     if (snapshot == null) return null;
     final need = snapshot.mostUrgent;
-    await prefs.setInt(
-      _keyFor(snapshot.kind, need),
-      at.millisecondsSinceEpoch,
-    );
+    await prefs.setInt(_keyFor(snapshot.kind, need), at.millisecondsSinceEpoch);
     return PetFill(kind: snapshot.kind, need: need);
   }
 

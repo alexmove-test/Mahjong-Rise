@@ -53,12 +53,16 @@ class TileMappedSprite extends StatelessWidget {
     required this.asset,
     required this.tileSize,
     this.filterQuality = FilterQuality.high,
+    this.color,
+    this.colorBlendMode,
     this.errorBuilder,
   });
 
   final String asset;
   final Size tileSize;
   final FilterQuality filterQuality;
+  final Color? color;
+  final BlendMode? colorBlendMode;
   final ImageErrorWidgetBuilder? errorBuilder;
 
   @override
@@ -72,9 +76,102 @@ class TileMappedSprite extends StatelessWidget {
         height: tileSize.height,
         fit: BoxFit.fill,
         filterQuality: filterQuality,
+        color: color,
+        colorBlendMode: colorBlendMode,
         errorBuilder: errorBuilder,
       ),
     );
+  }
+}
+
+/// Тело кости: PNG [TileBaseLayout.baseAsset], Canvas — только если спрайт
+/// не загрузился. Символ рисуется снаружи.
+class TileBodySprite extends StatelessWidget {
+  const TileBodySprite({
+    super.key,
+    required this.size,
+    this.locked = false,
+    this.lifted = false,
+    this.isSelected = false,
+    this.isSpecial = false,
+    this.specialSeed = 0,
+    this.symbol,
+  });
+
+  final Size size;
+  final bool locked;
+  final bool lifted;
+  final bool isSelected;
+  final bool isSpecial;
+  final int specialSeed;
+  final String? symbol;
+
+  /// Multiply по кремовому лицу: выбор — зелёный, перекрытая — серее.
+  static Color? chromeTint({
+    required bool locked,
+    required bool isSelected,
+  }) {
+    if (isSelected) return const Color(0xFF6EE24A);
+    if (locked) return const Color(0xFFC5CCC4);
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tint = chromeTint(locked: locked, isSelected: isSelected);
+    return TileMappedSprite(
+      asset: TileBaseLayout.baseAsset,
+      tileSize: size,
+      color: tint,
+      colorBlendMode: tint == null ? null : BlendMode.modulate,
+      errorBuilder: (context, error, stack) => TileFallbackFace(
+        size: size,
+        locked: locked,
+        lifted: lifted,
+        isSelected: isSelected,
+        isSpecial: false,
+        symbol: null,
+      ),
+    );
+  }
+}
+
+/// Классический глиф или сезонный мотив поверх PNG-тела.
+class TileOverlayArtPainter extends CustomPainter {
+  const TileOverlayArtPainter({
+    this.locked = false,
+    this.isSelected = false,
+    this.isSpecial = false,
+    this.specialSeed = 0,
+    this.symbol,
+  });
+
+  final bool locked;
+  final bool isSelected;
+  final bool isSpecial;
+  final int specialSeed;
+  final String? symbol;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    TileCanvas.drawOverlayArt(
+      canvas,
+      size,
+      isSpecial: isSpecial,
+      isSelected: isSelected,
+      locked: locked,
+      specialSeed: specialSeed,
+      symbol: symbol,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant TileOverlayArtPainter oldDelegate) {
+    return oldDelegate.locked != locked ||
+        oldDelegate.isSelected != isSelected ||
+        oldDelegate.isSpecial != isSpecial ||
+        oldDelegate.specialSeed != specialSeed ||
+        oldDelegate.symbol != symbol;
   }
 }
 

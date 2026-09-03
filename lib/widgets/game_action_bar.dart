@@ -57,6 +57,11 @@ class GameActionBar extends StatelessWidget {
               shufflesLeft,
               adsAvailable: adsAvailable,
             ),
+            semanticLabel: l10n.boostSemantic(
+              l10n.shuffle,
+              shufflesLeft,
+              adsAvailable: adsAvailable,
+            ),
             icon: Icons.shuffle_rounded,
             badge: badgeLabel(shufflesLeft),
             enabled: enabled && (shufflesLeft > 0 || adsAvailable),
@@ -69,14 +74,24 @@ class GameActionBar extends StatelessWidget {
               magnetsLeft,
               adsAvailable: adsAvailable,
             ),
-            child: const MagnetGlyph(size: 28, color: Colors.white),
+            semanticLabel: l10n.boostSemantic(
+              l10n.magnet,
+              magnetsLeft,
+              adsAvailable: adsAvailable,
+            ),
             badge: badgeLabel(magnetsLeft),
             enabled: enabled && (magnetsLeft > 0 || adsAvailable),
             onPressed: onMagnet,
+            child: const MagnetGlyph(size: 28, color: Colors.white),
           ),
           const SizedBox(width: gap),
           GameActionButton(
             tooltip: l10n.boostTooltip(
+              l10n.hint,
+              hintsLeft,
+              adsAvailable: adsAvailable,
+            ),
+            semanticLabel: l10n.boostSemantic(
               l10n.hint,
               hintsLeft,
               adsAvailable: adsAvailable,
@@ -91,6 +106,21 @@ class GameActionBar extends StatelessWidget {
             tooltip: canUndo
                 ? l10n.undo
                 : (canUndoViaAd ? l10n.watchAd(l10n.undo) : l10n.noneLeft),
+            semanticLabel: canUndo
+                ? (undosLeft > 0
+                      ? l10n.boostSemantic(
+                          l10n.undo,
+                          undosLeft,
+                          adsAvailable: false,
+                        )
+                      : l10n.undo)
+                : (canUndoViaAd
+                      ? l10n.watchAd(l10n.undo)
+                      : l10n.boostSemantic(
+                          l10n.undo,
+                          0,
+                          adsAvailable: adsAvailable,
+                        )),
             icon: Icons.undo_rounded,
             badge: badgeLabel(undosLeft),
             enabled: enabled && (canUndo || canUndoViaAd),
@@ -106,6 +136,7 @@ class GameActionButton extends StatefulWidget {
   const GameActionButton({
     super.key,
     required this.tooltip,
+    this.semanticLabel,
     required this.badge,
     required this.enabled,
     required this.onPressed,
@@ -114,6 +145,7 @@ class GameActionButton extends StatefulWidget {
   }) : assert(icon != null || child != null);
 
   final String tooltip;
+  final String? semanticLabel;
   final String badge;
   final bool enabled;
   final VoidCallback onPressed;
@@ -170,6 +202,7 @@ class _GameActionButtonState extends State<GameActionButton>
               iconSize: 28,
               size: GameActionBar.buttonSize,
               tooltip: widget.tooltip,
+              semanticLabel: widget.semanticLabel,
               enabled: widget.enabled,
               onPressed: widget.enabled ? _handlePressed : null,
               child: widget.child,
@@ -177,7 +210,12 @@ class _GameActionButtonState extends State<GameActionButton>
             Positioned(
               right: 0,
               top: 0,
-              child: _CountBadge(label: widget.badge, enabled: widget.enabled),
+              child: ExcludeSemantics(
+                child: _CountBadge(
+                  label: widget.badge,
+                  enabled: widget.enabled,
+                ),
+              ),
             ),
           ],
         ),

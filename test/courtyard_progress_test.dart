@@ -57,17 +57,20 @@ void main() {
   });
 
   group('path phrases', () {
-    test('home uses the current stage line', () {
+    test('home uses the current era line', () {
       final start = CourtyardSnapshot.fromStep(step: 0, totalStars: 0);
-      final roof = CourtyardSnapshot.fromStep(step: 14, totalStars: 10);
+      final shack = CourtyardSnapshot.fromStep(step: 12, totalStars: 10);
       expect(pathPhraseForHome(start), 'A house will stand here.');
-      expect(pathPhraseForHome(roof), 'The roof is on.');
+      expect(pathPhraseForHome(shack), 'A shack leans on the plot.');
     });
 
-    test('win uses a stage line when crossing a band', () {
-      final from = CourtyardSnapshot.fromStep(step: 4, totalStars: 6);
-      final to = CourtyardSnapshot.fromStep(step: 5, totalStars: 8);
-      expect(pathPhraseForWin(from: from, to: to), 'The fence holds the plot.');
+    test('win uses an era line when crossing into a new era', () {
+      final from = CourtyardSnapshot.fromStep(step: 8, totalStars: 6);
+      final to = CourtyardSnapshot.fromStep(step: 9, totalStars: 8);
+      expect(
+        pathPhraseForWin(from: from, to: to),
+        'A shack leans on the plot.',
+      );
     });
 
     test('more stars without a new step only warm the house', () {
@@ -81,10 +84,9 @@ void main() {
     });
   });
 
-  group('CourtyardLayers', () {
+  group('plot feature layers', () {
     test('empty field is only the yard', () {
       final empty = CourtyardSnapshot.fromStep(step: 0, totalStars: 0);
-      expect(empty.layerOpacity(CourtyardLayer.yard), 1);
       expect(empty.layerRoad, 0);
       expect(empty.layerHouse, 0);
       expect(empty.layerPond, 0);
@@ -124,35 +126,22 @@ void main() {
       expect(pond.layerHouse, 0);
       expect(pond.layerInternet, 0);
 
-      final road = CourtyardSnapshot.fromStep(
+      final pets = CourtyardSnapshot.fromStep(
         step: 12,
         totalStars: 20,
-        plotKind: PlotKind.road,
+        plotKind: PlotKind.pets,
       );
-      expect(road.layerRoad, greaterThan(0.5));
-      expect(road.layerHouse, 0);
-      expect(road.layerPond, 0);
+      expect(pets.layerHouse, closeTo(0.6, 0.001));
+      expect(pets.layerPond, 0);
 
-      final net = CourtyardSnapshot.fromStep(
+      final guest = CourtyardSnapshot.fromStep(
         step: 20,
         totalStars: 20,
-        plotKind: PlotKind.internet,
+        plotKind: PlotKind.guest,
       );
-      expect(net.layerHouse, 1);
-      expect(net.layerInternet, 1);
-      expect(net.layerPond, 0);
-    });
-
-    test('stack order is yard, pond, road, house, internet, flowers', () {
-      expect(CourtyardLayers.stackOrder, [
-        CourtyardLayer.yard,
-        CourtyardLayer.pond,
-        CourtyardLayer.road,
-        CourtyardLayer.house,
-        CourtyardLayer.internet,
-        CourtyardLayer.flowers,
-      ]);
-      expect(CourtyardLayers.allAssets.length, 6);
+      expect(guest.layerHouse, 1);
+      expect(guest.layerInternet, 1);
+      expect(guest.layerPond, 0);
     });
 
     test('evening overlay waits for a nearly finished house', () {

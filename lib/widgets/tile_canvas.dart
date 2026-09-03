@@ -134,22 +134,15 @@ class TileCanvas {
       lifted: lifted,
     );
 
-    if (isSpecial && !isSelected) {
-      canvas.save();
-      canvas.clipRRect(faceRRect);
-      _drawSpecialMotif(canvas, face, specialSeed);
-      canvas.restore();
-    } else if (symbol != null && TileGlyph.paints(symbol)) {
-      canvas.save();
-      canvas.clipRRect(faceRRect);
-      TileGlyph.draw(
-        canvas,
-        symbolRectOf(size),
-        symbol: symbol,
-        opacity: locked ? 0.78 : 1.0,
-      );
-      canvas.restore();
-    }
+    drawOverlayArt(
+      canvas,
+      size,
+      isSpecial: isSpecial,
+      isSelected: isSelected,
+      locked: locked,
+      specialSeed: specialSeed,
+      symbol: symbol,
+    );
 
     canvas.drawRRect(
       faceRRect.deflate(0.7),
@@ -173,6 +166,41 @@ class TileCanvas {
           alpha: locked ? 0.55 : 0.88,
         ),
     );
+  }
+
+  /// Символ / сезонный мотив поверх тела кости (PNG или Canvas).
+  static void drawOverlayArt(
+    Canvas canvas,
+    Size size, {
+    bool isSpecial = false,
+    bool isSelected = false,
+    bool locked = false,
+    int specialSeed = 0,
+    String? symbol,
+  }) {
+    final face = faceRectOf(size);
+    if (face.isEmpty) return;
+    final faceRRect = RRect.fromRectAndRadius(
+      face,
+      Radius.circular(cornerRadius(size) * 0.92),
+    );
+
+    if (isSpecial && !isSelected) {
+      canvas.save();
+      canvas.clipRRect(faceRRect);
+      _drawSpecialMotif(canvas, face, specialSeed);
+      canvas.restore();
+    } else if (symbol != null && TileGlyph.paints(symbol)) {
+      canvas.save();
+      canvas.clipRRect(faceRRect);
+      TileGlyph.draw(
+        canvas,
+        symbolRectOf(size),
+        symbol: symbol,
+        opacity: locked ? 0.78 : 1.0,
+      );
+      canvas.restore();
+    }
   }
 
   static void _drawDropShadow(

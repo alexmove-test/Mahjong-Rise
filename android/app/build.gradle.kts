@@ -1,3 +1,6 @@
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Properties
@@ -21,6 +24,29 @@ if (googleServicesFile.exists()) {
 
 data class AppVersion(val name: String, val code: Int)
 
+fun File.replaceTextRetry(content: String) {
+    val tmp = resolveSibling("$name.${System.nanoTime()}.tmp")
+    tmp.writeText(content)
+    var delayMs = 50L
+    var last: Exception? = null
+    repeat(12) {
+        try {
+            Files.move(tmp.toPath(), toPath(), StandardCopyOption.REPLACE_EXISTING)
+            return
+        } catch (e: Exception) {
+            last = e
+            Thread.sleep(delayMs)
+            delayMs = (delayMs * 2).coerceAtMost(400L)
+        }
+    }
+    tmp.delete()
+    throw IllegalStateException(
+        "Mahjong: cannot write $absolutePath. Close this file in the editor " +
+            "(Windows lock: user-mapped section) and rebuild. ${last?.message}",
+        last,
+    )
+}
+
 fun shouldBumpBuildNumber(): Boolean {
     return gradle.startParameter.taskNames.any { raw ->
         val task = raw.substringAfterLast(':').lowercase()
@@ -40,15 +66,17 @@ fun resolveAndMaybeBumpVersion(): AppVersion {
 
     if (bump) {
         val builtAt = buildDateTime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
-        pubspec.writeText(regex.replaceFirst(text, "version: $name+$code"))
-        file("../../lib/app_version.dart").writeText(
+        pubspec.replaceTextRetry(regex.replaceFirst(text, "version: $name+$code"))
+        // Пишем .g.dart, а не app_version.dart: исходник часто открыт в IDE,
+        // и Windows тогда блокирует overwrite (ERROR_USER_MAPPED_FILE).
+        file("../../lib/app_version.g.dart").replaceTextRetry(
             """
+            |part of 'app_version.dart';
+            |
             |/// Сгенерировано при Android-сборке. Не править вручную.
             |const appVersionName = '$name';
             |const appBuildNumber = $code;
             |const appBuildTime = '$builtAt';
-            |
-            |String get appVersionLabel => 'v${'$'}appVersionName+${'$'}appBuildNumber';
             |
             """.trimMargin(),
         )

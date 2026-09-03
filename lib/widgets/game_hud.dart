@@ -56,6 +56,7 @@ class GameHudCircleButton extends StatelessWidget {
     this.icon,
     this.child,
     required this.tooltip,
+    this.semanticLabel,
     this.onPressed,
     this.iconSize = 18,
     this.size = GameHud.buttonSize,
@@ -65,6 +66,7 @@ class GameHudCircleButton extends StatelessWidget {
   final IconData? icon;
   final Widget? child;
   final String tooltip;
+  final String? semanticLabel;
   final VoidCallback? onPressed;
   final double iconSize;
   final double size;
@@ -73,43 +75,52 @@ class GameHudCircleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dimmed = !enabled;
-    return Tooltip(
-      message: tooltip,
-      child: Opacity(
-        opacity: dimmed ? 0.55 : 1,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: enabled ? onPressed : null,
-            customBorder: const CircleBorder(),
-            child: Ink(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    GameHud.copperHi,
-                    GameHud.copperMid,
-                    GameHud.copperLo,
-                  ],
-                  stops: [0.0, 0.45, 1.0],
-                ),
-                border: Border.all(color: GameHud.copperRim, width: 1.6),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x66000000),
-                    offset: Offset(0, 2),
-                    blurRadius: 3,
+    final label = semanticLabel ?? tooltip;
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: label,
+      child: Tooltip(
+        message: tooltip,
+        excludeFromSemantics: true,
+        child: Opacity(
+          opacity: dimmed ? 0.55 : 1,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: enabled ? onPressed : null,
+              customBorder: const CircleBorder(),
+              child: Ink(
+                width: size,
+                height: size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      GameHud.copperHi,
+                      GameHud.copperMid,
+                      GameHud.copperLo,
+                    ],
+                    stops: [0.0, 0.45, 1.0],
                   ),
-                ],
-              ),
-              child: Center(
-                child:
-                    child ??
-                    Icon(icon!, size: iconSize, color: Colors.white),
+                  border: Border.all(color: GameHud.copperRim, width: 1.6),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x66000000),
+                      offset: Offset(0, 2),
+                      blurRadius: 3,
+                    ),
+                  ],
+                ),
+                child: ExcludeSemantics(
+                  child: Center(
+                    child:
+                        child ??
+                        Icon(icon!, size: iconSize, color: Colors.white),
+                  ),
+                ),
               ),
             ),
           ),

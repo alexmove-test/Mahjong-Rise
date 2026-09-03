@@ -32,18 +32,21 @@ class FirebaseLeaderboardRepository {
       final rating = LeaderboardService.ratingFor(progress);
       final lastSynced = profile.lastSyncedRating;
       final nameChanged = name != profile.lastSyncedName;
-      if (rating <= lastSynced && !nameChanged) return;
 
       final doc = _db!.collection(collection).doc(user.uid);
       final existing = await doc.get();
       final data = existing.data();
+      if (existing.exists && rating <= lastSynced && !nameChanged) return;
       final existingRating = _asInt(data?['rating']);
 
       // Частичный merge (только name) падает на hasOnly в firestore.rules.
       if (rating < existingRating && data != null) {
         if (!nameChanged) return;
         final stars = _asInt(data['totalStars']);
-        final unlocked = _asInt(data['levelsUnlocked'], fallback: 1).clamp(1, 240);
+        final unlocked = _asInt(
+          data['levelsUnlocked'],
+          fallback: 1,
+        ).clamp(1, 240);
         final scores = _asInt(data['sumBestScores']);
         final keepRating = LeaderboardService.ratingFrom(
           totalStars: stars,
@@ -83,10 +86,8 @@ class FirebaseLeaderboardRepository {
     required ProgressStore progress,
     required PlayerProfileStore profile,
   }) async {
-    List<LeaderboardEntry> local() => LeaderboardService.buildLocal(
-      progress: progress,
-      profile: profile,
-    );
+    List<LeaderboardEntry> local() =>
+        LeaderboardService.buildLocal(progress: progress, profile: profile);
 
     if (!FirebaseBootstrap.enabled) {
       return LeaderboardFetch(entries: local(), online: false);

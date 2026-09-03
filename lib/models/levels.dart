@@ -140,11 +140,39 @@ abstract final class Levels {
   /// 0-based номер участка для уровня.
   static int cycleOf(int id) => ((id.clamp(1, maxLevelId) - 1) ~/ storyLength);
 
+  /// Участок, который качает этот уровень по кампании: дом → ставок →
+  /// гости → питомцы, по 24 уровня. Ручной выбор хранится в ProgressStore.
   static PlotKind plotKindOf(int id) => PlotKind.ofCycle(cycleOf(id));
 
   static PlotKind plotKindOfCycle(int cycle) => PlotKind.ofCycle(cycle);
 
-  /// Круг из четырёх участков (0 = первый дом–интернет).
+  /// Сколько уже пройденных уровней качали [kind] при текущем [maxUnlocked].
+  static int completedStages(PlotKind kind, int maxUnlocked) {
+    final completed = (maxUnlocked - 1).clamp(0, maxLevelId);
+    if (completed <= 0) return 0;
+    final n = PlotKind.order.length;
+    final index = PlotKind.order.indexOf(kind);
+    if (index < 0) return 0;
+    final loopSpan = storyLength * n;
+    final fullLoops = completed ~/ loopSpan;
+    var count = fullLoops * storyLength;
+    final rem = completed % loopSpan;
+    final start = index * storyLength;
+    if (rem > start) {
+      final taken = rem < start + storyLength ? rem : start + storyLength;
+      count += taken - start;
+    }
+    return count;
+  }
+
+  /// Участок уже встречался в открытых уровнях 1…[maxUnlocked].
+  static bool plotReached(PlotKind kind, int maxUnlocked) {
+    final index = PlotKind.order.indexOf(kind);
+    if (index < 0) return false;
+    return maxUnlocked.clamp(1, maxLevelId) > index * storyLength;
+  }
+
+  /// Круг из четырёх участков (0 = первый дом–гости–питомцы).
   static int loopOf(int id) => cycleOf(id) ~/ PlotKind.order.length;
 
   /// 1–24 внутри участка.
@@ -188,7 +216,7 @@ abstract final class Levels {
     final cycle = cycleOf(id);
     final loop = cycle ~/ PlotKind.order.length;
     final variant = (loop + cycle) % 4;
-    final kind = PlotKind.ofCycle(cycle);
+    final kind = plotKindOf(id);
     return LevelDef(
       id: id,
       title: kind.titleEn,

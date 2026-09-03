@@ -9,8 +9,7 @@ import '../services/guest_name.dart';
 import '../services/leaderboard_service.dart';
 import '../services/player_profile_store.dart';
 import '../services/progress_store.dart';
-import '../services/weekly_leaderboard_repository.dart';
-import 'game_screen.dart';
+import '../widgets/mahjong_backdrop.dart';
 
 /// Общий рейтинг игроков.
 class LeaderboardScreen extends StatefulWidget {
@@ -22,17 +21,12 @@ class LeaderboardScreen extends StatefulWidget {
   State<LeaderboardScreen> createState() => _LeaderboardScreenState();
 }
 
-class _LeaderboardScreenState extends State<LeaderboardScreen>
-    with SingleTickerProviderStateMixin {
+class _LeaderboardScreenState extends State<LeaderboardScreen> {
   PlayerProfileStore? _profile;
-  late final TabController _tabs;
-  List<LeaderboardEntry> _allEntries = const [];
-  List<LeaderboardEntry> _weekEntries = const [];
-  int? _allRank;
-  int? _weekRank;
+  List<LeaderboardEntry> _entries = const [];
+  int? _rank;
   bool _loading = true;
-  bool _allOnline = false;
-  bool _weekOnline = false;
+  bool _online = false;
 
   static const _fieldGreen = Color(0xFFD7EEDC);
   static const _woodTop = Color(0xFF6B3E24);
@@ -44,32 +38,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 2, vsync: this);
-    _tabs.addListener(_onTab);
     _load();
   }
 
-  @override
-  void dispose() {
-    _tabs.removeListener(_onTab);
-    _tabs.dispose();
-    super.dispose();
-  }
-
-  void _onTab() {
-    if (_tabs.indexIsChanging) return;
-    if (_tabs.index == 0) {
-      AnalyticsService.log('weekly_open');
-    }
-    setState(() {});
-  }
-
-  bool get _weekly => _tabs.index == 0;
-
-  bool get _tabOnline => _weekly ? _weekOnline : _allOnline;
-
-  String? _tabError(L10n l10n) {
-    if (_tabOnline || !FirebaseBootstrap.enabled) return null;
+  String? _error(L10n l10n) {
+    if (_online || !FirebaseBootstrap.enabled) return null;
     return l10n.loadRankingFailed;
   }
 
@@ -84,22 +57,15 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
       progress: widget.progress,
       profile: profile,
     );
-    final week = await WeeklyLeaderboardRepository.fetchTop(
-      progress: widget.progress,
-      profile: profile,
-    );
     if (!mounted) return;
     setState(() {
       _profile = profile;
-      _allEntries = all.entries;
-      _weekEntries = week.entries;
-      _allRank = LeaderboardService.rankOf(all.entries);
-      _weekRank = LeaderboardService.rankOf(week.entries);
-      _allOnline = all.online;
-      _weekOnline = week.online;
+      _entries = all.entries;
+      _rank = LeaderboardService.rankOf(all.entries);
+      _online = all.online;
       _loading = false;
     });
-    AnalyticsService.log('weekly_open');
+    AnalyticsService.log('leaderboard_open');
   }
 
   Future<void> _editName() async {
@@ -143,7 +109,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(L10n.of(context).cancel, style: const TextStyle(color: _ivory)),
+              child: Text(
+                L10n.of(context).cancel,
+                style: const TextStyle(color: _ivory),
+              ),
             ),
             FilledButton(
               style: FilledButton.styleFrom(
@@ -178,11 +147,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   @override
   Widget build(BuildContext context) {
     final profile = _profile;
-    final entries = _weekly ? _weekEntries : _allEntries;
-    final rank = _weekly ? _weekRank : _allRank;
-    final current = entries.where((e) => e.isCurrentPlayer).firstOrNull;
+    final current = _entries.where((e) => e.isCurrentPlayer).firstOrNull;
     final l10n = L10n.of(context);
-    final tabError = _tabError(l10n);
+    final tabError = _error(l10n);
 
     return Scaffold(
       backgroundColor: _fieldGreen,
@@ -238,19 +205,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                           ],
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                        child: TabBar(
-                          controller: _tabs,
-                          labelColor: const Color(0xFF1E5A3A),
-                          unselectedLabelColor: const Color(0xFF3D6B52),
-                          indicatorColor: _gold,
-                          tabs: [
-                            Tab(text: l10n.thisWeek),
-                            Tab(text: l10n.allTime),
-                          ],
-                        ),
-                      ),
                       if (_loading)
                         const Expanded(
                           child: Center(
@@ -274,12 +228,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                           child: Text(
-                            _tabOnline
+                            _online
                                 ? l10n.onlineRanking(
-                                    _weekly
-                                        ? WeeklyLeaderboardRepository.fetchLimit
-                                        : FirebaseLeaderboardRepository
-                                              .fetchLimit,
+                                    FirebaseLeaderboardRepository.fetchLimit,
                                   )
                                 : FirebaseBootstrap.initError ??
                                       l10n.offlineRanking,
@@ -293,14 +244,13 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                             ),
                           ),
                         ),
-                        if (current != null && rank != null)
+                        if (current != null && _rank != null)
                           Padding(
                             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                             child: _CurrentPlayerCard(
-                              rank: rank,
+                              rank: _rank!,
                               entry: current,
                               ratingLabel: _formatRating(current.rating),
-                              weekly: _weekly,
                               plotsOpened: LeaderboardService.plotsOpened(
                                 current.levelsUnlocked,
                               ),
@@ -310,7 +260,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                           child: Text(
-                            _weekly ? l10n.weeklyFormula : l10n.rankingFormula,
+                            l10n.rankingFormula,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 12,
@@ -321,23 +271,22 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                             ),
                           ),
                         ),
-                        if (!_weekly)
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 28, 6),
-                            child: Align(
-                              alignment: Alignment.centerRight,
-                              child: Text(
-                                l10n.scorePlotsLegend,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: const Color(
-                                    0xFF3D6B52,
-                                  ).withValues(alpha: 0.7),
-                                  fontWeight: FontWeight.w700,
-                                ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 28, 6),
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              l10n.scorePlotsLegend,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: const Color(
+                                  0xFF3D6B52,
+                                ).withValues(alpha: 0.7),
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
+                        ),
                         Expanded(
                           child: RefreshIndicator(
                             color: _gold,
@@ -345,16 +294,15 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                             child: ListView.separated(
                               physics: const AlwaysScrollableScrollPhysics(),
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                              itemCount: entries.length,
-                              separatorBuilder: (_, __) =>
+                              itemCount: _entries.length,
+                              separatorBuilder: (_, _) =>
                                   const SizedBox(height: 8),
                               itemBuilder: (context, index) {
-                                final entry = entries[index];
+                                final entry = _entries[index];
                                 return _LeaderboardRow(
                                   rank: index + 1,
                                   entry: entry,
                                   ratingLabel: _formatRating(entry.rating),
-                                  weekly: _weekly,
                                   plotsOpened: LeaderboardService.plotsOpened(
                                     entry.levelsUnlocked,
                                   ),
@@ -380,7 +328,6 @@ class _CurrentPlayerCard extends StatelessWidget {
     required this.ratingLabel,
     required this.plotsOpened,
     required this.onEditName,
-    this.weekly = false,
   });
 
   final int rank;
@@ -388,7 +335,6 @@ class _CurrentPlayerCard extends StatelessWidget {
   final String ratingLabel;
   final int plotsOpened;
   final VoidCallback onEditName;
-  final bool weekly;
 
   @override
   Widget build(BuildContext context) {
@@ -430,16 +376,9 @@ class _CurrentPlayerCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    weekly
-                        ? L10n.of(context).weeklyStarsClearsDailies(
-                            entry.totalStars,
-                            entry.levelsUnlocked,
-                            entry.weeklyDailies,
-                          )
-                        : L10n.of(context).starsLevel(
-                            entry.totalStars,
-                            entry.levelsUnlocked,
-                          ),
+                    L10n.of(
+                      context,
+                    ).starsLevel(entry.totalStars, entry.levelsUnlocked),
                     style: TextStyle(
                       color: const Color(0xFFF8F1DE).withValues(alpha: 0.78),
                       fontWeight: FontWeight.w600,
@@ -452,23 +391,13 @@ class _CurrentPlayerCard extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                if (weekly)
-                  Text(
-                    ratingLabel,
-                    style: const TextStyle(
-                      color: Color(0xFFF8F1DE),
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                    ),
-                  )
-                else
-                  _ScoreAndPlots(
-                    ratingLabel: ratingLabel,
-                    plotsOpened: plotsOpened,
-                    color: const Color(0xFFF8F1DE),
-                    separatorColor: const Color(0xFFE8C96A),
-                    large: true,
-                  ),
+                _ScoreAndPlots(
+                  ratingLabel: ratingLabel,
+                  plotsOpened: plotsOpened,
+                  color: const Color(0xFFF8F1DE),
+                  separatorColor: const Color(0xFFE8C96A),
+                  large: true,
+                ),
                 TextButton(
                   onPressed: onEditName,
                   style: TextButton.styleFrom(
@@ -494,14 +423,12 @@ class _LeaderboardRow extends StatelessWidget {
     required this.entry,
     required this.ratingLabel,
     required this.plotsOpened,
-    this.weekly = false,
   });
 
   final int rank;
   final LeaderboardEntry entry;
   final String ratingLabel;
   final int plotsOpened;
-  final bool weekly;
 
   @override
   Widget build(BuildContext context) {
@@ -543,16 +470,9 @@ class _LeaderboardRow extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    weekly
-                        ? L10n.of(context).weeklyStarsClearsDailies(
-                            entry.totalStars,
-                            entry.levelsUnlocked,
-                            entry.weeklyDailies,
-                          )
-                        : L10n.of(context).starsLevel(
-                            entry.totalStars,
-                            entry.levelsUnlocked,
-                          ),
+                    L10n.of(
+                      context,
+                    ).starsLevel(entry.totalStars, entry.levelsUnlocked),
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -564,28 +484,16 @@ class _LeaderboardRow extends StatelessWidget {
                 ],
               ),
             ),
-            if (weekly)
-              Text(
-                ratingLabel,
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15,
-                  color: highlight
-                      ? const Color(0xFFF8F1DE)
-                      : const Color(0xFF1E5A3A),
-                ),
-              )
-            else
-              _ScoreAndPlots(
-                ratingLabel: ratingLabel,
-                plotsOpened: plotsOpened,
-                color: highlight
-                    ? const Color(0xFFF8F1DE)
-                    : const Color(0xFF1E5A3A),
-                separatorColor: highlight
-                    ? const Color(0xFFE8C96A)
-                    : const Color(0xFF3D6B52),
-              ),
+            _ScoreAndPlots(
+              ratingLabel: ratingLabel,
+              plotsOpened: plotsOpened,
+              color: highlight
+                  ? const Color(0xFFF8F1DE)
+                  : const Color(0xFF1E5A3A),
+              separatorColor: highlight
+                  ? const Color(0xFFE8C96A)
+                  : const Color(0xFF3D6B52),
+            ),
           ],
         ),
       ),
