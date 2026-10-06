@@ -7,9 +7,11 @@ import '../services/locale_store.dart';
 import '../services/local_reminder_service.dart';
 import '../services/locked_tile_dim_controller.dart';
 import '../services/music_controller.dart';
-import '../services/q_mode_controller.dart';
+import '../models/table_look.dart';
 import '../services/reminder_store.dart';
 import '../services/sfx_controller.dart';
+import '../services/table_look_controller.dart';
+import 'privacy_options_tile.dart';
 
 const _ivory = Color(0xFFF8F1DE);
 const _gold = Color(0xFFE8C96A);
@@ -20,8 +22,8 @@ Future<void> showAppSettings(BuildContext context) {
   final haptic = HapticScope.maybeOf(context);
   final sfx = SfxScope.maybeOf(context);
   final music = MusicScope.maybeOf(context);
-  final qMode = QModeScope.maybeOf(context);
   final lockedDim = LockedTileDimScope.maybeOf(context);
+  final tableLook = TableLookScope.maybeOf(context);
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -37,11 +39,11 @@ Future<void> showAppSettings(BuildContext context) {
             if (haptic != null) haptic,
             if (sfx != null) sfx,
             if (music != null) music,
-            if (qMode != null) qMode,
             if (lockedDim != null) lockedDim,
+            if (tableLook != null) tableLook,
           ]),
           builder: (_, _) {
-            final l10n = L10n.of(ctx);
+            final l10n = AppLocalizations.of(ctx);
             final current = locale?.preference ?? LanguagePref.system;
             return SingleChildScrollView(
               child: Column(
@@ -62,8 +64,9 @@ Future<void> showAppSettings(BuildContext context) {
                   MusicSwitchTile(controller: music, l10n: l10n),
                   HapticSwitchTile(controller: haptic, l10n: l10n),
                   LockedTileDimSwitchTile(controller: lockedDim, l10n: l10n),
-                  QModeSwitchTile(controller: qMode, l10n: l10n),
+                  TableLookSection(controller: tableLook, l10n: l10n),
                   const ReminderSwitchTile(),
+                  PrivacyOptionsTile(iconColor: _gold, textColor: _ivory),
                   const Padding(
                     padding: EdgeInsets.fromLTRB(20, 4, 20, 0),
                     child: Divider(color: Color(0x44F8F1DE)),
@@ -103,6 +106,13 @@ Future<void> showAppSettings(BuildContext context) {
                     current,
                     l10n.languageRussian,
                   ),
+                  _languageTile(
+                    ctx,
+                    locale,
+                    LanguagePref.th,
+                    current,
+                    l10n.languageThai,
+                  ),
                   const SizedBox(height: 8),
                 ],
               ),
@@ -116,7 +126,7 @@ Future<void> showAppSettings(BuildContext context) {
 
 Future<void> showLanguagePicker(BuildContext context) {
   final controller = LocaleScope.maybeOf(context);
-  final l10n = L10n.of(context);
+  final l10n = AppLocalizations.of(context);
   return showModalBottomSheet<void>(
     context: context,
     backgroundColor: _wood,
@@ -164,6 +174,14 @@ Future<void> showLanguagePicker(BuildContext context) {
               l10n.languageRussian,
               popOnSelect: true,
             ),
+            _languageTile(
+              ctx,
+              controller,
+              LanguagePref.th,
+              current,
+              l10n.languageThai,
+              popOnSelect: true,
+            ),
             const SizedBox(height: 8),
           ],
         ),
@@ -180,7 +198,7 @@ class SfxSwitchTile extends StatelessWidget {
   });
 
   final SfxController? controller;
-  final L10n l10n;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -213,7 +231,7 @@ class MusicSwitchTile extends StatelessWidget {
   });
 
   final MusicController? controller;
-  final L10n l10n;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -300,13 +318,13 @@ class _ReminderSwitchTileState extends State<ReminderSwitchTile> {
     }
     await store.setEnabled(value);
     if (!mounted) return;
-    await LocalReminderService.resync(l10n: L10n.of(context));
+    await LocalReminderService.resync(l10n: AppLocalizations.of(context));
     if (mounted) setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = L10n.of(context);
+    final l10n = AppLocalizations.of(context);
     final enabled = _store?.enabled ?? false;
     return SwitchListTile(
       secondary: Icon(
@@ -336,7 +354,7 @@ class HapticSwitchTile extends StatelessWidget {
   });
 
   final HapticController? controller;
-  final L10n l10n;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -358,6 +376,97 @@ class HapticSwitchTile extends StatelessWidget {
   }
 }
 
+class TableLookSection extends StatelessWidget {
+  const TableLookSection({
+    super.key,
+    required this.controller,
+    required this.l10n,
+  });
+
+  final TableLookController? controller;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final current = controller?.look ?? TableLook.defaultLook;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          child: Text(
+            l10n.tableLook,
+            style: const TextStyle(
+              color: _gold,
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+            ),
+          ),
+        ),
+        _tableLookTile(
+          controller,
+          TableLook.classic,
+          current,
+          l10n.tableLookClassic,
+          l10n.tableLookClassicHint,
+          l10n.tableLookLockedHint,
+        ),
+        _tableLookTile(
+          controller,
+          TableLook.casual,
+          current,
+          l10n.tableLookCasual,
+          l10n.tableLookCasualHint,
+          l10n.tableLookLockedHint,
+        ),
+        _tableLookTile(
+          controller,
+          TableLook.premium,
+          current,
+          l10n.tableLookPremium,
+          l10n.tableLookPremiumHint,
+          l10n.tableLookLockedHint,
+        ),
+      ],
+    );
+  }
+}
+
+Widget _tableLookTile(
+  TableLookController? controller,
+  TableLook value,
+  TableLook current,
+  String label,
+  String hint,
+  String lockedHint,
+) {
+  final selected = value == current;
+  final unlocked = controller?.isUnlocked(value) ?? true;
+  final accent = selected ? _gold : _ivory;
+  return ListTile(
+    leading: Icon(
+      selected
+          ? Icons.check_circle_rounded
+          : unlocked
+          ? Icons.circle_outlined
+          : Icons.lock_rounded,
+      color: accent,
+    ),
+    title: Text(
+      label,
+      style: TextStyle(color: accent, fontWeight: FontWeight.w700),
+    ),
+    subtitle: Text(
+      unlocked ? hint : lockedHint,
+      style: TextStyle(color: accent.withValues(alpha: 0.72), fontSize: 12),
+    ),
+    enabled: unlocked,
+    onTap: controller == null || !unlocked
+        ? null
+        : () => controller.setLook(value),
+  );
+}
+
 class LockedTileDimSwitchTile extends StatelessWidget {
   const LockedTileDimSwitchTile({
     super.key,
@@ -366,7 +475,7 @@ class LockedTileDimSwitchTile extends StatelessWidget {
   });
 
   final LockedTileDimController? controller;
-  final L10n l10n;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -380,38 +489,6 @@ class LockedTileDimSwitchTile extends StatelessWidget {
       ),
       subtitle: Text(
         l10n.dimCoveredTilesHint,
-        style: TextStyle(color: accent.withValues(alpha: 0.72), fontSize: 12),
-      ),
-      value: enabled,
-      onChanged: controller?.setEnabled,
-      activeThumbColor: _gold,
-      activeTrackColor: _gold.withValues(alpha: 0.38),
-    );
-  }
-}
-
-class QModeSwitchTile extends StatelessWidget {
-  const QModeSwitchTile({
-    super.key,
-    required this.controller,
-    required this.l10n,
-  });
-
-  final QModeController? controller;
-  final L10n l10n;
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = controller?.enabled ?? false;
-    final accent = enabled ? _gold : _ivory;
-    return SwitchListTile(
-      secondary: Icon(Icons.bolt_rounded, color: accent),
-      title: Text(
-        l10n.qMode,
-        style: TextStyle(color: accent, fontWeight: FontWeight.w700),
-      ),
-      subtitle: Text(
-        l10n.qModeHint,
         style: TextStyle(color: accent.withValues(alpha: 0.72), fontSize: 12),
       ),
       value: enabled,

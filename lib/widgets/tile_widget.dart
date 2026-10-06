@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -7,10 +8,12 @@ import '../debug_agent_log.dart';
 import '../l10n/l10n.dart';
 import '../models/tile.dart';
 import '../services/locked_tile_dim_controller.dart';
+import '../services/table_look_controller.dart';
 import '../utils/tile_pyramid_position.dart';
 import 'match_particles.dart';
 import 'tile_canvas.dart';
 import 'tile_glyph.dart';
+import 'tile_hit_target.dart';
 import 'tile_painter.dart';
 import 'tile_symbol_image.dart';
 
@@ -25,11 +28,14 @@ class TileWidget extends StatefulWidget {
     required this.isFree,
     this.onTap,
     this.isHinted = false,
+    this.isBlocker = false,
+    this.isTarget = false,
     this.isRemoving = false,
     this.onRemoveComplete,
     this.compact = false,
     this.showBack = false,
     this.shuffleToken = 0,
+    this.shuffleGatherOffset = Offset.zero,
   });
 
   final Tile tile;
@@ -38,7 +44,12 @@ class TileWidget extends StatefulWidget {
   final bool isSelected;
   final bool isFree;
   final bool isHinted;
+  final bool isBlocker;
+  final bool isTarget;
   final int shuffleToken;
+
+  /// Вектор от центра этой плитки к центру поля — куда ссыпается колода.
+  final Offset shuffleGatherOffset;
 
   /// Тап с глобальным rect плитки (для полёта в лоток).
   final void Function(Rect globalRect)? onTap;
@@ -58,8 +69,11 @@ class TileWidget extends StatefulWidget {
   static const selectDuration = Duration(milliseconds: 80);
   static const tapPopDuration = Duration(milliseconds: 200);
   static const tapPopPeak = 1.15;
-  static const shuffleFlipDuration = Duration(milliseconds: 480);
-  static const shuffleMaxStagger = Duration(milliseconds: 216);
+  static const shuffleDuration = Duration(milliseconds: 820);
+  static const shuffleFlipDuration = shuffleDuration;
+  static const shuffleMaxStagger = Duration.zero;
+  static const shuffleGatherIn = 0.40;
+  static const shuffleGatherOut = 0.60;
 
   /// Отказ по перекрытой кости: короткая тряска вместо немого тапа.
   static const shakeDuration = Duration(milliseconds: 200);
@@ -67,12 +81,24 @@ class TileWidget extends StatefulWidget {
 
   /// Свободная кость выступает над стопкой, под пальцем — bounce.
   static const _freeLiftPx = -1.6;
-  static Duration get shufflePlayDuration =>
-      shuffleFlipDuration + shuffleMaxStagger;
+  static Duration get shufflePlayDuration => shuffleDuration;
 
   static Duration shuffleStaggerOf(Tile tile) {
-    final wave = (tile.x * 3 + tile.y * 5 + tile.layer * 11).abs() % 12;
-    return Duration(milliseconds: wave * 18);
+    // Keep the old entry point; the pile meets in one beat.
+    return Duration(milliseconds: 0 * tile.layer);
+  }
+
+  /// 0 на местах, 1 когда вся колода лежит одной костью в центре.
+  static double shuffleGatherAmount(double t) {
+    if (t <= 0 || t >= 1) return 0;
+    if (t < shuffleGatherIn) {
+      return Curves.easeInCubic.transform(t / shuffleGatherIn);
+    }
+    if (t <= shuffleGatherOut) return 1;
+    return 1 -
+        Curves.easeOutCubic.transform(
+          (t - shuffleGatherOut) / (1 - shuffleGatherOut),
+        );
   }
 
   static Offset layerOffset(int zIndex, double tileW, double tileH) {
@@ -96,7 +122,8 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
   late final AnimationController _pop;
   late String _shownSymbol;
   String? _shuffleFromSymbol;
-  int _shuffleDelayMs = 0;
+  Timer? _shuffleFallback;
+  bool _blockHits = false;
 
   @override
   void initState() {
@@ -114,14 +141,19 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 720),
     );
     _shuffleFlip =
-        AnimationController(
-          vsync: this,
-          duration: TileWidget.shuffleFlipDuration,
-        )..addStatusListener((status) {
-          if (status == AnimationStatus.completed) {
+        AnimationController(vsync: this, duration: TileWidget.shuffleDuration)
+          ..addStatusListener((status) {
+            if (status != AnimationStatus.completed &&
+                status != AnimationStatus.dismissed) {
+              return;
+            }
             _shownSymbol = widget.tile.symbol;
-          }
-        });
+            // isAnimating ещё true в кадр смены статуса, а родитель может
+            // больше не перестраиваться. Без своего флага плитки остаются
+            // глухими после перемешивания.
+            _blockHits = false;
+            if (mounted) setState(() {});
+          });
     _shake = AnimationController(
       vsync: this,
       duration: TileWidget.shakeDuration,
@@ -164,15 +196,25 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
 
   void _playShuffle({required String fromSymbol}) {
     _shuffleFromSymbol = fromSymbol;
-    _shuffleDelayMs = TileWidget.shuffleStaggerOf(widget.tile).inMilliseconds;
-    _shuffleFlip.duration =
-        TileWidget.shuffleFlipDuration +
-        Duration(milliseconds: _shuffleDelayMs);
+    _blockHits = true;
+    _shuffleFlip.duration = TileWidget.shuffleDuration;
     _shuffleFlip.forward(from: 0);
+    _shuffleFallback?.cancel();
+    _shuffleFallback = Timer(
+      TileWidget.shuffleDuration + const Duration(milliseconds: 80),
+      () {
+        if (!mounted) return;
+        if (_shuffleFlip.status == AnimationStatus.completed) return;
+        _shuffleFlip.value = 1;
+        _shownSymbol = widget.tile.symbol;
+      },
+    );
   }
 
   @override
   void dispose() {
+    _shuffleFallback?.cancel();
+    _tapGuard?.cancel();
     _shake.dispose();
     _pop.dispose();
     _shuffleFlip.dispose();
@@ -181,16 +223,7 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  double get _shuffleLocalT {
-    final duration = _shuffleFlip.duration;
-    if (duration == null || duration.inMilliseconds <= 0) {
-      return _shuffleFlip.value;
-    }
-    final elapsed = _shuffleFlip.value * duration.inMilliseconds;
-    return ((elapsed - _shuffleDelayMs) /
-            TileWidget.shuffleFlipDuration.inMilliseconds)
-        .clamp(0.0, 1.0);
-  }
+  double get _shuffleLocalT => _shuffleFlip.value.clamp(0.0, 1.0);
 
   String get _faceSymbol {
     final from = _shuffleFromSymbol;
@@ -198,15 +231,73 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
     return from;
   }
 
+  double _shuffleFlightAmount(double t) {
+    if (t <= 0 || t >= 1) return 0;
+    if (t < TileWidget.shuffleGatherIn) {
+      return math.sin((t / TileWidget.shuffleGatherIn) * math.pi);
+    }
+    if (t > TileWidget.shuffleGatherOut) {
+      return math.sin(
+        ((t - TileWidget.shuffleGatherOut) /
+                (1 - TileWidget.shuffleGatherOut)) *
+            math.pi,
+      );
+    }
+    return 0;
+  }
+
+  Matrix4 _shuffleMatrix(double t, double tapPop) {
+    final m = Matrix4.identity();
+    if (t <= 0 || t >= 1) {
+      return m..scaleByDouble(tapPop, tapPop, 1, 1);
+    }
+
+    final gather = TileWidget.shuffleGatherAmount(t);
+    final flight = _shuffleFlightAmount(t);
+    final mix = math.sin(
+      widget.tile.id * 2.399 + widget.tile.x * 0.91 + widget.tile.y * 1.37,
+    );
+    final offset = widget.shuffleGatherOffset;
+    final twist = mix * 0.26 * flight;
+    final scale = (1.0 - 0.04 * gather + 0.05 * flight) * tapPop;
+
+    return m
+      ..translate(offset.dx * gather, offset.dy * gather)
+      ..rotateZ(twist)
+      ..scaleByDouble(scale, scale, 1, 1);
+  }
+
   void _playTapPop() {
     if (!widget.isFree || widget.compact || widget.isRemoving) return;
     _pop.forward(from: 0);
   }
 
-  double _highlightIntensity() {
+  Timer? _tapGuard;
+
+  /// Сразу на касании, без ожидания отпускания. На части экранов палец
+  /// уезжает дальше стандартного порога, и обычный tap просто пропадает.
+  void _emitTap() {
+    if (_tapGuard != null) return;
+    _tapGuard = Timer(const Duration(milliseconds: 280), () {
+      _tapGuard = null;
+    });
+    if (!widget.isFree) {
+      _shake.forward(from: 0);
+    } else {
+      _playTapPop();
+    }
+    final box = context.findRenderObject() as RenderBox?;
+    final rect = (box != null && box.hasSize)
+        ? box.localToGlobal(Offset.zero) & box.size
+        : Rect.zero;
+    widget.onTap?.call(rect);
+  }
+
+  double _highlightIntensity({required bool casual, bool premium = false}) {
     if (widget.isHinted) {
       return widget.compact ? 0.92 : 1.0;
     }
+    if ((casual || premium) && widget.isSelected) return 1.0;
     return 0.0;
   }
 
@@ -219,8 +310,11 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
     final showBack = widget.showBack;
 
     final covered = !widget.isFree && !widget.isSelected;
+    final look = TableLookScope.lookOf(context);
+    final casual = look.isCasual;
+    final premium = look.isPremium;
     final dimCovered = LockedTileDimScope.maybeOf(context)?.enabled ?? false;
-    final locked = dimCovered && covered;
+    final locked = (casual || dimCovered) && covered;
     final lifted = widget.isFree || widget.isSelected;
 
     final selectScale = (widget.isSelected || widget.isHinted) ? 1.05 : 1.0;
@@ -228,14 +322,38 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
     final restLift = (lifted && !widget.compact) ? TileWidget._freeLiftPx : 0.0;
     final selectLift = (widget.isSelected || widget.isHinted) ? -2.0 : restLift;
     final tileSize = Size(width, height);
-    final symbolRect = TileBaseLayout.symbolRectOf(tileSize);
+    final faceRect = premium
+        ? PremiumTileLayout.faceRectOf(tileSize)
+        : (casual
+              ? CasualTileLayout.faceRectOf(tileSize)
+              : TileBaseLayout.faceRectOf(tileSize));
+    final symbolRect = premium
+        ? PremiumTileLayout.symbolRectOf(tileSize)
+        : (casual
+              ? CasualTileLayout.symbolRectOf(tileSize)
+              : TileBaseLayout.symbolRectOf(tileSize));
+    final faceClipRadius = premium
+        ? PremiumTileLayout.faceCornerRadius(tileSize)
+        : (casual
+              ? CasualTileLayout.cornerRadius(tileSize)
+              : TileCanvas.faceCornerRadius(tileSize));
     final pyramid = TilePyramidPosition.visuals(
       z: tile.layer,
       tileWidth: width,
       tileHeight: height,
       lifted: lifted,
     );
-    final baseHighlight = _highlightIntensity();
+    // Premium: контактная тень плотнее и резче, чтобы стопка читалась
+    // объёмнее (см. разбор референса — тени были слишком мягкими/размытыми).
+    final effectivePyramid = premium
+        ? TilePyramidVisuals(
+            baseOffset: pyramid.baseOffset,
+            shadowOffset: pyramid.shadowOffset * 1.35,
+            shadowOpacity: (pyramid.shadowOpacity * 1.30).clamp(0.0, 0.97),
+            shadowBlur: pyramid.shadowBlur * 0.72,
+          )
+        : pyramid;
+    final baseHighlight = _highlightIntensity(casual: casual, premium: premium);
     // #region agent log
     if (_loggedTiles < 3) {
       _loggedTiles++;
@@ -267,8 +385,8 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
           'faceFillsWidget':
               TileBaseLayout.faceRectOf(tileSize) == (Offset.zero & tileSize),
           'clipRadius': TileBaseLayout.cornerRadius(tileSize),
-          'assetW': 514,
-          'assetH': 709,
+          'assetW': TileBaseLayout.spriteWidthPx,
+          'assetH': TileBaseLayout.spriteHeightPx,
           'engrave': 'raw-color',
           'kIsWeb': kIsWeb,
           'renderer': 'png-tile-base',
@@ -288,14 +406,22 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
               fit: StackFit.expand,
               clipBehavior: Clip.none,
               children: [
-                TilePyramidShadowLayer(visuals: pyramid, tileSize: tileSize),
+                TilePyramidShadowLayer(
+                  visuals: effectivePyramid,
+                  tileSize: tileSize,
+                  cornerRadius: premium
+                      ? PremiumTileLayout.cornerRadius(tileSize)
+                      : (casual
+                            ? CasualTileLayout.cornerRadius(tileSize)
+                            : TileCanvas.cornerRadius(tileSize)),
+                ),
                 Positioned.fill(
                   child: AnimatedBuilder(
                     animation: _shuffleFlip,
                     builder: (context, _) {
                       final shown = _faceSymbol;
                       final special = TileCanvas.isSpecialSymbol(shown);
-                      return Stack(
+                      Widget layers = Stack(
                         fit: StackFit.expand,
                         clipBehavior: Clip.none,
                         children: [
@@ -315,23 +441,54 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
                                 locked: locked,
                                 isSelected: widget.isSelected,
                                 isSpecial: special,
+                                casual: casual,
+                                premium: premium,
                                 specialSeed: shown.hashCode,
                                 symbol: shown,
                               ),
                             )
                           else
                             Positioned(
-                              left: symbolRect.left,
-                              top: symbolRect.top,
-                              width: symbolRect.width,
-                              height: symbolRect.height,
-                              child: Opacity(
-                                opacity: locked ? 0.72 : 1.0,
-                                child: _EngravedFace(symbol: shown),
+                              left: faceRect.left,
+                              top: faceRect.top,
+                              width: faceRect.width,
+                              height: faceRect.height,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(
+                                  faceClipRadius,
+                                ),
+                                child: Stack(
+                                  clipBehavior: Clip.hardEdge,
+                                  children: [
+                                    Positioned(
+                                      left: symbolRect.left - faceRect.left,
+                                      top: symbolRect.top - faceRect.top,
+                                      width: symbolRect.width,
+                                      height: symbolRect.height,
+                                      child: ClipRect(
+                                        child: Opacity(
+                                          opacity: locked
+                                              ? (premium ? 0.90 : 0.72)
+                                              : 1.0,
+                                          child: _EngravedFace(symbol: shown),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                         ],
                       );
+                      if (casual) {
+                        layers = ClipRRect(
+                          borderRadius: BorderRadius.circular(
+                            CasualTileLayout.cornerRadius(tileSize),
+                          ),
+                          child: layers,
+                        );
+                      }
+                      return layers;
                     },
                   ),
                 ),
@@ -346,6 +503,8 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
                         size: tileSize,
                         painter: TileHighlightPainter(
                           intensity: baseHighlight * pulse,
+                          casual: casual,
+                          premium: premium,
                         ),
                       );
                     },
@@ -384,24 +543,14 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
           child: AnimatedBuilder(
             animation: Listenable.merge([_shuffleFlip, _pop]),
             builder: (context, child) {
-              final t = _shuffleLocalT;
-              final scaleX = (t == 0 || t == 1)
-                  ? 1.0
-                  : (t < 0.5 ? (1 - t * 2) : (t - 0.5) * 2).clamp(0.08, 1.0);
-              final bounce = math.sin(t * math.pi);
-              final lift = -12.0 * bounce;
-              final tilt = bounce * 0.14 * (widget.tile.id.isEven ? 1.0 : -1.0);
-              final pop = 1.0 + 0.07 * bounce;
               final tapPop =
                   1.0 +
                   (TileWidget.tapPopPeak - 1.0) *
                       math.sin(_pop.value * math.pi);
               return Transform(
                 alignment: Alignment.center,
-                transform: Matrix4.identity()
-                  ..translate(0.0, lift)
-                  ..rotateZ(tilt)
-                  ..scale(scaleX * pop * tapPop, pop * tapPop),
+                transform: _shuffleMatrix(_shuffleLocalT, tapPop),
+                key: const ValueKey('tile-shuffle-transform'),
                 child: child,
               );
             },
@@ -430,6 +579,41 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
         clipBehavior: Clip.none,
         children: [
           tileBody,
+          if (widget.isTarget)
+            Positioned(
+              left: faceRect.left + 2,
+              top: faceRect.top + 2,
+              child: IgnorePointer(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF45276B),
+                    shape: BoxShape.circle,
+                  ),
+                  padding: const EdgeInsets.all(2),
+                  child: Icon(
+                    Icons.star_rounded,
+                    color: const Color(0xFFFFD54F),
+                    size: width * 0.23,
+                  ),
+                ),
+              ),
+            ),
+          if (widget.isBlocker)
+            Positioned.fromRect(
+              rect: faceRect,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: const Color(0x33FFAB40),
+                    borderRadius: BorderRadius.circular(faceClipRadius),
+                    border: Border.all(
+                      color: const Color(0xFFFFAB40),
+                      width: 3,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           if (isRemoving)
             Positioned(
               left: -width * 0.12,
@@ -450,13 +634,15 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
       ),
     );
 
-    final shuffling = _shuffleFlip.isAnimating;
-    final l10n = L10n.of(context);
+    final shuffling = _blockHits;
+    final l10n = AppLocalizations.of(context);
     final semantic = Semantics(
       container: true,
       button: widget.onTap != null,
       enabled: widget.onTap != null,
+      onTap: widget.onTap == null ? null : _emitTap,
       selected: widget.isHinted || widget.isSelected,
+      hint: widget.isTarget ? l10n.specialTile : null,
       label: l10n.tileSemanticLabel(
         symbol: tile.symbol,
         free: widget.isFree,
@@ -470,24 +656,20 @@ class _TileWidgetState extends State<TileWidget> with TickerProviderStateMixin {
       return IgnorePointer(ignoring: isRemoving || shuffling, child: semantic);
     }
 
-    return IgnorePointer(
-      ignoring: isRemoving || shuffling,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapDown: (_) {
-          if (widget.isFree) _playTapPop();
-        },
-        onTap: () {
-          if (!widget.isFree) _shake.forward(from: 0);
-          final box = context.findRenderObject() as RenderBox?;
-          final rect = (box != null && box.hasSize)
-              ? box.localToGlobal(Offset.zero) & box.size
-              : Rect.zero;
-          widget.onTap?.call(rect);
-        },
-        child: semantic,
-      ),
+    final bool Function(Size, Offset) hitContains = casual
+        ? CasualTileLayout.containsPoint
+        : (premium
+              ? PremiumTileLayout.containsPoint
+              : TileCanvas.containsBodyPoint);
+    Widget interactive = Listener(
+      behavior: HitTestBehavior.opaque,
+      onPointerDown: (_) => _emitTap(),
+      child: semantic,
     );
+    if (!widget.compact) {
+      interactive = TileHitTarget(contains: hitContains, child: interactive);
+    }
+    return IgnorePointer(ignoring: isRemoving || shuffling, child: interactive);
   }
 }
 

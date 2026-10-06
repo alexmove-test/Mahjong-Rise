@@ -1,3 +1,4 @@
+import '../../models/house_upgrade.dart';
 import '../../models/leaderboard_entry.dart';
 import '../../models/levels.dart';
 import '../../models/plot_kind.dart';
@@ -12,13 +13,40 @@ class CourtyardEstate {
     required this.lots,
     this.festival = 0,
     this.streakLife = 0,
+    this.purchasedHome,
   });
 
   final Map<PlotKind, CourtyardLotView> lots;
   final double festival;
   final double streakLife;
 
+  /// Купленное состояние дома игрока, 1…24. Пусто у условного двора соседа.
+  final int? purchasedHome;
+
   CourtyardLotView lot(PlotKind kind) => lots[kind]!;
+
+  /// Сумма стадий участков. Пруд и условный двор соседа читают её.
+  /// Купленный дом на эту сумму больше не опирается.
+  double get campaignStage {
+    final completed = PlotKind.order.fold<double>(
+      0,
+      (value, kind) => value + lot(kind).stage,
+    );
+    return completed.clamp(0, CourtyardLotBuild.maxStage.toDouble());
+  }
+
+  /// Дом игрока — купленное состояние. Без него шкала остаётся кампанийной:
+  /// так рисуется условный прогресс, а не чужой купленный уровень.
+  double get homeStage => purchasedHome?.toDouble() ?? campaignStage;
+
+  /// Пруд наполняется кампанией после 24 суммарных стадий и не зависит от покупки дома.
+  double get pondStage => pondStageOf(campaignStage);
+
+  static double pondStageOf(double homeStage) {
+    final pastHouse = homeStage - PlotStages.frameCount;
+    if (pastHouse <= 0) return 0;
+    return pastHouse.clamp(0, PlotStages.framesOf(PlotKind.pond).toDouble());
+  }
 
   /// Тестовый/оверлейный двор с акцентом на один участок.
   factory CourtyardEstate.fromFocus(CourtyardSnapshot snapshot) {
@@ -48,6 +76,7 @@ class CourtyardEstate {
     ProgressStore store, {
     int streak = 0,
     bool festival = false,
+    int? purchasedHome,
   }) {
     final lots = <PlotKind, CourtyardLotView>{
       for (final kind in PlotKind.order)
@@ -63,10 +92,25 @@ class CourtyardEstate {
       lots: lots,
       festival: festival ? 1 : 0,
       streakLife: sample.streakLife,
+      purchasedHome: purchasedHome == null
+          ? null
+          : HouseUpgrade.clampState(purchasedHome),
     );
   }
 
-  /// Двор по кампании: хватает `levelsUnlocked` из рейтинга.
+  /// Кадр дома, который виден до победы и должен остаться после неё.
+  static int frozenHome({
+    required CourtyardEstate before,
+    required bool houseMigrated,
+    required int purchasedState,
+  }) {
+    if (houseMigrated) return HouseUpgrade.clampState(purchasedState);
+    return HouseUpgrade.fromCampaignFrame(
+      PlotStages.currentFrame(before.campaignStage),
+    );
+  }
+
+  /// Условный двор по числу открытых уровней. Это не купленное состояние дома.
   static CourtyardEstate fromUnlocked(int maxUnlocked) {
     return CourtyardEstate(
       lots: {
@@ -85,6 +129,7 @@ class CourtyardEstate {
       },
       festival: a.festival + (b.festival - a.festival) * u,
       streakLife: a.streakLife + (b.streakLife - a.streakLife) * u,
+      purchasedHome: b.purchasedHome ?? a.purchasedHome,
     );
   }
 
@@ -195,7 +240,8 @@ class NeighborYard {
 
   bool get named => name != null && name!.trim().isNotEmpty;
 
-  /// Холмы: игроки рядом в рейтинге, двор из их `levelsUnlocked`.
+  /// Соседи: картинка по открытым уровням, без номера купленного дома.
+  /// Сервер это состояние пока не хранит.
   static List<NeighborYard> placed({
     required List<LeaderboardEntry> others,
     required bool online,

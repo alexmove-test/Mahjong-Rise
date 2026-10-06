@@ -15,4 +15,15 @@ class LeaderboardEntry {
   final int totalStars;
   final int levelsUnlocked;
   final bool isCurrentPlayer;
+
+  LeaderboardEntry copyWith({String? name}) {
+    return LeaderboardEntry(
+      id: id,
+      name: name ?? this.name,
+      rating: rating,
+      totalStars: totalStars,
+      levelsUnlocked: levelsUnlocked,
+      isCurrentPlayer: isCurrentPlayer,
+    );
+  }
 }

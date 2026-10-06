@@ -72,5 +72,26 @@ service cloud.firestore {
 
       allow delete: if false;
     }
+
+    match /ugc_reports/{reportId} {
+      allow read: if false;
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly([
+          'reporterUid',
+          'targetUid',
+          'targetName',
+          'reason',
+          'createdAt',
+        ])
+        && request.resource.data.reporterUid == request.auth.uid
+        && request.resource.data.targetUid is string
+        && request.resource.data.targetUid.size() >= 1
+        && request.resource.data.targetUid.size() <= 128
+        && request.resource.data.targetUid != request.auth.uid
+        && validName(request.resource.data.targetName)
+        && request.resource.data.reason in ['name', 'abuse', 'other']
+        && request.resource.data.createdAt is timestamp;
+      allow update, delete: if false;
+    }
   }
 }

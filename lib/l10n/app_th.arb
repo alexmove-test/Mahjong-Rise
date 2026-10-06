@@ -1,0 +1,3608 @@
+{
+  "@@locale": "th",
+  "continueGame": "เล่นต่อ",
+  "@continueGame": {
+    "description": "Resumes the current activity."
+  },
+  "noShuffleMoves": "ไม่มีคู่ให้จับ — ลองย้อนกลับ ใช้คำใบ้ หรือแม่เหล็ก",
+  "shuffleLockedChallenge": "สับไพ่ไม่ได้ในชาเลนจ์นี้",
+  "specialTile": "ไพ่เป้าหมายที่มีดาว",
+  "@specialTile": {
+    "description": "Semantics name of a starred challenge tile."
+  },
+  "continueWith": "เล่นต่อ · {title}",
+  "@continueWith": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "newPlot": "แปลงใหม่",
+  "@newPlot": {
+    "description": "Semantics label for a courtyard plot that is not built yet."
+  },
+  "previousPlot": "แปลงก่อนหน้า",
+  "@previousPlot": {
+    "description": "Short interface label: Previous plot"
+  },
+  "nextPlot": "แปลงถัดไป",
+  "@nextPlot": {
+    "description": "Short interface label: Next plot"
+  },
+  "plotLockedHint": "ชัยชนะถัดไปจะสร้างแปลงนี้",
+  "neighborYard": "ลานบ้านของ {name}",
+  "@neighborYard": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "neighborRating": "{name} · {rating}",
+  "@neighborRating": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "rating": {
+        "type": "int"
+      }
+    }
+  },
+  "neighboringCourtyard": "ลานบ้านเพื่อนบ้าน",
+  "courtyardPanHint": "ลากเพื่อมองรอบลานบ้าน",
+  "houseStateTitle": "บ้าน · {state}/{total}",
+  "@houseStateTitle": {
+    "placeholders": {
+      "state": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "houseFullyUpgraded": "บ้านอัปเกรดครบแล้ว",
+  "houseDetailsShow": "รายละเอียด",
+  "@houseDetailsShow": {
+    "description": "Expands the house upgrade details."
+  },
+  "houseDetailsHide": "ซ่อน",
+  "@houseDetailsHide": {
+    "description": "Collapses the house upgrade details."
+  },
+  "upgradeHouseForText": "อัปเกรดในราคา {price}",
+  "@upgradeHouseForText": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "pointsShortfallText": "แต้มไม่พอ {amount}",
+  "@pointsShortfallText": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "houseUpgradeOfferText": "อัปเกรดบ้าน · {cost}",
+  "@houseUpgradeOfferText": {
+    "placeholders": {
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
+  "nextHouseLook": "รูปลักษณ์ถัดไปของบ้าน",
+  "@nextHouseLook": {
+    "description": "Short interface label: Next house look"
+  },
+  "houseLookLine": "รูปลักษณ์บ้านที่สร้างแล้ว: {built} จาก {total}",
+  "@houseLookLine": {
+    "placeholders": {
+      "built": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "hubLevelUnlocksPet": "ด่าน {id} จะปลดล็อกสัตว์เลี้ยง",
+  "@hubLevelUnlocksPet": {
+    "placeholders": {
+      "id": {
+        "type": "int"
+      }
+    }
+  },
+  "hubQuestRewardReady": "รางวัลรายสัปดาห์พร้อมแล้ว",
+  "hubThreeStarUntilReward": "ผ่านด้วย 3★ จะได้รางวัล",
+  "today": "วันนี้",
+  "@today": {
+    "description": "Label of the daily table."
+  },
+  "clearedToday": "ผ่านวันนี้แล้ว",
+  "@clearedToday": {
+    "description": "Short interface label: Cleared today"
+  },
+  "streakNights": "วันที่ {n} จาก 3",
+  "@streakNights": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "streakKept": "คงแสงสามคืนแล้ว",
+  "streakAtRisk": "จะดับตอนเที่ยงคืน",
+  "keepTheLight": "รักษาแสงไฟ",
+  "@keepTheLight": {
+    "description": "Short interface label: Keep the light"
+  },
+  "openedProgress": "เปิดแล้ว {unlocked}/{total}",
+  "@openedProgress": {
+    "placeholders": {
+      "unlocked": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "courtyard": "ลานบ้าน",
+  "@courtyard": {
+    "description": "Button that leaves the table and returns to the courtyard."
+  },
+  "howToPlay": "วิธีเล่น",
+  "@howToPlay": {
+    "description": "Short interface label: How to play"
+  },
+  "levels": "ด่าน",
+  "@levels": {
+    "description": "Short interface label: Levels"
+  },
+  "retry": "ลองใหม่",
+  "@retry": {
+    "description": "Restarts the current level."
+  },
+  "playAgain": "เล่นอีกครั้ง",
+  "@playAgain": {
+    "description": "Starts the cleared level over."
+  },
+  "next": "ถัดไป",
+  "@next": {
+    "description": "Button that advances to the next level."
+  },
+  "menu": "เมนู",
+  "@menu": {
+    "description": "Opens the in-game menu."
+  },
+  "close": "ปิด",
+  "@close": {
+    "description": "Dismisses a dialog or sheet."
+  },
+  "cancel": "ยกเลิก",
+  "@cancel": {
+    "description": "Abandons the current dialog without saving."
+  },
+  "save": "บันทึก",
+  "@save": {
+    "description": "Saves the edited player name."
+  },
+  "back": "กลับ",
+  "@back": {
+    "description": "Returns to the previous screen."
+  },
+  "privacyPolicy": "นโยบายความเป็นส่วนตัว",
+  "@privacyPolicy": {
+    "description": "Short interface label: Privacy Policy"
+  },
+  "privacySettings": "การตั้งค่าความเป็นส่วนตัว",
+  "@privacySettings": {
+    "description": "Short interface label: Privacy settings"
+  },
+  "hideBannerButton": "24 ชั่วโมง",
+  "@hideBannerButton": {
+    "description": "Short label for hiding the banner ad for a day."
+  },
+  "hideBannerTitle": "ซ่อนแบนเนอร์ 24 ชั่วโมง",
+  "hideBannerSubtitle": "ดูโฆษณา แล้วจะปิดบนอุปกรณ์นี้",
+  "hideBannerWatch": "ดูโฆษณา",
+  "@hideBannerWatch": {
+    "description": "Short interface label: Watch ad"
+  },
+  "hideBannerNotNow": "ไว้ทีหลัง",
+  "@hideBannerNotNow": {
+    "description": "Dismisses the hide-banner offer."
+  },
+  "aboutGame": "เกี่ยวกับเกม",
+  "@aboutGame": {
+    "description": "Opens the build-info dialog."
+  },
+  "builtAt": "บิลด์: {time}",
+  "@builtAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "settings": "ตั้งค่า",
+  "@settings": {
+    "description": "Opens the settings sheet."
+  },
+  "sound": "เสียง",
+  "@sound": {
+    "description": "Toggle for sound effects."
+  },
+  "music": "เพลง",
+  "@music": {
+    "description": "Toggle for background music."
+  },
+  "hapticFeedback": "การสั่น",
+  "@hapticFeedback": {
+    "description": "Short interface label: Haptic feedback"
+  },
+  "qMode": "โหมด Q",
+  "@qMode": {
+    "description": "Settings name of the high-charge magnet mode."
+  },
+  "qModeHint": "โฆษณาแม่เหล็กให้ 50",
+  "dimCoveredTiles": "ทำให้ไพ่ที่ปิดอยู่จางลง",
+  "dimCoveredTilesHint": "ทำให้ไพ่ที่หยิบไม่ได้เป็นสีเทา",
+  "tableLook": "รูปลักษณ์โต๊ะ",
+  "@tableLook": {
+    "description": "Short interface label: Table look"
+  },
+  "tableLookClassic": "มาจองคลาสสิก",
+  "@tableLookClassic": {
+    "description": "Short interface label: Classic mahjong"
+  },
+  "tableLookClassicHint": "ไพ่สามมิติและปุ่มทองแดง",
+  "tableLookCasual": "แมตช์สีสด",
+  "@tableLookCasual": {
+    "description": "Short interface label: Bright match"
+  },
+  "tableLookCasualHint": "ไพ่แบน สีเขียวและทอง",
+  "tableLookPremium": "ใหม่",
+  "@tableLookPremium": {
+    "description": "Name of the newest table theme."
+  },
+  "tableLookPremiumHint": "ไพ่สีงาช้าง โต๊ะไม้โทนอุ่น",
+  "tableLookGift": "โต๊ะ",
+  "@tableLookGift": {
+    "description": "Short label for a table theme unlocked as a courtyard gift."
+  },
+  "tableLookUse": "ใช้",
+  "@tableLookUse": {
+    "description": "Selects a table theme."
+  },
+  "tableLookLockedHint": "ปลดล็อกเป็นของขวัญลานบ้าน",
+  "tableLookSettingsHint": "เลือกธีมโต๊ะแบบอื่นได้ในเมนู",
+  "language": "ภาษา",
+  "@language": {
+    "description": "Short interface label: Language"
+  },
+  "languageSystem": "ตามระบบ",
+  "@languageSystem": {
+    "description": "Short interface label: System"
+  },
+  "tileLocked": "ไพ่ถูกล็อก",
+  "@tileLocked": {
+    "description": "Toast when the player taps a covered tile."
+  },
+  "trayFull": "ถาดเต็ม",
+  "@trayFull": {
+    "description": "Toast when the tray cannot take another tile."
+  },
+  "trayFullHint": "ไม่มีคู่ที่ตรงกัน",
+  "noMovesShuffle": "ไม่มีตาเดิน — สับไพ่",
+  "youWin": "คุณชนะ!",
+  "@youWin": {
+    "description": "Win headline on the result overlay."
+  },
+  "noFreeTiles": "ไม่มีไพ่ว่าง",
+  "@noFreeTiles": {
+    "description": "Short interface label: No free tiles"
+  },
+  "shuffled": "สับแล้ว",
+  "@shuffled": {
+    "description": "Short interface label: Shuffled"
+  },
+  "stillNoMoves": "ยังไม่มีตาเดิน",
+  "@stillNoMoves": {
+    "description": "Short interface label: Still no moves"
+  },
+  "loadingAd": "กำลังโหลดโฆษณา…",
+  "@loadingAd": {
+    "description": "Short interface label: Loading ad…"
+  },
+  "rewardNotEarned": "ยังไม่ได้รับรางวัล",
+  "adUnavailable": "โหลดโฆษณาไม่ได้ ลองอีกครั้ง",
+  "noUsefulMoves": "ไม่มีตาเดินที่ใช้ได้",
+  "@noUsefulMoves": {
+    "description": "Short interface label: No useful moves"
+  },
+  "continuing": "กำลังเล่นต่อ",
+  "@continuing": {
+    "description": "Short interface label: Continuing"
+  },
+  "moveUndone": "ย้อนการเดินแล้ว",
+  "@moveUndone": {
+    "description": "Short interface label: Move undone"
+  },
+  "noMatchingTiles": "ไม่มีไพ่ที่ตรงกัน",
+  "couldNotOpenLink": "เปิดลิงก์ไม่ได้",
+  "dailyComplete": "ภารกิจรายวันเสร็จแล้ว",
+  "@dailyComplete": {
+    "description": "Short interface label: Daily complete"
+  },
+  "streakLabel": "สตรีค: {n}",
+  "@streakLabel": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "score": "คะแนน: {value}",
+  "@score": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "starsCount": "{n} ดาว",
+  "@starsCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyBonus": "โบนัส: +1 คำใบ้และสับไพ่",
+  "points": "แต้ม",
+  "@points": {
+    "description": "Name of the soft currency."
+  },
+  "pointsBalanceText": "แต้ม: {value}",
+  "@pointsBalanceText": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "pointsShopTitle": "แต้ม",
+  "@pointsShopTitle": {
+    "description": "Short interface label: Points"
+  },
+  "pointsShopSubtitle": "ได้ทุกครั้งที่ผ่านโต๊ะ เติมได้ทุกเมื่อ",
+  "pointsEarnRuleText": "ผ่านด่าน: +{perClear} และ +{perStar} ต่อดาว",
+  "@pointsEarnRuleText": {
+    "placeholders": {
+      "perClear": {
+        "type": "int"
+      },
+      "perStar": {
+        "type": "int"
+      }
+    }
+  },
+  "pointsPackBonus": "โบนัส +{percent}%",
+  "@pointsPackBonus": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "pointsPackPopular": "คนซื้อมากสุด",
+  "@pointsPackPopular": {
+    "description": "Short interface label: Most taken"
+  },
+  "pointsPackBest": "คุ้มที่สุด",
+  "@pointsPackBest": {
+    "description": "Short interface label: Best value"
+  },
+  "pointsBuy": "ซื้อ",
+  "@pointsBuy": {
+    "description": "Buys a points pack."
+  },
+  "pointsCreditedText": "ได้รับ +{value}",
+  "@pointsCreditedText": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "pointsPurchaseCancelled": "ยกเลิกการซื้อแล้ว",
+  "pointsPurchaseUnavailable": "ร้านค้าไม่พร้อมใช้งาน",
+  "pointsDemoNote": "ยังไม่ได้เชื่อมการชำระเงิน — แพ็กจะเข้าทันที",
+  "pointsWatchAd": "ดูโฆษณา",
+  "@pointsWatchAd": {
+    "description": "Short interface label: Watch ad"
+  },
+  "pointsWatchAdRewardText": "ฟรี +{value}",
+  "@pointsWatchAdRewardText": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "level": "ด่าน {id}",
+  "@level": {
+    "placeholders": {
+      "id": {
+        "type": "int"
+      }
+    }
+  },
+  "anotherLevelCleared": "ผ่านอีกหนึ่งด่าน",
+  "@anotherLevelCleared": {
+    "description": "Win headline after a campaign clear."
+  },
+  "newBest": "สถิติใหม่!",
+  "@newBest": {
+    "description": "Shown when the score beats the previous best."
+  },
+  "levelUnlocked": "ปลดล็อกด่าน {id}",
+  "@levelUnlocked": {
+    "placeholders": {
+      "id": {
+        "type": "int"
+      }
+    }
+  },
+  "shuffle": "สับ",
+  "@shuffle": {
+    "description": "Booster that rearranges the board."
+  },
+  "magnet": "แม่เหล็ก",
+  "@magnet": {
+    "description": "Booster that pulls a match off the board."
+  },
+  "hint": "คำใบ้",
+  "@hint": {
+    "description": "Booster that highlights a matching pair."
+  },
+  "undo": "ย้อนกลับ",
+  "@undo": {
+    "description": "Booster that takes back the last move. Also the cancel verb in some dialogs."
+  },
+  "watchAd": "ดูโฆษณา → {name}",
+  "@watchAd": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "boostEarnedText": "+{count} {name}",
+  "@boostEarnedText": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noneLeft": "หมดแล้ว",
+  "@noneLeft": {
+    "description": "Tooltip when a booster has no charges and ads are unavailable."
+  },
+  "coachTapFree": "จับไพ่ที่ว่าง — เปิดด้านบนและด้านหนึ่ง",
+  "coachMatchPair": "คู่ในถาดจะถูกลบ",
+  "coachTrayLimit": "ถาดใส่ได้ 4 ใบ — เต็มโดยไม่มีคู่แล้วจะแพ้",
+  "easy": "ง่าย",
+  "@easy": {
+    "description": "Difficulty label for the first campaign levels."
+  },
+  "normal": "ปกติ",
+  "@normal": {
+    "description": "Difficulty label for mid-early campaign levels."
+  },
+  "hard": "ยาก",
+  "@hard": {
+    "description": "Difficulty label for later campaign levels."
+  },
+  "expert": "ผู้เชี่ยวชาญ",
+  "@expert": {
+    "description": "Difficulty label for the hardest campaign levels."
+  },
+  "you": "คุณ",
+  "@you": {
+    "description": "Leaderboard label for the local player."
+  },
+  "player": "ผู้เล่น",
+  "@player": {
+    "description": "Fallback name before the player chooses one."
+  },
+  "yourName": "ชื่อของคุณ",
+  "@yourName": {
+    "description": "Short interface label: Your name"
+  },
+  "youClimbed": "คุณไต่อันดับแล้ว!",
+  "@youClimbed": {
+    "description": "Short interface label: You climbed!"
+  },
+  "rankClimbPlaces": "อันดับ {from} → {to}",
+  "@rankClimbPlaces": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
+    }
+  },
+  "leaderboard": "กระดานอันดับ",
+  "@leaderboard": {
+    "description": "Short interface label: Leaderboard"
+  },
+  "refresh": "รีเฟรช",
+  "@refresh": {
+    "description": "Reloads the online leaderboard."
+  },
+  "changeName": "เปลี่ยนชื่อ",
+  "@changeName": {
+    "description": "Short interface label: Change name"
+  },
+  "nameNotAllowed": "ใช้ชื่อนี้ไม่ได้ เลือกชื่ออื่น",
+  "rankingNamesNote": "ผู้เล่นเป็นคนตั้งชื่อ รายงานหรือซ่อนคนที่ผิดกฎได้",
+  "reportPlayer": "รายงานหรือซ่อน",
+  "@reportPlayer": {
+    "description": "Short interface label: Report or hide"
+  },
+  "reportName": "รายงานชื่อนี้",
+  "@reportName": {
+    "description": "Short interface label: Report this name"
+  },
+  "hidePlayer": "ซ่อนผู้เล่นนี้",
+  "@hidePlayer": {
+    "description": "Short interface label: Hide this player"
+  },
+  "reportThanks": "ขอบคุณ เราจะตรวจสอบชื่อนี้",
+  "playerHidden": "ซ่อนผู้เล่นนี้บนอุปกรณ์ของคุณแล้ว",
+  "name": "ชื่อ",
+  "@name": {
+    "description": "Column header for a leaderboard name."
+  },
+  "onlineRanking": "อันดับออนไลน์ · สูงสุด {top}",
+  "@onlineRanking": {
+    "placeholders": {
+      "top": {
+        "type": "int"
+      }
+    }
+  },
+  "offlineRanking": "ออฟไลน์: แสดงเฉพาะผลของคุณ",
+  "rankingFormula": "คะแนนจัดอันดับ: ดาว × 100,000 + คะแนนดีที่สุด + ความคืบหน้าแคมเปญ",
+  "scorePlotsLegend": "คะแนน : แปลง",
+  "@scorePlotsLegend": {
+    "description": "Leaderboard legend pairing score with courtyard plots."
+  },
+  "loadRankingFailed": "โหลดอันดับออนไลน์ไม่ได้",
+  "starsLevel": "{stars} ★ · ด่าน {unlocked}",
+  "@starsLevel": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      },
+      "unlocked": {
+        "type": "int"
+      }
+    }
+  },
+  "ad": "โฆษณา",
+  "@ad": {
+    "description": "Short badge on the simulated advertisement."
+  },
+  "done": "เสร็จ",
+  "@done": {
+    "description": "Finishes the simulated ad."
+  },
+  "closeWithoutReward": "ปิดโดยไม่รับรางวัล",
+  "simulatedAd": "โฆษณาจำลอง",
+  "@simulatedAd": {
+    "description": "Short interface label: Simulated ad"
+  },
+  "watchClipForBoost": "ดูคลิปเพื่อรับบูสต์",
+  "claimReward": "รับรางวัล",
+  "@claimReward": {
+    "description": "Short interface label: Claim reward"
+  },
+  "watchingAd": "กำลังดูโฆษณา…",
+  "@watchingAd": {
+    "description": "Short interface label: Watching ad…"
+  },
+  "weeklyQuests": "เควสต์รายสัปดาห์",
+  "@weeklyQuests": {
+    "description": "Short interface label: Weekly quests"
+  },
+  "claim": "รับ",
+  "@claim": {
+    "description": "Collects a completed weekly quest reward."
+  },
+  "claimed": "รับแล้ว",
+  "@claimed": {
+    "description": "Shown after a weekly quest reward was collected."
+  },
+  "questBonus": "+1 คำใบ้และสับไพ่",
+  "extraBoostThisWeek": "+1 บูสต์บนโต๊ะวันนี้",
+  "seasonClosed": "ซีซันปิดแล้ว",
+  "@seasonClosed": {
+    "description": "Short interface label: Season closed"
+  },
+  "lastWeekPlace": "สัปดาห์ที่แล้ว: อันดับ {rank}",
+  "@lastWeekPlace": {
+    "placeholders": {
+      "rank": {
+        "type": "int"
+      }
+    }
+  },
+  "lastWeekScore": "คะแนน {rating}",
+  "@lastWeekScore": {
+    "placeholders": {
+      "rating": {
+        "type": "String"
+      }
+    }
+  },
+  "reminders": "การแจ้งเตือนรายวัน",
+  "@reminders": {
+    "description": "Short interface label: Daily reminders"
+  },
+  "reminderDailyTitle": "ลานบ้านของคุณกำลังรอ",
+  "reminderDailyBody": "วันนี้มีโต๊ะใหม่พร้อมแล้ว",
+  "reminderStreakTitle": "สตรีคของคุณกำลังจะดับ",
+  "reminderStreakBody": "โคมดวงที่สามจะดับตอนเที่ยงคืน",
+  "reminderWeekTitle": "ซีซันลานบ้านใหม่",
+  "reminderWeekBody": "เควสต์รายสัปดาห์และอันดับถูกรีเซ็ตแล้ว",
+  "pet": "สัตว์เลี้ยง",
+  "@pet": {
+    "description": "Singular label for one companion."
+  },
+  "pets": "สัตว์เลี้ยง",
+  "@pets": {
+    "description": "Label for more than one companion."
+  },
+  "chooseAPet": "เลือกเพื่อนคู่ใจ",
+  "addPet": "เพิ่มเพื่อนคู่ใจ",
+  "@addPet": {
+    "description": "Short interface label: Add a companion"
+  },
+  "petInviteAdopt": "เพื่อนกำลังรอคุณ",
+  "petInviteShow": "แสดงสัตว์เลี้ยง",
+  "@petInviteShow": {
+    "description": "Short interface label: Show pets"
+  },
+  "petYardStartAdventure": "เริ่มการผจญภัย",
+  "petYardVisit": "แวะที่รัง",
+  "@petYardVisit": {
+    "description": "Short interface label: Visit the den"
+  },
+  "petYardShow": "แสดงในลาน",
+  "@petYardShow": {
+    "description": "Short interface label: Show in yard"
+  },
+  "petYardShowing": "อยู่ในลาน",
+  "@petYardShowing": {
+    "description": "Short interface label: In the yard"
+  },
+  "petYardShowAll": "แสดงทุกตัวในลาน",
+  "petCareHint": "ชัยชนะช่วยให้พวกมันเล่นและพักผ่อน ให้อาหารจากพืชที่เก็บในคลัง",
+  "petStarvingLine": "พวกมันหิวมาก ให้อาหารจากพืชที่เก็บในคลัง",
+  "petRemindersPromptTitle": "แจ้งเตือนเมื่อหิวไหม?",
+  "petRemindersPromptBody": "เราจะแจ้งเมื่อพวกมันเริ่มหิว",
+  "petRemindersYes": "แจ้งเตือนฉัน",
+  "@petRemindersYes": {
+    "description": "Short interface label: Remind me"
+  },
+  "petRemindersLater": "ไว้ทีหลัง",
+  "@petRemindersLater": {
+    "description": "Dismisses the hungry-pet reminder prompt."
+  },
+  "reminderPetHungerTitle": "{name} หิวแล้ว",
+  "@reminderPetHungerTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderPetHungerBody": "ให้อาหารจากพืชที่เก็บในคลัง",
+  "reminderPetPlayTitle": "{name} อยากเล่น",
+  "@reminderPetPlayTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderPetPlayBody": "ผ่านโต๊ะหนึ่งโต๊ะเพื่อเล่นกับพวกมัน",
+  "reminderPetRestTitle": "{name} อยากพัก",
+  "@reminderPetRestTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderPetRestBody": "ผ่านโต๊ะหนึ่งโต๊ะเพื่อให้พวกมันได้พัก",
+  "reminderPetStarveTitle": "{name} หิวมาก",
+  "@reminderPetStarveTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderPetStarveBody": "ให้อาหารจากพืชที่เก็บในคลัง",
+  "petLevelLabel": "ระดับ {level}",
+  "@petLevelLabel": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "petLevelShort": "ระดับ {level}",
+  "@petLevelShort": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "petMaxLevel": "ระดับสูงสุด",
+  "@petMaxLevel": {
+    "description": "Short interface label: Maximum level"
+  },
+  "petXpLabel": "ประสบการณ์ {xp} / {need}",
+  "@petXpLabel": {
+    "placeholders": {
+      "xp": {
+        "type": "int"
+      },
+      "need": {
+        "type": "int"
+      }
+    }
+  },
+  "petStrengthLineText": "{stat} {total} = พื้นฐาน {base} + ของ {main} + เครื่องประดับ {accessory}",
+  "@petStrengthLineText": {
+    "placeholders": {
+      "stat": {
+        "type": "String"
+      },
+      "total": {
+        "type": "int"
+      },
+      "base": {
+        "type": "int"
+      },
+      "main": {
+        "type": "int"
+      },
+      "accessory": {
+        "type": "int"
+      }
+    }
+  },
+  "petLevelChange": "ระดับ {from} → {to}",
+  "@petLevelChange": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
+    }
+  },
+  "petStatChange": "{stat} {from} → {to}",
+  "@petStatChange": {
+    "placeholders": {
+      "stat": {
+        "type": "String"
+      },
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
+    }
+  },
+  "petFeed": "ให้อาหาร",
+  "@petFeed": {
+    "description": "Opens the plant feeding sheet."
+  },
+  "petFeedTitle": "เลือกพืช",
+  "@petFeedTitle": {
+    "description": "Short interface label: Choose a plant"
+  },
+  "petFeedEmpty": "ไม่มีพืชที่เก็บแล้วในคลัง",
+  "petFeedPointless": "อิ่มแล้ว และอยู่ระดับสูงสุด",
+  "petFeedXp": "ประสบการณ์: {xp}",
+  "@petFeedXp": {
+    "placeholders": {
+      "xp": {
+        "type": "int"
+      }
+    }
+  },
+  "petFeedSatiety": "บรรเทาความหิว พลังจะไม่เพิ่ม",
+  "petFeedConfirm": "ให้อาหารพืชนี้",
+  "@petFeedConfirm": {
+    "description": "Short interface label: Feed this plant"
+  },
+  "petFedReaction": "{name} อร่อยกับมื้อนี้",
+  "@petFedReaction": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petFeedFailed": "บันทึกไม่ได้ พืชไม่ได้ถูกใช้",
+  "petFeedMissing": "พืชนั้นไม่อยู่ในคลังแล้ว",
+  "petSlotEmpty": "ว่าง",
+  "@petSlotEmpty": {
+    "description": "Short interface label: Empty"
+  },
+  "petGuardAction": "เฝ้าสวน",
+  "@petGuardAction": {
+    "description": "Short interface label: Guard the garden"
+  },
+  "petGuarding": "กำลังเฝ้าสวน",
+  "petStopGuard": "หยุดเฝ้า",
+  "@petStopGuard": {
+    "description": "Short interface label: Stop guarding"
+  },
+  "petRaidAction": "เลือกสำหรับบุก",
+  "@petRaidAction": {
+    "description": "Short interface label: Choose for raids"
+  },
+  "petRaiding": "ถูกเลือกให้บุก",
+  "@petRaiding": {
+    "description": "Short interface label: Chosen for raids"
+  },
+  "petStopRaid": "ยกเลิกการเลือกบุก",
+  "gearBonus": "+{bonus} พลัง",
+  "@gearBonus": {
+    "placeholders": {
+      "bonus": {
+        "type": "int"
+      }
+    }
+  },
+  "gearPriceText": "{price} แต้ม",
+  "@gearPriceText": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "gearLevelRequired": "ต้องมีระดับ {level}",
+  "@gearLevelRequired": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "gearIfEquipped": "ถ้าสวม: {stat} {from} → {to}",
+  "@gearIfEquipped": {
+    "placeholders": {
+      "stat": {
+        "type": "String"
+      },
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
+    }
+  },
+  "gearBuy": "ซื้อ",
+  "@gearBuy": {
+    "description": "Buys a pet item."
+  },
+  "gearEquip": "สวม",
+  "@gearEquip": {
+    "description": "Equips an owned pet item."
+  },
+  "gearUnequip": "ถอด",
+  "@gearUnequip": {
+    "description": "Removes an equipped pet item."
+  },
+  "gearWornBy": "{name} สวมอยู่",
+  "@gearWornBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gearShortfallText": "ต้องการอีก {shortfall} แต้ม",
+  "@gearShortfallText": {
+    "placeholders": {
+      "shortfall": {
+        "type": "String"
+      }
+    }
+  },
+  "gearBuyFailed": "บันทึกไม่ได้ แต้มไม่ได้ถูกใช้",
+  "gardenGuardLabel": "{name} เฝ้าสวน ป้องกัน {power}",
+  "@gardenGuardLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "power": {
+        "type": "int"
+      }
+    }
+  },
+  "gardenNoDefender": "ยังไม่มีผู้ป้องกัน",
+  "@gardenNoDefender": {
+    "description": "Short interface label: No defender yet"
+  },
+  "gardenUnguarded": "สวนไม่มีคนเฝ้า",
+  "boardSemantic": "กระดาน",
+  "@boardSemantic": {
+    "description": "Short interface label: Board"
+  },
+  "traySemantic": "ถาด {filled} จาก {capacity}",
+  "@traySemantic": {
+    "placeholders": {
+      "filled": {
+        "type": "int"
+      },
+      "capacity": {
+        "type": "int"
+      }
+    }
+  },
+  "trayEmptySlot": "ช่องว่าง",
+  "@trayEmptySlot": {
+    "description": "Short interface label: Empty slot"
+  },
+  "trayAlmostFull": "เหลือที่ว่างหนึ่งช่อง — หาคู่",
+  "houseCardTitle": "บ้าน",
+  "@houseCardTitle": {
+    "description": "Short interface label: House"
+  },
+  "seedsHeading": "เมล็ด",
+  "@seedsHeading": {
+    "description": "Short interface label: Seeds"
+  },
+  "seedsButton": "เมล็ด · {count}",
+  "@seedsButton": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "seedPowerStep": "พลังเมล็ด: {from} → {to}",
+  "@seedPowerStep": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
+    }
+  },
+  "seedCostStep": "ต้นทุนการผลิต: {from} → {to} แต้ม",
+  "@seedCostStep": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
+    }
+  },
+  "seedSpeciesUnlock": "เมล็ดใหม่: {name}",
+  "@seedSpeciesUnlock": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "seedDurationStep": "เวลาผลิต: {from} → {to}",
+  "@seedDurationStep": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "seedChanceStep": "โอกาส: {summary}",
+  "@seedChanceStep": {
+    "placeholders": {
+      "summary": {
+        "type": "String"
+      }
+    }
+  },
+  "seedClassCommon": "ธรรมดา",
+  "@seedClassCommon": {
+    "description": "ชั้นเมล็ดที่โตเร็วและให้ประสบการณ์ 10"
+  },
+  "seedClassNutrient": "บำรุง",
+  "@seedClassNutrient": {
+    "description": "ชั้นเมล็ดที่โตนานขึ้นและให้ประสบการณ์ 25"
+  },
+  "seedClassRare": "หายาก",
+  "@seedClassRare": {
+    "description": "ชั้นเมล็ดที่โตนานที่สุดและให้ประสบการณ์ 60"
+  },
+  "seedClassLine": "{name} {percent}%",
+  "@seedClassLine": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "seedSpan": "{minutes} นาที {seconds} วินาที",
+  "@seedSpan": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "seedPowerLabel": "อาหาร: {power}",
+  "@seedPowerLabel": {
+    "placeholders": {
+      "power": {
+        "type": "int"
+      }
+    }
+  },
+  "seedPowerPending": "พลังเมล็ดที่คาดไว้: {power}",
+  "@seedPowerPending": {
+    "placeholders": {
+      "power": {
+        "type": "int"
+      }
+    }
+  },
+  "seedMinutes": "{minutes} นาที",
+  "@seedMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "seedSpeciesHeading": "เมล็ดที่เป็นไปได้",
+  "@seedSpeciesHeading": {
+    "description": "Short interface label: Possible seeds"
+  },
+  "seedEqualChance": "สองชนิดในชั้นเดียวกันมีโอกาสเท่ากัน",
+  "@seedEqualChance": {
+    "description": "Short interface label: Equal chance"
+  },
+  "produceSeedForText": "ผลิตเมล็ด · {price} แต้ม",
+  "@produceSeedForText": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "claimSeed": "เก็บเมล็ด",
+  "@claimSeed": {
+    "description": "Short interface label: Collect seed"
+  },
+  "seedAdded": "เพิ่มเมล็ดเข้าที่เก็บแล้ว",
+  "openSeedStorage": "เปิดที่เก็บ",
+  "@openSeedStorage": {
+    "description": "Short interface label: Open storage"
+  },
+  "seedPurpose": "ปลูกพืชจากเมล็ดนี้ได้",
+  "seedHouseLevel": "ปลูกโดยระดับบ้าน {level}",
+  "@seedHouseLevel": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "seedReceived": "ได้รับ {date}",
+  "@seedReceived": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "seedGroupCount": "×{count}",
+  "@seedGroupCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "seedSortPower": "ตามอาหาร",
+  "@seedSortPower": {
+    "description": "Short interface label: By power"
+  },
+  "seedSortTime": "ตามเวลาที่ได้รับ",
+  "@seedSortTime": {
+    "description": "Short interface label: By time received"
+  },
+  "seedProducing": "เมล็ดกำลังงอก",
+  "seedReadyTitle": "เมล็ดพร้อมแล้ว",
+  "seedUnknown": "เมล็ดไม่ทราบชนิด",
+  "@seedUnknown": {
+    "description": "Short interface label: Unknown seed"
+  },
+  "seedTimeLeft": "เหลือ {minutes} นาที {seconds} วินาที",
+  "@seedTimeLeft": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "seedBadgeIdle": "ผลิตเมล็ดได้",
+  "seedBadgeProducing": "เมล็ดกำลังงอก เหลือ {time}",
+  "@seedBadgeProducing": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "seedBadgeReady": "เมล็ดพร้อมเก็บ",
+  "seedReadyMark": "พร้อม",
+  "@seedReadyMark": {
+    "description": "Badge shown when a seed can be collected."
+  },
+  "seedPlayMahjong": "เล่นมาจอง",
+  "@seedPlayMahjong": {
+    "description": "Short interface label: Play mahjong"
+  },
+  "produceFirstSeed": "ผลิตเมล็ดแรก",
+  "seedsEmptyBody": "บ้านยังไม่ได้ผลิตเมล็ด",
+  "seedStackLabel": "{name} อาหาร {power} จำนวน {count}",
+  "@seedStackLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "power": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "seedProductionTitle": "การผลิตเมล็ด",
+  "@seedProductionTitle": {
+    "description": "Short interface label: Seed production"
+  },
+  "plantsButton": "พืช · {count}",
+  "@plantsButton": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "warehouseTitle": "คลัง",
+  "@warehouseTitle": {
+    "description": "Short interface label: Warehouse"
+  },
+  "warehouseSemantic": "คลัง พืช {count} ต้น",
+  "@warehouseSemantic": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "warehouseEmptyBody": "พืชที่เก็บจะถูกเก็บไว้ที่นี่",
+  "openGarden": "เปิดสวน",
+  "@openGarden": {
+    "description": "Short interface label: Open the garden"
+  },
+  "plantActionText": "ปลูก · เมล็ด {seeds} + {points} แต้ม",
+  "@plantActionText": {
+    "placeholders": {
+      "seeds": {
+        "type": "int"
+      },
+      "points": {
+        "type": "String"
+      }
+    }
+  },
+  "chooseSeedTitle": "เลือกเมล็ด",
+  "@chooseSeedTitle": {
+    "description": "Short interface label: Choose a seed"
+  },
+  "noSeedsBody": "ยังไม่มีเมล็ด ผลิตในบ้านก่อน",
+  "openHouseProduction": "เปิดการผลิต",
+  "@openHouseProduction": {
+    "description": "Short interface label: Open production"
+  },
+  "gardenBedEmpty": "แปลง {number} ว่าง",
+  "@gardenBedEmpty": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "bedTitle": "แปลง {number}",
+  "@bedTitle": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "harvestAction": "เก็บ",
+  "@harvestAction": {
+    "description": "Collects a ripe garden plant."
+  },
+  "harvestMark": "เก็บ",
+  "@harvestMark": {
+    "description": "Short badge on a ripe garden bed."
+  },
+  "plantPower": "อาหาร: {power}",
+  "@plantPower": {
+    "placeholders": {
+      "power": {
+        "type": "int"
+      }
+    }
+  },
+  "plantCostLabelText": "ค่าปลูก: {points} แต้ม",
+  "@plantCostLabelText": {
+    "placeholders": {
+      "points": {
+        "type": "String"
+      }
+    }
+  },
+  "growDurationLabel": "เวลาเติบโต: {minutes} นาที",
+  "@growDurationLabel": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "seedsAvailable": "มีอยู่: {count}",
+  "@seedsAvailable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "plantPreviewLabel": "พืชในอนาคต",
+  "@plantPreviewLabel": {
+    "description": "Short interface label: Future plant"
+  },
+  "plantVariant": "รูปลักษณ์: {variant}",
+  "@plantVariant": {
+    "placeholders": {
+      "variant": {
+        "type": "String"
+      }
+    }
+  },
+  "plantedOn": "ปลูก {date}",
+  "@plantedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "maturedOn": "สุก {date}",
+  "@maturedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "harvestedOn": "เก็บ {date}",
+  "@harvestedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "gardenSaveFailed": "บันทึกไม่ได้ ไม่มีอะไรถูกใช้",
+  "gardenNotReady": "ยังไม่พร้อม",
+  "@gardenNotReady": {
+    "description": "Short interface label: Not ready yet"
+  },
+  "languageEnglish": "English",
+  "@languageEnglish": {
+    "description": "Language name shown in the picker. Stays English in every locale."
+  },
+  "languageRussian": "Русский",
+  "@languageRussian": {
+    "description": "Language name shown in the picker. Stays Russian in every locale."
+  },
+  "languageThai": "ไทย",
+  "@languageThai": {
+    "description": "Language name shown in the picker. Stays Thai in every locale."
+  },
+  "challengeCompactTower": "หอคอย: เก็บทุกชั้นให้หมด",
+  "@challengeCompactTower": {
+    "description": "Goal for the compact tower challenge."
+  },
+  "challengeSpecialPair": "เก็บไพ่ที่มีดาวสองใบ · {cleared}/2",
+  "@challengeSpecialPair": {
+    "description": "Goal while the two starred tiles are still on the board.",
+    "placeholders": {
+      "cleared": {
+        "type": "int"
+      }
+    }
+  },
+  "challengeNoShuffle": "เก็บกระดานให้หมดโดยไม่สับ",
+  "@challengeNoShuffle": {
+    "description": "Goal for the no-shuffle challenge."
+  },
+  "plotKindTitle": "{kind, select, house{บ้าน} pond{สระน้ำ} pets{สัตว์เลี้ยง} guest{บ้านรับแขก} other{บ้าน}}",
+  "@plotKindTitle": {
+    "description": "Display name of a courtyard plot.",
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "plotKindTitleToward": "{kind, select, house{บ้าน} pond{สระน้ำ} pets{สัตว์เลี้ยง} guest{บ้านรับแขก} other{บ้าน}}",
+  "@plotKindTitleToward": {
+    "description": "Plot name used inside a sentence, including the Russian genitive.",
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "plotLookComplete": "{name} สมบูรณ์แล้ว",
+  "@plotLookComplete": {
+    "description": "The courtyard plot art has reached its last look.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "plotLookNextOne": "อีก 1 ด่านก่อนรูปลักษณ์ถัดไปของ {name}",
+  "@plotLookNextOne": {
+    "description": "Exactly one level remains before the plot art changes.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "plotLookProgressText": "{count, plural, other{อีก {count} ด่านก่อนรูปลักษณ์ถัดไปของ {name}}}",
+  "@plotLookProgressText": {
+    "description": "How many levels remain before the plot art changes. Used when more than one level remains.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "nextWinUpgradesHouse": "ชัยชนะครั้งถัดไปจะอัปเกรดบ้าน",
+  "@nextWinUpgradesHouse": {
+    "description": "Shown when exactly one win remains before the house look changes."
+  },
+  "winsUntilHouseUpgradeText": "{count, plural, one{อีก {count} ชัยชนะก่อนบ้านจะอัปเกรด} other{อีก {count} ชัยชนะก่อนบ้านจะอัปเกรด}}",
+  "@winsUntilHouseUpgradeText": {
+    "description": "Wins remaining before the house look changes.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nextWinImprovesPond": "ชัยชนะครั้งถัดไปจะทำให้สระน้ำงอกงาม",
+  "@nextWinImprovesPond": {
+    "description": "Shown when exactly one win remains before the pond look changes."
+  },
+  "winsUntilPondUpgradeText": "{count, plural, one{อีก {count} ชัยชนะก่อนสระน้ำจะงอกงาม} other{อีก {count} ชัยชนะก่อนสระน้ำจะงอกงาม}}",
+  "@winsUntilPondUpgradeText": {
+    "description": "Wins remaining before the pond look changes.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nextPondLook": "รูปลักษณ์ถัดไปของสระน้ำ",
+  "@nextPondLook": {
+    "description": "Heading for the upcoming pond art."
+  },
+  "hubStarsUntilPlotText": "{count, plural, =0{อีก 1 ดาวก่อนถึง{dest}} =1{อีก 1 ดาวก่อนถึง{dest}} other{อีก {count} ดาวก่อนถึง{dest}}}",
+  "@hubStarsUntilPlotText": {
+    "description": "Stars remaining before the next courtyard plot unlocks.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "dest": {
+        "type": "String"
+      }
+    }
+  },
+  "oneDailyUntilReward": "อีกหนึ่งภารกิจรายวันก่อนได้รางวัล",
+  "@oneDailyUntilReward": {
+    "description": "Shown when one or fewer daily clears remain before a reward."
+  },
+  "hubDailiesUntilRewardText": "{count, plural, one{อีก {count} ภารกิจรายวันก่อนได้รางวัล} other{อีก {count} ภารกิจรายวันก่อนได้รางวัล}}",
+  "@hubDailiesUntilRewardText": {
+    "description": "Daily clears remaining before a reward.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "oneLevelUntilReward": "อีกหนึ่งด่านก่อนได้รางวัล",
+  "@oneLevelUntilReward": {
+    "description": "Shown when one or fewer campaign levels remain before a reward."
+  },
+  "hubLevelsUntilRewardText": "{count, plural, one{อีก {count} ด่านก่อนได้รางวัล} other{อีก {count} ด่านก่อนได้รางวัล}}",
+  "@hubLevelsUntilRewardText": {
+    "description": "Campaign levels remaining before a reward.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courtyardLevelsUntilGift": "{count, plural, =0{อีกหนึ่งด่านก่อนของขวัญลานบ้าน} =1{อีกหนึ่งด่านก่อนของขวัญลานบ้าน} other{อีก {count} ด่านก่อนของขวัญลานบ้าน}}",
+  "@courtyardLevelsUntilGift": {
+    "description": "First-time clears remaining before a courtyard gift.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hubStarsUntilReward": "{count, plural, =0{อีก 1 ดาวก่อนได้รางวัล} =1{อีก 1 ดาวก่อนได้รางวัล} other{อีก {count} ดาวก่อนได้รางวัล}}",
+  "@hubStarsUntilReward": {
+    "description": "Stars remaining before the weekly reward.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pointsRewardText": "{count, plural, one{+{amount} แต้ม} other{+{amount} แต้ม}}",
+  "@pointsRewardText": {
+    "description": "Points just earned, with the currency word inflected.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "styleFruit": "ผลไม้",
+  "@styleFruit": {
+    "description": "Tile-set name on a level card."
+  },
+  "styleNature": "ธรรมชาติ",
+  "@styleNature": {
+    "description": "Tile-set name on a level card."
+  },
+  "styleCourt": "ราชสำนัก",
+  "@styleCourt": {
+    "description": "Tile-set name on a level card."
+  },
+  "styleMyth": "ตำนาน",
+  "@styleMyth": {
+    "description": "Tile-set name on a level card."
+  },
+  "styleClassic": "คลาสสิก",
+  "@styleClassic": {
+    "description": "Tile-set name on a level card."
+  },
+  "styleShape": "รูปทรง",
+  "@styleShape": {
+    "description": "Tile-set name on a level card."
+  },
+  "styleNumber": "ตัวเลข",
+  "@styleNumber": {
+    "description": "Tile-set name on a level card."
+  },
+  "styleMix": "ผสม",
+  "@styleMix": {
+    "description": "Tile-set name when the style is unknown."
+  },
+  "questDaily3": "ผ่านรายวัน 3 ครั้ง",
+  "@questDaily3": {
+    "description": "Weekly quest title."
+  },
+  "questStars8": "สะสม 8 ดาว",
+  "@questStars8": {
+    "description": "Weekly quest title."
+  },
+  "questClears4": "ผ่าน 4 ด่านแคมเปญ",
+  "@questClears4": {
+    "description": "Weekly quest title."
+  },
+  "questThreeStar1": "ได้ 3★ ในด่านหนึ่ง",
+  "@questThreeStar1": {
+    "description": "Weekly quest title."
+  },
+  "questStreak3": "คงแสงสามคืน",
+  "@questStreak3": {
+    "description": "Weekly quest title."
+  },
+  "weekGarden": "สัปดาห์สวน",
+  "@weekGarden": {
+    "description": "Name of the garden week event."
+  },
+  "weekCourt": "สัปดาห์ลานบ้าน",
+  "@weekCourt": {
+    "description": "Name of the courtyard week event."
+  },
+  "weekLanterns": "สัปดาห์โคมไฟ",
+  "@weekLanterns": {
+    "description": "Name of the lantern week event."
+  },
+  "weekMyth": "สัปดาห์ตำนาน",
+  "@weekMyth": {
+    "description": "Name of the myth week event."
+  },
+  "weekHarvest": "สัปดาห์เก็บเกี่ยว",
+  "@weekHarvest": {
+    "description": "Name of the harvest week event."
+  },
+  "weekDefault": "โต๊ะของสัปดาห์นี้",
+  "@weekDefault": {
+    "description": "Fallback name of the weekly table."
+  },
+  "petCat": "แมว",
+  "@petCat": {
+    "description": "Companion name."
+  },
+  "petDog": "สุนัข",
+  "@petDog": {
+    "description": "Companion name."
+  },
+  "petRaccoon": "แรคคูน",
+  "@petRaccoon": {
+    "description": "Companion name."
+  },
+  "petHamster": "แฮมสเตอร์",
+  "@petHamster": {
+    "description": "Companion name."
+  },
+  "petFox": "จิ้งจอก",
+  "@petFox": {
+    "description": "Companion name."
+  },
+  "petNeedHunger": "ความหิว",
+  "@petNeedHunger": {
+    "description": "Pet need name."
+  },
+  "petNeedPlay": "การเล่น",
+  "@petNeedPlay": {
+    "description": "Pet need name. Not the play button."
+  },
+  "petNeedRest": "การพักผ่อน",
+  "@petNeedRest": {
+    "description": "Pet need name."
+  },
+  "petMoodContent": "{name} สบายดี",
+  "@petMoodContent": {
+    "description": "Pet status when nothing is needed.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petMoodAsking": "{name} ต้องการคุณ",
+  "@petMoodAsking": {
+    "description": "Pet status when a need is waiting.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petMoodStarving": "{name} หิวมาก",
+  "@petMoodStarving": {
+    "description": "Pet status when hunger is critical.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petCareHunger": "คุณให้อาหาร {name} แล้ว",
+  "@petCareHunger": {
+    "description": "Result line after feeding.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petCarePlay": "คุณเล่นกับ {name} แล้ว",
+  "@petCarePlay": {
+    "description": "Result line after playing.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petCareRest": "{name} ได้พักแล้ว",
+  "@petCareRest": {
+    "description": "Result line after rest.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petRoleAttacker": "ผู้โจมตี",
+  "@petRoleAttacker": {
+    "description": "Pet combat role."
+  },
+  "petRoleDefender": "ผู้ป้องกัน",
+  "@petRoleDefender": {
+    "description": "Pet combat role."
+  },
+  "petStatAttack": "พลังโจมตี",
+  "@petStatAttack": {
+    "description": "Attack stat name."
+  },
+  "petStatDefense": "พลังป้องกัน",
+  "@petStatDefense": {
+    "description": "Defense stat name."
+  },
+  "gearSlotMain": "ของหลัก",
+  "@gearSlotMain": {
+    "description": "Primary gear slot."
+  },
+  "gearSlotAccessory": "เครื่องประดับ",
+  "@gearSlotAccessory": {
+    "description": "Secondary gear slot."
+  },
+  "growthSown": "เพาะเมล็ดแล้ว",
+  "@growthSown": {
+    "description": "Garden stage after planting."
+  },
+  "growthSprout": "ต้นอ่อน",
+  "@growthSprout": {
+    "description": "Garden stage when the plant has sprouted."
+  },
+  "growthGrowing": "กำลังเติบโต",
+  "@growthGrowing": {
+    "description": "Garden stage while the plant is growing."
+  },
+  "growthRipe": "พร้อมเก็บ",
+  "@growthRipe": {
+    "description": "Garden stage when the plant can be harvested."
+  },
+  "seedAmberbell": "ระฆังอำพัน",
+  "@seedAmberbell": {
+    "description": "Seed species name."
+  },
+  "seedMistfern": "เฟิร์นหมอก",
+  "@seedMistfern": {
+    "description": "Seed species name."
+  },
+  "seedGlassreed": "อ้อแก้ว",
+  "@seedGlassreed": {
+    "description": "Seed species name."
+  },
+  "seedCrimsonplum": "พลัมแดง",
+  "@seedCrimsonplum": {
+    "description": "Seed species name."
+  },
+  "seedNightlotus": "บัวราตรี",
+  "@seedNightlotus": {
+    "description": "Seed species name."
+  },
+  "seedStarbamboo": "ไผ่ดาว",
+  "@seedStarbamboo": {
+    "description": "Seed species name."
+  },
+  "seedBlurbAmberbell": "เมล็ดอุ่นที่มีระฆังเล็กอยู่ข้างใน",
+  "@seedBlurbAmberbell": {
+    "description": "Short description of Amber Bell."
+  },
+  "seedBlurbMistfern": "ใบอ่อนซีดพับอยู่ในเมล็ด",
+  "@seedBlurbMistfern": {
+    "description": "Short description of Mist Fern."
+  },
+  "seedBlurbGlassreed": "ต้นอ้อใสที่ส่งเสียงเมื่อแสงกระทบ",
+  "@seedBlurbGlassreed": {
+    "description": "Short description of Glass Reed."
+  },
+  "seedBlurbCrimsonplum": "เมล็ดหวานเข้มจากพลัมในลานบ้าน",
+  "@seedBlurbCrimsonplum": {
+    "description": "Short description of Crimson Plum."
+  },
+  "seedBlurbNightlotus": "ดอกตูมสีม่วงที่บานหลังพลบค่ำเท่านั้น",
+  "@seedBlurbNightlotus": {
+    "description": "Short description of Night Lotus."
+  },
+  "seedBlurbStarbamboo": "เมล็ดเป็นข้อที่มีประกายที่ปลาย",
+  "@seedBlurbStarbamboo": {
+    "description": "Short description of Star Bamboo."
+  },
+  "plantOriginHouse": "ที่มา: การผลิตของบ้าน",
+  "@plantOriginHouse": {
+    "description": "Where a seed came from when the house produced it."
+  },
+  "plantOriginOther": "ที่มา: {source}",
+  "@plantOriginOther": {
+    "description": "Where a seed came from when the source is not the house.",
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "firstPhraseHouse": "รูปลักษณ์ถัดไปของบ้านซื้อด้วยแต้ม",
+  "@firstPhraseHouse": {
+    "description": "First-win line for the house plot."
+  },
+  "firstPhrasePond": "สระน้ำนี้จะเต็มขึ้นเมื่อคุณเล่น",
+  "@firstPhrasePond": {
+    "description": "First-win line for the pond plot."
+  },
+  "firstPhrasePets": "บ้านสัตว์เลี้ยงนี้จะโตขึ้นเมื่อคุณเล่น",
+  "@firstPhrasePets": {
+    "description": "First-win line for the pet plot."
+  },
+  "firstPhraseGuest": "ลานนี้จะออนไลน์เมื่อคุณเล่น",
+  "@firstPhraseGuest": {
+    "description": "First-win line for the guest plot."
+  },
+  "pathLifeHouse": "บ้านรู้สึกอบอุ่นขึ้น",
+  "@pathLifeHouse": {
+    "description": "Line when the house gains life without a new build step."
+  },
+  "pathLifePond": "สระน้ำมีชีวิตชีวา",
+  "@pathLifePond": {
+    "description": "Line when the pond gains life."
+  },
+  "pathLifePets": "บ้านสัตว์เลี้ยงอบอุ่นขึ้น",
+  "@pathLifePets": {
+    "description": "Line when the pet house gains life."
+  },
+  "pathLifeGuest": "ลานส่งเสียงฮัมเบา ๆ",
+  "@pathLifeGuest": {
+    "description": "Line when the guest yard gains life."
+  },
+  "rewardPond": "สระน้ำเล็ก",
+  "@rewardPond": {
+    "description": "Name of the pond courtyard gift."
+  },
+  "rewardSwing": "ชิงช้าในสวน",
+  "@rewardSwing": {
+    "description": "Name of the swing courtyard gift."
+  },
+  "rewardFlowerBed": "แปลงดอกไม้",
+  "@rewardFlowerBed": {
+    "description": "Name of the flower bed courtyard gift."
+  },
+  "tileStateFree": "ว่าง",
+  "@tileStateFree": {
+    "description": "Tile state: it can be picked."
+  },
+  "tileStateLocked": "ล็อก",
+  "@tileStateLocked": {
+    "description": "Tile state: it is covered."
+  },
+  "tileRemoving": "{name} กำลังจับคู่",
+  "@tileRemoving": {
+    "description": "Semantics while a matched tile is leaving.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tileInTrayHinted": "{name} ในถาด มีคำใบ้",
+  "@tileInTrayHinted": {
+    "description": "Semantics for a hinted tile in the tray.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tileInTray": "{name} ในถาด",
+  "@tileInTray": {
+    "description": "Semantics for a tile sitting in the tray.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tileFreeHinted": "{name} ว่าง มีคำใบ้",
+  "@tileFreeHinted": {
+    "description": "Semantics for a free hinted tile on the board.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tileLockedHinted": "{name} ล็อก มีคำใบ้",
+  "@tileLockedHinted": {
+    "description": "Semantics for a covered hinted tile.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tileFreeState": "{name} ว่าง",
+  "@tileFreeState": {
+    "description": "Semantics for a free tile.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tileLockedState": "{name} ล็อก",
+  "@tileLockedState": {
+    "description": "Semantics for a covered tile.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "levelCardLocked": "ด่าน {id} ล็อก",
+  "@levelCardLocked": {
+    "description": "Semantics for a locked level card.",
+    "placeholders": {
+      "id": {
+        "type": "int"
+      }
+    }
+  },
+  "levelCardOpen": "ด่าน {id}, {title}, {stars}{progress}",
+  "@levelCardOpen": {
+    "description": "Semantics for an unlocked level card.",
+    "placeholders": {
+      "id": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      },
+      "stars": {
+        "type": "String"
+      },
+      "progress": {
+        "type": "String"
+      }
+    }
+  },
+  "levelStarsNone": "ไม่มีดาว",
+  "@levelStarsNone": {
+    "description": "Level card semantics when no stars were earned."
+  },
+  "levelStarsSome": "{count} ดาว",
+  "@levelStarsSome": {
+    "description": "Level card semantics for a star count. Russian keeps the star mark.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "levelInProgress": ", กำลังเล่น",
+  "@levelInProgress": {
+    "description": "Suffix when a level was started and not finished."
+  },
+  "boostLeft": "{name} เหลือ {count}",
+  "@boostLeft": {
+    "description": "Semantics when a booster still has charges.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "boostNone": "{name} หมดแล้ว",
+  "@boostNone": {
+    "description": "Semantics when a booster is exhausted.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petsNeedCare": "สัตว์เลี้ยง ต้องการการดูแล",
+  "@petsNeedCare": {
+    "description": "Semantics when a pet needs attention."
+  },
+  "dailyButtonSemanticText": "{today}. {status}",
+  "@dailyButtonSemanticText": {
+    "description": "Semantics for the daily button, joining the day label and streak status.",
+    "placeholders": {
+      "today": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "courtyardSemanticText": "ลานบ้าน {name}",
+  "@courtyardSemanticText": {
+    "description": "Semantics for a plot on the courtyard map.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gardenBedReady": "แปลง {number}, {name}, พร้อมเก็บ",
+  "@gardenBedReady": {
+    "description": "Semantics for a ripe garden bed.",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gardenBedGrowing": "แปลง {number}, {name}, {stage}, เหลือ {time}",
+  "@gardenBedGrowing": {
+    "description": "Semantics for a growing garden bed.",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "stage": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "storyNextItem": "ถัดไป: {item}",
+  "@storyNextItem": {
+    "description": "Names the next collectible in a pet adventure.",
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "newGiftItem": "ของขวัญใหม่: {item}",
+  "@newGiftItem": {
+    "description": "Headline of a newly earned story item.",
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "storyProgressLine": "{title} · {progress}/3",
+  "@storyProgressLine": {
+    "description": "Active story title with chapter progress.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "progress": {
+        "type": "int"
+      }
+    }
+  },
+  "newChapterProgress": "บทใหม่ · {progress}/3",
+  "@newChapterProgress": {
+    "description": "Yard label when a story chapter is waiting.",
+    "placeholders": {
+      "progress": {
+        "type": "int"
+      }
+    }
+  },
+  "storyReadyProgress": "เรื่องราวพร้อม · {stage}/3",
+  "@storyReadyProgress": {
+    "description": "Legacy fox story label when a scene is ready.",
+    "placeholders": {
+      "stage": {
+        "type": "int"
+      }
+    }
+  },
+  "foxStoryProgress": "เรื่องของจิ้งจอก · {stage}/3",
+  "@foxStoryProgress": {
+    "description": "Legacy fox story progress.",
+    "placeholders": {
+      "stage": {
+        "type": "int"
+      }
+    }
+  },
+  "gearOfferText": "{role} · {slot}",
+  "@gearOfferText": {
+    "description": "Gear shop line joining the role and the slot.",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      },
+      "slot": {
+        "type": "String"
+      }
+    }
+  },
+  "petBadgeText": "{role}, {level}",
+  "@petBadgeText": {
+    "description": "Compact pet badge joining role and level.",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      },
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "chooseAPetYard": "เลือกเพื่อนคู่ใจ",
+  "@chooseAPetYard": {
+    "description": "Empty pet yard prompt. Infinitive, unlike the sheet title."
+  },
+  "chooseAPetStatus": "เลือกสัตว์เลี้ยง",
+  "@chooseAPetStatus": {
+    "description": "Status line when the yard has no pet yet."
+  },
+  "homeSemantic": "บ้าน",
+  "@homeSemantic": {
+    "description": "Semantics label for the house on the map. Not the plot name used in sentences."
+  },
+  "petAdventures": "การผจญภัยของสัตว์เลี้ยง",
+  "@petAdventures": {
+    "description": "Yard label before a story is chosen."
+  },
+  "adventures": "การผจญภัย",
+  "@adventures": {
+    "description": "Section title on the pet page."
+  },
+  "adventureComplete": "การผจญภัยเสร็จสิ้น",
+  "@adventureComplete": {
+    "description": "Status when all three chapters of a story are done."
+  },
+  "adventureCompleteBang": "การผจญภัยเสร็จสิ้น!",
+  "@adventureCompleteBang": {
+    "description": "Button after the last story gift."
+  },
+  "play": "เล่น",
+  "@play": {
+    "description": "Starts the campaign from the active pet story."
+  },
+  "storyLocked": "ทำเรื่องก่อนหน้าให้จบก่อน",
+  "@storyLocked": {
+    "description": "Locked story row."
+  },
+  "fiveAdventures": "5 การผจญภัย",
+  "@fiveAdventures": {
+    "description": "Caption under a pet that has five stories."
+  },
+  "foxTitle": "มุมอบอุ่นสำหรับจิ้งจอก",
+  "@foxTitle": {
+    "description": "Title of the legacy fox story."
+  },
+  "foxGoal0": "ชนะหนึ่งครั้งเพื่อเตรียมที่",
+  "@foxGoal0": {
+    "description": "Fox story goal before the first win."
+  },
+  "foxGoal1": "ชนะหนึ่งครั้งเพื่อทำที่นอน",
+  "@foxGoal1": {
+    "description": "Fox story goal before the second win."
+  },
+  "foxGoal2": "ชนะหนึ่งครั้งเพื่อนำของเล่นมา",
+  "@foxGoal2": {
+    "description": "Fox story goal before the third win."
+  },
+  "foxGoalDone": "จิ้งจอกรู้สึกเหมือนอยู่บ้าน!",
+  "@foxGoalDone": {
+    "description": "Fox story goal after the corner is finished."
+  },
+  "foxSeeWhatChanged": "ดูว่ามีอะไรเปลี่ยน!",
+  "@foxSeeWhatChanged": {
+    "description": "Fox banner when a new scene is waiting."
+  },
+  "foxHelpSettle": "ช่วยจิ้งจอกตั้งถิ่นฐาน · ชนะ 3 ครั้ง",
+  "@foxHelpSettle": {
+    "description": "Fox banner before the story starts."
+  },
+  "foxSaveFailed": "บันทึกไม่ได้ โปรดลองอีกครั้ง",
+  "@foxSaveFailed": {
+    "description": "Error when the fox story fails to save."
+  },
+  "foxIntro": "จิ้งจอกพบมุมสงบในลานบ้านของคุณ ชนะแคมเปญสามครั้งจะทำให้ที่นี่เป็นบ้าน",
+  "@foxIntro": {
+    "description": "Opening text of the fox story."
+  },
+  "foxStage0": "มาเก็บใบไม้กัน ชนะด่านแคมเปญเพื่อเตรียมที่",
+  "@foxStage0": {
+    "description": "Fox story text for the first chapter."
+  },
+  "foxStage1": "ที่พร้อมแล้ว! ชนะอีกครั้งจะได้ที่นอนนุ่ม",
+  "@foxStage1": {
+    "description": "Fox story text for the second chapter."
+  },
+  "foxStage2": "ที่นอนนุ่ม! เลือกสี ชนะอีกครั้งจะได้ของเล่น",
+  "@foxStage2": {
+    "description": "Fox story text for the color choice."
+  },
+  "foxStageDone": "จิ้งจอกรู้สึกเหมือนอยู่บ้าน! แตะจิ้งจอกเพื่อเล่น มุมนี้จะอยู่ในลานบ้านของคุณ",
+  "@foxStageDone": {
+    "description": "Fox story text after the corner is complete."
+  },
+  "foxHoney": "สีน้ำผึ้ง",
+  "@foxHoney": {
+    "description": "Bed color choice."
+  },
+  "foxSkyBlue": "สีฟ้าท้องฟ้า",
+  "@foxSkyBlue": {
+    "description": "Bed color choice."
+  },
+  "foxBall": "ลูกบอล",
+  "@foxBall": {
+    "description": "Toy choice in the fox story."
+  },
+  "foxPlushToy": "ตุ๊กตาผ้า",
+  "@foxPlushToy": {
+    "description": "Toy choice in the fox story."
+  },
+  "later": "ไว้ทีหลัง",
+  "@later": {
+    "description": "Closes the fox story for now."
+  },
+  "foxHelpStages": "ช่วย · 3 ขั้น",
+  "@foxHelpStages": {
+    "description": "Button that starts the fox story."
+  },
+  "foxLovely": "น่ารัก!",
+  "@foxLovely": {
+    "description": "Button after the fox story is complete."
+  },
+  "foxIsHome": "จิ้งจอกอยู่บ้าน · 3/3",
+  "@foxIsHome": {
+    "description": "Yard label when the fox story is finished."
+  },
+  "foxStory": "เรื่องของจิ้งจอก",
+  "@foxStory": {
+    "description": "Yard label for the fox story before it starts."
+  },
+  "windEast": "ลมตะวันออก",
+  "@windEast": {
+    "description": "Tile name."
+  },
+  "windSouth": "ลมใต้",
+  "@windSouth": {
+    "description": "Tile name."
+  },
+  "windWest": "ลมตะวันตก",
+  "@windWest": {
+    "description": "Tile name."
+  },
+  "windNorth": "ลมเหนือ",
+  "@windNorth": {
+    "description": "Tile name."
+  },
+  "familyFruit": "ผลไม้",
+  "@familyFruit": {
+    "description": "Singular tile family. Not the level style name."
+  },
+  "familyFlower": "ดอกไม้",
+  "@familyFlower": {
+    "description": "Tile family."
+  },
+  "familyAnimal": "สัตว์",
+  "@familyAnimal": {
+    "description": "Tile family."
+  },
+  "familyBamboo": "ไม้ไผ่",
+  "@familyBamboo": {
+    "description": "Tile family."
+  },
+  "familyCharacter": "อักษร",
+  "@familyCharacter": {
+    "description": "Tile family."
+  },
+  "familyDot": "จุด",
+  "@familyDot": {
+    "description": "Tile family."
+  },
+  "familyDragon": "มังกร",
+  "@familyDragon": {
+    "description": "Tile family."
+  },
+  "familyWind": "ลม",
+  "@familyWind": {
+    "description": "Tile family."
+  },
+  "familySeason": "ฤดู",
+  "@familySeason": {
+    "description": "Tile family."
+  },
+  "familyNumber": "ตัวเลข",
+  "@familyNumber": {
+    "description": "Singular tile family. Not the level style name."
+  },
+  "familyShape": "รูปทรง",
+  "@familyShape": {
+    "description": "Singular tile family. Not the level style name."
+  },
+  "familyTile": "ไพ่",
+  "@familyTile": {
+    "description": "Generic tile family."
+  },
+  "familyArt": "ศิลปะ",
+  "@familyArt": {
+    "description": "Tile family."
+  },
+  "familyClown": "ตัวตลก",
+  "@familyClown": {
+    "description": "Tile family."
+  },
+  "familyEmperor": "จักรพรรดิ",
+  "@familyEmperor": {
+    "description": "Tile family."
+  },
+  "familyJoker": "โจ๊กเกอร์",
+  "@familyJoker": {
+    "description": "Tile family."
+  },
+  "familyProfession": "อาชีพ",
+  "@familyProfession": {
+    "description": "Tile family."
+  },
+  "familyQueen": "ราชินี",
+  "@familyQueen": {
+    "description": "Tile family."
+  },
+  "familyEast": "ตะวันออก",
+  "@familyEast": {
+    "description": "Wind direction on a tile."
+  },
+  "familySouth": "ใต้",
+  "@familySouth": {
+    "description": "Wind direction on a tile."
+  },
+  "familyWest": "ตะวันตก",
+  "@familyWest": {
+    "description": "Wind direction on a tile."
+  },
+  "familyNorth": "เหนือ",
+  "@familyNorth": {
+    "description": "Wind direction on a tile."
+  },
+  "familySpring": "ฤดูใบไม้ผลิ",
+  "@familySpring": {
+    "description": "Season on a tile."
+  },
+  "familySummer": "ฤดูร้อน",
+  "@familySummer": {
+    "description": "Season on a tile."
+  },
+  "familyAutumn": "ฤดูใบไม้ร่วง",
+  "@familyAutumn": {
+    "description": "Season on a tile."
+  },
+  "familyWinter": "ฤดูหนาว",
+  "@familyWinter": {
+    "description": "Season on a tile."
+  },
+  "gearAttackerMain1": "สายสะพายไหม",
+  "@gearAttackerMain1": {
+    "description": "Pet item name for id attacker_main_1."
+  },
+  "gearAttackerMain2": "กรงเล็บราตรี",
+  "@gearAttackerMain2": {
+    "description": "Pet item name for id attacker_main_2."
+  },
+  "gearAttackerMain3": "โคมบุก",
+  "@gearAttackerMain3": {
+    "description": "Pet item name for id attacker_main_3."
+  },
+  "gearAttackerAccessory1": "ระฆังสอดแนม",
+  "@gearAttackerAccessory1": {
+    "description": "Pet item name for id attacker_accessory_1."
+  },
+  "gearAttackerAccessory2": "ถุงย่อง",
+  "@gearAttackerAccessory2": {
+    "description": "Pet item name for id attacker_accessory_2."
+  },
+  "gearAttackerAccessory3": "เครื่องรางจันทร์",
+  "@gearAttackerAccessory3": {
+    "description": "Pet item name for id attacker_accessory_3."
+  },
+  "gearDefenderMain1": "เสื้อเกราะนวม",
+  "@gearDefenderMain1": {
+    "description": "Pet item name for id defender_main_1."
+  },
+  "gearDefenderMain2": "เสื้อยาม",
+  "@gearDefenderMain2": {
+    "description": "Pet item name for id defender_main_2."
+  },
+  "gearDefenderMain3": "แผ่นโคม",
+  "@gearDefenderMain3": {
+    "description": "Pet item name for id defender_main_3."
+  },
+  "gearDefenderAccessory1": "ปลอกคอหนัง",
+  "@gearDefenderAccessory1": {
+    "description": "Pet item name for id defender_accessory_1."
+  },
+  "gearDefenderAccessory2": "สายรัดเฝ้ายาม",
+  "@gearDefenderAccessory2": {
+    "description": "Pet item name for id defender_accessory_2."
+  },
+  "gearDefenderAccessory3": "เครื่องรางประตู",
+  "@gearDefenderAccessory3": {
+    "description": "Pet item name for id defender_accessory_3."
+  },
+  "storyCampaign0": "ต้นอ่อน",
+  "@storyCampaign0": {
+    "description": "Campaign chapter name 1."
+  },
+  "storyCampaign1": "ดอกตูม",
+  "@storyCampaign1": {
+    "description": "Campaign chapter name 2."
+  },
+  "storyCampaign2": "ดอกบาน",
+  "@storyCampaign2": {
+    "description": "Campaign chapter name 3."
+  },
+  "storyCampaign3": "ลานโล่ง",
+  "@storyCampaign3": {
+    "description": "Campaign chapter name 4."
+  },
+  "storyCampaign4": "สนามหญ้า",
+  "@storyCampaign4": {
+    "description": "Campaign chapter name 5."
+  },
+  "storyCampaign5": "ดงไม้",
+  "@storyCampaign5": {
+    "description": "Campaign chapter name 6."
+  },
+  "storyCampaign6": "คลื่น",
+  "@storyCampaign6": {
+    "description": "Campaign chapter name 7."
+  },
+  "storyCampaign7": "ลำธาร",
+  "@storyCampaign7": {
+    "description": "Campaign chapter name 8."
+  },
+  "storyCampaign8": "สวน",
+  "@storyCampaign8": {
+    "description": "Campaign chapter name 9."
+  },
+  "storyCampaign9": "ศาลา",
+  "@storyCampaign9": {
+    "description": "Campaign chapter name 10."
+  },
+  "storyCampaign10": "พัด",
+  "@storyCampaign10": {
+    "description": "Campaign chapter name 11."
+  },
+  "storyCampaign11": "พัดนกยูง",
+  "@storyCampaign11": {
+    "description": "Campaign chapter name 12."
+  },
+  "storyCampaign12": "บัว",
+  "@storyCampaign12": {
+    "description": "Campaign chapter name 13."
+  },
+  "storyCampaign13": "สระ",
+  "@storyCampaign13": {
+    "description": "Campaign chapter name 14."
+  },
+  "storyCampaign14": "ปลาคาร์ป",
+  "@storyCampaign14": {
+    "description": "Campaign chapter name 15."
+  },
+  "storyCampaign15": "ทะเลสาบ",
+  "@storyCampaign15": {
+    "description": "Campaign chapter name 16."
+  },
+  "storyCampaign16": "เถาวัลย์",
+  "@storyCampaign16": {
+    "description": "Campaign chapter name 17."
+  },
+  "storyCampaign17": "ไม้เลื้อย",
+  "@storyCampaign17": {
+    "description": "Campaign chapter name 18."
+  },
+  "storyCampaign18": "เทศกาล",
+  "@storyCampaign18": {
+    "description": "Campaign chapter name 19."
+  },
+  "storyCampaign19": "โคมไฟ",
+  "@storyCampaign19": {
+    "description": "Campaign chapter name 20."
+  },
+  "storyCampaign20": "ศาลาใหญ่",
+  "@storyCampaign20": {
+    "description": "Campaign chapter name 21."
+  },
+  "storyCampaign21": "วิหารลม",
+  "@storyCampaign21": {
+    "description": "Campaign chapter name 22."
+  },
+  "storyCampaign22": "มังกร",
+  "@storyCampaign22": {
+    "description": "Campaign chapter name 23."
+  },
+  "storyCampaign23": "มังกรฟ้า",
+  "@storyCampaign23": {
+    "description": "Campaign chapter name 24."
+  },
+  "houseEraName0": "โล่ง",
+  "@houseEraName0": {
+    "description": "Era name 1 of the house plot."
+  },
+  "houseEraPhrase0": "บ้านจะตั้งที่นี่",
+  "@houseEraPhrase0": {
+    "description": "Era narration 1 of the house plot."
+  },
+  "houseEraName1": "เพิง",
+  "@houseEraName1": {
+    "description": "Era name 2 of the house plot."
+  },
+  "houseEraPhrase1": "เพิงโน้มอยู่บนแปลง",
+  "@houseEraPhrase1": {
+    "description": "Era narration 2 of the house plot."
+  },
+  "houseEraName2": "กระท่อม",
+  "@houseEraName2": {
+    "description": "Era name 3 of the house plot."
+  },
+  "houseEraPhrase2": "กระท่อมมีประตูแล้ว",
+  "@houseEraPhrase2": {
+    "description": "Era narration 3 of the house plot."
+  },
+  "houseEraName3": "บ้านไม้",
+  "@houseEraName3": {
+    "description": "Era name 4 of the house plot."
+  },
+  "houseEraPhrase3": "ตอนนี้เป็นบ้านไม้",
+  "@houseEraPhrase3": {
+    "description": "Era narration 4 of the house plot."
+  },
+  "houseEraName4": "บ้าน",
+  "@houseEraName4": {
+    "description": "Era name 5 of the house plot."
+  },
+  "houseEraPhrase4": "บ้านจริงตั้งอยู่ที่นี่",
+  "@houseEraPhrase4": {
+    "description": "Era narration 5 of the house plot."
+  },
+  "houseEraName5": "บ้านสองชั้น",
+  "@houseEraName5": {
+    "description": "Era name 6 of the house plot."
+  },
+  "houseEraPhrase5": "บ้านมีสองชั้น",
+  "@houseEraPhrase5": {
+    "description": "Era narration 6 of the house plot."
+  },
+  "houseEraName6": "คฤหาสน์",
+  "@houseEraName6": {
+    "description": "Era name 7 of the house plot."
+  },
+  "houseEraPhrase6": "คฤหาสน์แผ่ปีก",
+  "@houseEraPhrase6": {
+    "description": "Era narration 7 of the house plot."
+  },
+  "houseEraName7": "แมนชัน",
+  "@houseEraName7": {
+    "description": "Era name 8 of the house plot."
+  },
+  "houseEraPhrase7": "แมนชันเป็นหิน",
+  "@houseEraPhrase7": {
+    "description": "Era narration 8 of the house plot."
+  },
+  "houseEraName8": "ป้อม",
+  "@houseEraName8": {
+    "description": "Era name 9 of the house plot."
+  },
+  "houseEraPhrase8": "กำแพงกลายเป็นป้อม",
+  "@houseEraPhrase8": {
+    "description": "Era narration 9 of the house plot."
+  },
+  "houseEraName9": "ปราสาท",
+  "@houseEraName9": {
+    "description": "Era name 10 of the house plot."
+  },
+  "houseEraPhrase9": "ปราสาทผุดขึ้น",
+  "@houseEraPhrase9": {
+    "description": "Era narration 10 of the house plot."
+  },
+  "houseEraName10": "ปราสาทใหญ่",
+  "@houseEraName10": {
+    "description": "Era name 11 of the house plot."
+  },
+  "houseEraPhrase10": "ปราสาทเต็มเนินเขา",
+  "@houseEraPhrase10": {
+    "description": "Era narration 11 of the house plot."
+  },
+  "houseEraName11": "ที่พำนัก",
+  "@houseEraName11": {
+    "description": "Era name 12 of the house plot."
+  },
+  "houseEraPhrase11": "ที่พำนักสมบูรณ์แล้ว",
+  "@houseEraPhrase11": {
+    "description": "Era narration 12 of the house plot."
+  },
+  "pondEraName0": "แอ่ง",
+  "@pondEraName0": {
+    "description": "Era name 1 of the pond plot."
+  },
+  "pondEraPhrase0": "สระน้ำจะเต็มแอ่งนี้",
+  "@pondEraPhrase0": {
+    "description": "Era narration 1 of the pond plot."
+  },
+  "pondEraName1": "แอ่งน้ำ",
+  "@pondEraName1": {
+    "description": "Era name 2 of the pond plot."
+  },
+  "pondEraPhrase1": "แอ่งน้ำคงอยู่",
+  "@pondEraPhrase1": {
+    "description": "Era narration 2 of the pond plot."
+  },
+  "pondEraName2": "สระ",
+  "@pondEraName2": {
+    "description": "Era name 3 of the pond plot."
+  },
+  "pondEraPhrase2": "ต้นอ้อขึ้นริมฝั่ง",
+  "@pondEraPhrase2": {
+    "description": "Era narration 3 of the pond plot."
+  },
+  "pondEraName3": "ทางเดิน",
+  "@pondEraName3": {
+    "description": "Era name 4 of the pond plot."
+  },
+  "pondEraPhrase3": "ทางเดินวางลงแล้ว",
+  "@pondEraPhrase3": {
+    "description": "Era narration 4 of the pond plot."
+  },
+  "pondEraName4": "สระปลาคาร์ป",
+  "@pondEraName4": {
+    "description": "Era name 5 of the pond plot."
+  },
+  "pondEraPhrase4": "ปลาคาร์ปมีบ้าน",
+  "@pondEraPhrase4": {
+    "description": "Era narration 5 of the pond plot."
+  },
+  "pondEraName5": "ศาลา",
+  "@pondEraName5": {
+    "description": "Era name 6 of the pond plot."
+  },
+  "pondEraPhrase5": "ศาลามองดูน้ำ",
+  "@pondEraPhrase5": {
+    "description": "Era narration 6 of the pond plot."
+  },
+  "pondEraName6": "สวนน้ำ",
+  "@pondEraName6": {
+    "description": "Era name 7 of the pond plot."
+  },
+  "pondEraPhrase6": "สระกลายเป็นสวน",
+  "@pondEraPhrase6": {
+    "description": "Era narration 7 of the pond plot."
+  },
+  "pondEraName7": "ริมฝั่งหิน",
+  "@pondEraName7": {
+    "description": "Era name 8 of the pond plot."
+  },
+  "pondEraPhrase7": "ริมฝั่งหินและโคมไฟ",
+  "@pondEraPhrase7": {
+    "description": "Era narration 8 of the pond plot."
+  },
+  "pondEraName8": "สะพาน",
+  "@pondEraName8": {
+    "description": "Era name 9 of the pond plot."
+  },
+  "pondEraPhrase8": "สะพานข้ามน้ำ",
+  "@pondEraPhrase8": {
+    "description": "Era narration 9 of the pond plot."
+  },
+  "pondEraName9": "ลานน้ำ",
+  "@pondEraName9": {
+    "description": "Era name 10 of the pond plot."
+  },
+  "pondEraPhrase9": "ลานน้ำมีกำแพง",
+  "@pondEraPhrase9": {
+    "description": "Era narration 10 of the pond plot."
+  },
+  "pondEraName10": "สระวัง",
+  "@pondEraName10": {
+    "description": "Era name 11 of the pond plot."
+  },
+  "pondEraPhrase10": "สวนวังมาถึงสระ",
+  "@pondEraPhrase10": {
+    "description": "Era narration 11 of the pond plot."
+  },
+  "pondEraName11": "สวนน้ำสมบูรณ์",
+  "@pondEraName11": {
+    "description": "Era name 12 of the pond plot."
+  },
+  "pondEraPhrase11": "สวนน้ำสมบูรณ์แล้ว",
+  "@pondEraPhrase11": {
+    "description": "Era narration 12 of the pond plot."
+  },
+  "petsEraName0": "ลาน",
+  "@petsEraName0": {
+    "description": "Era name 1 of the pets plot."
+  },
+  "petsEraPhrase0": "บ้านสัตว์เลี้ยงจะตั้งที่นี่",
+  "@petsEraPhrase0": {
+    "description": "Era narration 1 of the pets plot."
+  },
+  "petsEraName1": "ชาม",
+  "@petsEraName1": {
+    "description": "Era name 2 of the pets plot."
+  },
+  "petsEraPhrase1": "ชามรออยู่ในหญ้า",
+  "@petsEraPhrase1": {
+    "description": "Era narration 2 of the pets plot."
+  },
+  "petsEraName2": "กรง",
+  "@petsEraName2": {
+    "description": "Era name 3 of the pets plot."
+  },
+  "petsEraPhrase2": "กรงโน้มอยู่บนแปลง",
+  "@petsEraPhrase2": {
+    "description": "Era narration 3 of the pets plot."
+  },
+  "petsEraName3": "เล้า",
+  "@petsEraName3": {
+    "description": "Era name 4 of the pets plot."
+  },
+  "petsEraPhrase3": "เล้ามีประตูแล้ว",
+  "@petsEraPhrase3": {
+    "description": "Era narration 4 of the pets plot."
+  },
+  "petsEraName4": "บ้านสัตว์เลี้ยง",
+  "@petsEraName4": {
+    "description": "Era name 5 of the pets plot."
+  },
+  "petsEraPhrase4": "สัตว์เลี้ยงมีบ้านแล้ว",
+  "@petsEraPhrase4": {
+    "description": "Era narration 5 of the pets plot."
+  },
+  "petsEraName5": "ลานเล่น",
+  "@petsEraName5": {
+    "description": "Era name 6 of the pets plot."
+  },
+  "petsEraPhrase5": "ลานเล่นเปิดแล้ว",
+  "@petsEraPhrase5": {
+    "description": "Era narration 6 of the pets plot."
+  },
+  "petsEraName6": "สวน",
+  "@petsEraName6": {
+    "description": "Era name 7 of the pets plot."
+  },
+  "petsEraPhrase6": "สวนนี้เป็นของพวกมัน",
+  "@petsEraPhrase6": {
+    "description": "Era narration 7 of the pets plot."
+  },
+  "petsEraName7": "รัง",
+  "@petsEraName7": {
+    "description": "Era name 8 of the pets plot."
+  },
+  "petsEraPhrase7": "รังถูกปูไว้แล้ว",
+  "@petsEraPhrase7": {
+    "description": "Era narration 8 of the pets plot."
+  },
+  "petsEraName8": "เรือน",
+  "@petsEraName8": {
+    "description": "Era name 9 of the pets plot."
+  },
+  "petsEraPhrase8": "เรือนอบอุ่น",
+  "@petsEraPhrase8": {
+    "description": "Era narration 9 of the pets plot."
+  },
+  "petsEraName9": "สวนสัตว์เล็ก",
+  "@petsEraName9": {
+    "description": "Era name 10 of the pets plot."
+  },
+  "petsEraPhrase9": "สวนสัตว์เล็กรวมกัน",
+  "@petsEraPhrase9": {
+    "description": "Era narration 10 of the pets plot."
+  },
+  "petsEraName10": "เขตสงบ",
+  "@petsEraName10": {
+    "description": "Era name 11 of the pets plot."
+  },
+  "petsEraPhrase10": "เขตสงบมีรั้วแล้ว",
+  "@petsEraPhrase10": {
+    "description": "Era narration 11 of the pets plot."
+  },
+  "petsEraName11": "บ้านสัตว์เลี้ยงสมบูรณ์",
+  "@petsEraName11": {
+    "description": "Era name 12 of the pets plot."
+  },
+  "petsEraPhrase11": "บ้านสัตว์เลี้ยงสมบูรณ์แล้ว",
+  "@petsEraPhrase11": {
+    "description": "Era narration 12 of the pets plot."
+  },
+  "guestEraName0": "ลานเงียบ",
+  "@guestEraName0": {
+    "description": "Era name 1 of the guest plot."
+  },
+  "guestEraPhrase0": "สัญญาณจะมาถึงลานนี้",
+  "@guestEraPhrase0": {
+    "description": "Era narration 1 of the guest plot."
+  },
+  "guestEraName1": "เสา",
+  "@guestEraName1": {
+    "description": "Era name 2 of the guest plot."
+  },
+  "guestEraPhrase1": "เสาถือสายไว้",
+  "@guestEraPhrase1": {
+    "description": "Era narration 2 of the guest plot."
+  },
+  "guestEraName2": "สายเคเบิล",
+  "@guestEraName2": {
+    "description": "Era name 3 of the guest plot."
+  },
+  "guestEraPhrase2": "สายเคเบิลมาถึงบ้าน",
+  "@guestEraPhrase2": {
+    "description": "Era narration 3 of the guest plot."
+  },
+  "guestEraName3": "จานรับสัญญาณ",
+  "@guestEraName3": {
+    "description": "Era name 4 of the guest plot."
+  },
+  "guestEraPhrase3": "จานรับสัญญาณตั้งขึ้นแล้ว",
+  "@guestEraPhrase3": {
+    "description": "Era narration 4 of the guest plot."
+  },
+  "guestEraName4": "จอ",
+  "@guestEraName4": {
+    "description": "Era name 5 of the guest plot."
+  },
+  "guestEraPhrase4": "จอสว่างในลาน",
+  "@guestEraPhrase4": {
+    "description": "Era narration 5 of the guest plot."
+  },
+  "guestEraName5": "โคมสาย",
+  "@guestEraName5": {
+    "description": "Era name 6 of the guest plot."
+  },
+  "guestEraPhrase5": "โคมของสายสัญญาณ",
+  "@guestEraPhrase5": {
+    "description": "Era narration 6 of the guest plot."
+  },
+  "guestEraName6": "คุยไกล",
+  "@guestEraName6": {
+    "description": "Era name 7 of the guest plot."
+  },
+  "guestEraPhrase6": "ลานคุยได้ไกลขึ้น",
+  "@guestEraPhrase6": {
+    "description": "Era narration 7 of the guest plot."
+  },
+  "guestEraName7": "หอสัญญาณ",
+  "@guestEraName7": {
+    "description": "Era name 8 of the guest plot."
+  },
+  "guestEraPhrase7": "หอของสัญญาณ",
+  "@guestEraPhrase7": {
+    "description": "Era narration 8 of the guest plot."
+  },
+  "guestEraName8": "หอดูดาว",
+  "@guestEraName8": {
+    "description": "Era name 9 of the guest plot."
+  },
+  "guestEraPhrase8": "หอดูดาวผุดขึ้น",
+  "@guestEraPhrase8": {
+    "description": "Era narration 9 of the guest plot."
+  },
+  "guestEraName9": "สายคริสตัล",
+  "@guestEraName9": {
+    "description": "Era name 10 of the guest plot."
+  },
+  "guestEraPhrase9": "คริสตัลและลวด",
+  "@guestEraPhrase9": {
+    "description": "Era narration 10 of the guest plot."
+  },
+  "guestEraName10": "ประภาคาร",
+  "@guestEraName10": {
+    "description": "Era name 11 of the guest plot."
+  },
+  "guestEraPhrase10": "ประภาคารบนเนินเขา",
+  "@guestEraPhrase10": {
+    "description": "Era narration 11 of the guest plot."
+  },
+  "guestEraName11": "ลานออนไลน์",
+  "@guestEraName11": {
+    "description": "Era name 12 of the guest plot."
+  },
+  "guestEraPhrase11": "ลานออนไลน์ครบแล้ว",
+  "@guestEraPhrase11": {
+    "description": "Era narration 12 of the guest plot."
+  },
+  "houseWarm0": "อีกก้าวบนเส้นทาง",
+  "@houseWarm0": {
+    "description": "Small progress line 1 for the house plot."
+  },
+  "houseWarm1": "แปลงนี้เป็นของคุณแล้ว",
+  "@houseWarm1": {
+    "description": "Small progress line 2 for the house plot."
+  },
+  "houseWarm2": "บ้านใกล้ขึ้นอีกนิด",
+  "@houseWarm2": {
+    "description": "Small progress line 3 for the house plot."
+  },
+  "pondWarm0": "น้ำสูงขึ้นเล็กน้อย",
+  "@pondWarm0": {
+    "description": "Small progress line 1 for the pond plot."
+  },
+  "pondWarm1": "สระเป็นของคุณมากขึ้น",
+  "@pondWarm1": {
+    "description": "Small progress line 2 for the pond plot."
+  },
+  "pondWarm2": "ริมฝั่งใกล้ขึ้น",
+  "@pondWarm2": {
+    "description": "Small progress line 3 for the pond plot."
+  },
+  "petsWarm0": "บ้านสัตว์เลี้ยงโตขึ้นเล็กน้อย",
+  "@petsWarm0": {
+    "description": "Small progress line 1 for the pets plot."
+  },
+  "petsWarm1": "ลานเป็นของพวกมันมากขึ้น",
+  "@petsWarm1": {
+    "description": "Small progress line 2 for the pets plot."
+  },
+  "petsWarm2": "กรงใกล้ขึ้น",
+  "@petsWarm2": {
+    "description": "Small progress line 3 for the pets plot."
+  },
+  "guestWarm0": "สัญญาณแรงขึ้นเล็กน้อย",
+  "@guestWarm0": {
+    "description": "Small progress line 1 for the guest plot."
+  },
+  "guestWarm1": "ลานเชื่อมต่อมากขึ้น",
+  "@guestWarm1": {
+    "description": "Small progress line 2 for the guest plot."
+  },
+  "guestWarm2": "สายใกล้ขึ้น",
+  "@guestWarm2": {
+    "description": "Small progress line 3 for the guest plot."
+  },
+  "storyCatWindowTitle": "ขอบหน้าต่างแดด",
+  "@storyCatWindowTitle": {
+    "description": "Title of pet story cat_window."
+  },
+  "storyCatWindowChapter0": "หาหย่อมแสงแดดที่อุ่นที่สุด",
+  "@storyCatWindowChapter0": {
+    "description": "Chapter 1 of pet story cat_window."
+  },
+  "storyCatWindowChapter1": "นำเบาะนุ่มและไหมพรมมา",
+  "@storyCatWindowChapter1": {
+    "description": "Chapter 2 of pet story cat_window."
+  },
+  "storyCatWindowChapter2": "แขวนม่านสำหรับการงีบตอนบ่ายที่สมบูรณ์แบบ",
+  "@storyCatWindowChapter2": {
+    "description": "Chapter 3 of pet story cat_window."
+  },
+  "storyCatWatchTitle": "เฝ้ายามเที่ยงคืน",
+  "@storyCatWatchTitle": {
+    "description": "Title of pet story cat_watch."
+  },
+  "storyCatWatchChapter0": "จุดทางเดินเงียบ ๆ ข้ามลานบ้าน",
+  "@storyCatWatchChapter0": {
+    "description": "Chapter 1 of pet story cat_watch."
+  },
+  "storyCatWatchChapter1": "ใส่กระดิ่งเพื่อได้ยินผู้มาเยือนทุกคน",
+  "@storyCatWatchChapter1": {
+    "description": "Chapter 2 of pet story cat_watch."
+  },
+  "storyCatWatchChapter2": "มองดวงจันทร์ผ่านกล้องส่องทางไกลเล็ก ๆ",
+  "@storyCatWatchChapter2": {
+    "description": "Chapter 3 of pet story cat_watch."
+  },
+  "storyCatGardenTitle": "สวนลับ",
+  "@storyCatGardenTitle": {
+    "description": "Title of pet story cat_garden."
+  },
+  "storyCatGardenChapter0": "ปลูกมุมเขียวที่ซ่อนอยู่",
+  "@storyCatGardenChapter0": {
+    "description": "Chapter 1 of pet story cat_garden."
+  },
+  "storyCatGardenChapter1": "เชื้อเชิญผีเสื้อสีสดให้มาเยือน",
+  "@storyCatGardenChapter1": {
+    "description": "Chapter 2 of pet story cat_garden."
+  },
+  "storyCatGardenChapter2": "เติมน้ำพุกระซิบให้สวนสมบูรณ์",
+  "@storyCatGardenChapter2": {
+    "description": "Chapter 3 of pet story cat_garden."
+  },
+  "storyCatLibraryTitle": "ห้องสมุดเล็ก",
+  "@storyCatLibraryTitle": {
+    "description": "Title of pet story cat_library."
+  },
+  "storyCatLibraryChapter0": "สะสมหนังสือนิทานโปรดสามเล่ม",
+  "@storyCatLibraryChapter0": {
+    "description": "Chapter 1 of pet story cat_library."
+  },
+  "storyCatLibraryChapter1": "ปูผ้าห่มข้างชั้นหนังสือ",
+  "@storyCatLibraryChapter1": {
+    "description": "Chapter 2 of pet story cat_library."
+  },
+  "storyCatLibraryChapter2": "จุดโคมอ่านหนังสือสำหรับเย็นที่ยาวนาน",
+  "@storyCatLibraryChapter2": {
+    "description": "Chapter 3 of pet story cat_library."
+  },
+  "storyCatTeaTitle": "ผู้ดูแลโรงน้ำชา",
+  "@storyCatTeaTitle": {
+    "description": "Title of pet story cat_tea."
+  },
+  "storyCatTeaChapter0": "จัดถ้วยชาเล็กใบแรก",
+  "@storyCatTeaChapter0": {
+    "description": "Chapter 1 of pet story cat_tea."
+  },
+  "storyCatTeaChapter1": "ประดับโต๊ะด้วยดอกไม้สด",
+  "@storyCatTeaChapter1": {
+    "description": "Chapter 2 of pet story cat_tea."
+  },
+  "storyCatTeaChapter2": "ชูธงโรงน้ำชาต้อนรับแขก",
+  "@storyCatTeaChapter2": {
+    "description": "Chapter 3 of pet story cat_tea."
+  },
+  "storyDogTrailTitle": "เส้นทางต้อนรับ",
+  "@storyDogTrailTitle": {
+    "description": "Title of pet story dog_trail."
+  },
+  "storyDogTrailChapter0": "ทำเครื่องหมายเส้นทางเป็นมิตรผ่านลาน",
+  "@storyDogTrailChapter0": {
+    "description": "Chapter 1 of pet story dog_trail."
+  },
+  "storyDogTrailChapter1": "วางน้ำสดไว้ให้ผู้เดินทาง",
+  "@storyDogTrailChapter1": {
+    "description": "Chapter 2 of pet story dog_trail."
+  },
+  "storyDogTrailChapter2": "วางลูกบอลที่เส้นชัยเพื่อต้อนรับอย่างร่าเริง",
+  "@storyDogTrailChapter2": {
+    "description": "Chapter 3 of pet story dog_trail."
+  },
+  "storyDogBridgeTitle": "ลาดตระเวนสะพาน",
+  "@storyDogBridgeTitle": {
+    "description": "Title of pet story dog_bridge."
+  },
+  "storyDogBridgeChapter0": "ยึดสะพานเก่าด้วยเชือกแข็งแรง",
+  "@storyDogBridgeChapter0": {
+    "description": "Chapter 1 of pet story dog_bridge."
+  },
+  "storyDogBridgeChapter1": "แขวนโคมสำหรับเช้าที่มีหมอก",
+  "@storyDogBridgeChapter1": {
+    "description": "Chapter 2 of pet story dog_bridge."
+  },
+  "storyDogBridgeChapter2": "รับตราลาดตระเวนลานบ้านสีทอง",
+  "@storyDogBridgeChapter2": {
+    "description": "Chapter 3 of pet story dog_bridge."
+  },
+  "storyDogPicnicTitle": "วันปิกนิก",
+  "@storyDogPicnicTitle": {
+    "description": "Title of pet story dog_picnic."
+  },
+  "storyDogPicnicChapter0": "จัดตะกร้าให้เพื่อนทุกคน",
+  "@storyDogPicnicChapter0": {
+    "description": "Chapter 1 of pet story dog_picnic."
+  },
+  "storyDogPicnicChapter1": "เลือกที่แดดจัดสำหรับผ้าห่ม",
+  "@storyDogPicnicChapter1": {
+    "description": "Chapter 2 of pet story dog_picnic."
+  },
+  "storyDogPicnicChapter2": "แบ่งขนมเมื่อทุกคนมาถึง",
+  "@storyDogPicnicChapter2": {
+    "description": "Chapter 3 of pet story dog_picnic."
+  },
+  "storyDogKiteTitle": "ว่าวที่หายไป",
+  "@storyDogKiteTitle": {
+    "description": "Title of pet story dog_kite."
+  },
+  "storyDogKiteChapter0": "มองเห็นว่าวพ้นเนินเขา",
+  "@storyDogKiteChapter0": {
+    "description": "Chapter 1 of pet story dog_kite."
+  },
+  "storyDogKiteChapter1": "ตามลมไปกับเข็มทิศ",
+  "@storyDogKiteChapter1": {
+    "description": "Chapter 2 of pet story dog_kite."
+  },
+  "storyDogKiteChapter2": "นำกลับบ้านและผูกโบใหม่",
+  "@storyDogKiteChapter2": {
+    "description": "Chapter 3 of pet story dog_kite."
+  },
+  "storyDogFestivalTitle": "ผู้ช่วยเทศกาล",
+  "@storyDogFestivalTitle": {
+    "description": "Title of pet story dog_festival."
+  },
+  "storyDogFestivalChapter0": "ถือธงสีสดไปที่ลานกว้าง",
+  "@storyDogFestivalChapter0": {
+    "description": "Chapter 1 of pet story dog_festival."
+  },
+  "storyDogFestivalChapter1": "นำขบวนพร้อมกลองเล็ก",
+  "@storyDogFestivalChapter1": {
+    "description": "Chapter 2 of pet story dog_festival."
+  },
+  "storyDogFestivalChapter2": "รับเหรียญเพราะช่วยทุกคน",
+  "@storyDogFestivalChapter2": {
+    "description": "Chapter 3 of pet story dog_festival."
+  },
+  "storyRaccoonWorkshopTitle": "โรงงานแวววาว",
+  "@storyRaccoonWorkshopTitle": {
+    "description": "Title of pet story raccoon_workshop."
+  },
+  "storyRaccoonWorkshopChapter0": "เปิดกล่องเครื่องมือของสิ่งประดิษฐ์แปลก ๆ",
+  "@storyRaccoonWorkshopChapter0": {
+    "description": "Chapter 1 of pet story raccoon_workshop."
+  },
+  "storyRaccoonWorkshopChapter1": "ประกอบเฟืองที่สว่างที่สุดเข้าด้วยกัน",
+  "@storyRaccoonWorkshopChapter1": {
+    "description": "Chapter 2 of pet story raccoon_workshop."
+  },
+  "storyRaccoonWorkshopChapter2": "สร้างนาฬิกาที่ตีเมื่อพระอาทิตย์ตก",
+  "@storyRaccoonWorkshopChapter2": {
+    "description": "Chapter 3 of pet story raccoon_workshop."
+  },
+  "storyRaccoonMarketTitle": "ตลาดแสงจันทร์",
+  "@storyRaccoonMarketTitle": {
+    "description": "Title of pet story raccoon_market."
+  },
+  "storyRaccoonMarketChapter0": "สานตะกร้าสำหรับของแปลก",
+  "@storyRaccoonMarketChapter0": {
+    "description": "Chapter 1 of pet story raccoon_market."
+  },
+  "storyRaccoonMarketChapter1": "จุดแผงใต้แสงจันทร์",
+  "@storyRaccoonMarketChapter1": {
+    "description": "Chapter 2 of pet story raccoon_market."
+  },
+  "storyRaccoonMarketChapter2": "แลกเหรียญแวววาวสามเหรียญกับของเซอร์ไพรส์",
+  "@storyRaccoonMarketChapter2": {
+    "description": "Chapter 3 of pet story raccoon_market."
+  },
+  "storyRaccoonRiverTitle": "สมบัติริมแม่น้ำ",
+  "@storyRaccoonRiverTitle": {
+    "description": "Title of pet story raccoon_river."
+  },
+  "storyRaccoonRiverChapter0": "อ่านแผนที่ที่ซ่อนใต้ก้อนหิน",
+  "@storyRaccoonRiverChapter0": {
+    "description": "Chapter 1 of pet story raccoon_river."
+  },
+  "storyRaccoonRiverChapter1": "ปะเรือเล็กสำหรับการข้าม",
+  "@storyRaccoonRiverChapter1": {
+    "description": "Chapter 2 of pet story raccoon_river."
+  },
+  "storyRaccoonRiverChapter2": "พบเปลือกหอยร้องเพลงที่ฝั่งตรงข้าม",
+  "@storyRaccoonRiverChapter2": {
+    "description": "Chapter 3 of pet story raccoon_river."
+  },
+  "storyRaccoonRecycleTitle": "สวนโอกาสที่สอง",
+  "@storyRaccoonRecycleTitle": {
+    "description": "Title of pet story raccoon_recycle."
+  },
+  "storyRaccoonRecycleChapter0": "เปลี่ยนลังเก่าเป็นกระถาง",
+  "@storyRaccoonRecycleChapter0": {
+    "description": "Chapter 1 of pet story raccoon_recycle."
+  },
+  "storyRaccoonRecycleChapter1": "ซ่อมบัวรดน้ำที่บุบ",
+  "@storyRaccoonRecycleChapter1": {
+    "description": "Chapter 2 of pet story raccoon_recycle."
+  },
+  "storyRaccoonRecycleChapter2": "สร้างกังหันลมจากชิ้นส่วนที่ถูกลืม",
+  "@storyRaccoonRecycleChapter2": {
+    "description": "Chapter 3 of pet story raccoon_recycle."
+  },
+  "storyRaccoonCafeTitle": "คาเฟ่ยามค่ำ",
+  "@storyRaccoonCafeTitle": {
+    "description": "Title of pet story raccoon_cafe."
+  },
+  "storyRaccoonCafeChapter0": "ขัดแก้วให้แขกคนแรก",
+  "@storyRaccoonCafeChapter0": {
+    "description": "Chapter 1 of pet story raccoon_cafe."
+  },
+  "storyRaccoonCafeChapter1": "อบคุกกี้รูปพระจันทร์หนึ่งจาน",
+  "@storyRaccoonCafeChapter1": {
+    "description": "Chapter 2 of pet story raccoon_cafe."
+  },
+  "storyRaccoonCafeChapter2": "แขวนป้ายคาเฟ่ก่อนค่ำคืน",
+  "@storyRaccoonCafeChapter2": {
+    "description": "Chapter 3 of pet story raccoon_cafe."
+  },
+  "storyHamsterRailwayTitle": "ทางรถไฟจิ๋ว",
+  "@storyHamsterRailwayTitle": {
+    "description": "Title of pet story hamster_railway."
+  },
+  "storyHamsterRailwayChapter0": "วางรางรอบแปลงดอกไม้",
+  "@storyHamsterRailwayChapter0": {
+    "description": "Chapter 1 of pet story hamster_railway."
+  },
+  "storyHamsterRailwayChapter1": "สร้างรถเข็นขนาดพอดี",
+  "@storyHamsterRailwayChapter1": {
+    "description": "Chapter 2 of pet story hamster_railway."
+  },
+  "storyHamsterRailwayChapter2": "เปิดสถานีที่เล็กที่สุดของลานบ้าน",
+  "@storyHamsterRailwayChapter2": {
+    "description": "Chapter 3 of pet story hamster_railway."
+  },
+  "storyHamsterPantryTitle": "ห้องเก็บอาหารใหญ่",
+  "@storyHamsterPantryTitle": {
+    "description": "Title of pet story hamster_pantry."
+  },
+  "storyHamsterPantryChapter0": "สะสมถุงเมล็ดสำหรับฤดูหนาว",
+  "@storyHamsterPantryChapter0": {
+    "description": "Chapter 1 of pet story hamster_pantry."
+  },
+  "storyHamsterPantryChapter1": "สร้างชั้นวางจากกิ่งเรียบ",
+  "@storyHamsterPantryChapter1": {
+    "description": "Chapter 2 of pet story hamster_pantry."
+  },
+  "storyHamsterPantryChapter2": "ติดป้ายโหลที่ดีที่สุดในห้องเก็บ",
+  "@storyHamsterPantryChapter2": {
+    "description": "Chapter 3 of pet story hamster_pantry."
+  },
+  "storyHamsterCloudsTitle": "หอดูเมฆ",
+  "@storyHamsterCloudsTitle": {
+    "description": "Title of pet story hamster_clouds."
+  },
+  "storyHamsterCloudsChapter0": "ตั้งบันไดเหนือหญ้าสูง",
+  "@storyHamsterCloudsChapter0": {
+    "description": "Chapter 1 of pet story hamster_clouds."
+  },
+  "storyHamsterCloudsChapter1": "เล็งกล้องส่องทางไกลระหว่างเมฆ",
+  "@storyHamsterCloudsChapter1": {
+    "description": "Chapter 2 of pet story hamster_clouds."
+  },
+  "storyHamsterCloudsChapter2": "ตั้งชื่อดาวดวงใหม่ตามลานบ้าน",
+  "@storyHamsterCloudsChapter2": {
+    "description": "Chapter 3 of pet story hamster_clouds."
+  },
+  "storyHamsterGardenTitle": "สวนจำลอง",
+  "@storyHamsterGardenTitle": {
+    "description": "Title of pet story hamster_garden."
+  },
+  "storyHamsterGardenChapter0": "ปลูกสวนในกระถางดิน",
+  "@storyHamsterGardenChapter0": {
+    "description": "Chapter 1 of pet story hamster_garden."
+  },
+  "storyHamsterGardenChapter1": "วางสะพานข้ามลำธารกรวด",
+  "@storyHamsterGardenChapter1": {
+    "description": "Chapter 2 of pet story hamster_garden."
+  },
+  "storyHamsterGardenChapter2": "เพิ่มบ้านเห็ดให้ผู้มาเยือน",
+  "@storyHamsterGardenChapter2": {
+    "description": "Chapter 3 of pet story hamster_garden."
+  },
+  "storyHamsterBirthdayTitle": "ขบวนวันเกิด",
+  "@storyHamsterBirthdayTitle": {
+    "description": "Title of pet story hamster_birthday."
+  },
+  "storyHamsterBirthdayChapter0": "ทำหมวกปาร์ตี้ที่เล็กที่สุด",
+  "@storyHamsterBirthdayChapter0": {
+    "description": "Chapter 1 of pet story hamster_birthday."
+  },
+  "storyHamsterBirthdayChapter1": "อบเค้กด้วยเบอร์รีสามลูก",
+  "@storyHamsterBirthdayChapter1": {
+    "description": "Chapter 2 of pet story hamster_birthday."
+  },
+  "storyHamsterBirthdayChapter2": "เริ่มขบวนท่ามกลางสายฝนคอนเฟตติ",
+  "@storyHamsterBirthdayChapter2": {
+    "description": "Chapter 3 of pet story hamster_birthday."
+  },
+  "storyFoxCozyTitle": "มุมอบอุ่น",
+  "@storyFoxCozyTitle": {
+    "description": "Title of pet story fox_cozy."
+  },
+  "storyFoxCozyChapter0": "กวาดใบไม้จากมุมสงบ",
+  "@storyFoxCozyChapter0": {
+    "description": "Chapter 1 of pet story fox_cozy."
+  },
+  "storyFoxCozyChapter1": "นำที่นอนนุ่มมาสำหรับการงีบตอนบ่าย",
+  "@storyFoxCozyChapter1": {
+    "description": "Chapter 2 of pet story fox_cozy."
+  },
+  "storyFoxCozyChapter2": "เลือกของเล่นโปรดและทำให้ที่นี่เป็นบ้าน",
+  "@storyFoxCozyChapter2": {
+    "description": "Chapter 3 of pet story fox_cozy."
+  },
+  "storyFoxFirefliesTitle": "ทางหิ่งห้อย",
+  "@storyFoxFirefliesTitle": {
+    "description": "Title of pet story fox_fireflies."
+  },
+  "storyFoxFirefliesChapter0": "วางโคมที่ขอบป่า",
+  "@storyFoxFirefliesChapter0": {
+    "description": "Chapter 1 of pet story fox_fireflies."
+  },
+  "storyFoxFirefliesChapter1": "ปลูกดอกไม้กลางคืนตามทาง",
+  "@storyFoxFirefliesChapter1": {
+    "description": "Chapter 2 of pet story fox_fireflies."
+  },
+  "storyFoxFirefliesChapter2": "ต้อนรับฝูงหิ่งห้อยประกาย",
+  "@storyFoxFirefliesChapter2": {
+    "description": "Chapter 3 of pet story fox_fireflies."
+  },
+  "storyFoxPostTitle": "ที่ทำการไปรษณีย์ป่า",
+  "@storyFoxPostTitle": {
+    "description": "Title of pet story fox_post."
+  },
+  "storyFoxPostChapter0": "สร้างตู้จดหมายสีแดงใต้ต้นโอ๊ก",
+  "@storyFoxPostChapter0": {
+    "description": "Chapter 1 of pet story fox_post."
+  },
+  "storyFoxPostChapter1": "แยกจดหมายให้เพื่อนทุกคนในลานบ้าน",
+  "@storyFoxPostChapter1": {
+    "description": "Chapter 2 of pet story fox_post."
+  },
+  "storyFoxPostChapter2": "ส่งของชิ้นแรกในกระเป๋าใบใหม่",
+  "@storyFoxPostChapter2": {
+    "description": "Chapter 3 of pet story fox_post."
+  },
+  "storyFoxStudioTitle": "สตูดิโอฤดูใบไม้ร่วง",
+  "@storyFoxStudioTitle": {
+    "description": "Title of pet story fox_studio."
+  },
+  "storyFoxStudioChapter0": "ตั้งขาตั้งภาพท่ามกลางใบไม้สีทอง",
+  "@storyFoxStudioChapter0": {
+    "description": "Chapter 1 of pet story fox_studio."
+  },
+  "storyFoxStudioChapter1": "ผสมสีสำหรับภาพฤดูใบไม้ร่วง",
+  "@storyFoxStudioChapter1": {
+    "description": "Chapter 2 of pet story fox_studio."
+  },
+  "storyFoxStudioChapter2": "ใส่กรอบภาพให้บ้านในลาน",
+  "@storyFoxStudioChapter2": {
+    "description": "Chapter 3 of pet story fox_studio."
+  },
+  "storyFoxCampTitle": "ค่ายใต้ดาว",
+  "@storyFoxCampTitle": {
+    "description": "Title of pet story fox_camp."
+  },
+  "storyFoxCampChapter0": "ตั้งเต็นท์ใต้ต้นสน",
+  "@storyFoxCampChapter0": {
+    "description": "Chapter 1 of pet story fox_camp."
+  },
+  "storyFoxCampChapter1": "จุดกองไฟที่อบอุ่นและระมัดระวัง",
+  "@storyFoxCampChapter1": {
+    "description": "Chapter 2 of pet story fox_camp."
+  },
+  "storyFoxCampChapter2": "เฝ้าหาดาวตก",
+  "@storyFoxCampChapter2": {
+    "description": "Chapter 3 of pet story fox_camp."
+  },
+  "petItemCushion": "เบาะ",
+  "@petItemCushion": {
+    "description": "Collectible name for cushion."
+  },
+  "petItemYarn": "ไหมพรม",
+  "@petItemYarn": {
+    "description": "Collectible name for yarn."
+  },
+  "petItemCurtain": "ม่าน",
+  "@petItemCurtain": {
+    "description": "Collectible name for curtain."
+  },
+  "petItemLantern": "โคม",
+  "@petItemLantern": {
+    "description": "Collectible name for lantern."
+  },
+  "petItemBell": "กระดิ่ง",
+  "@petItemBell": {
+    "description": "Collectible name for bell."
+  },
+  "petItemTelescope": "กล้องส่องทางไกล",
+  "@petItemTelescope": {
+    "description": "Collectible name for telescope."
+  },
+  "petItemSeedling": "ต้นกล้า",
+  "@petItemSeedling": {
+    "description": "Collectible name for seedling."
+  },
+  "petItemButterflies": "ผีเสื้อ",
+  "@petItemButterflies": {
+    "description": "Collectible name for butterflies."
+  },
+  "petItemFountain": "น้ำพุ",
+  "@petItemFountain": {
+    "description": "Collectible name for fountain."
+  },
+  "petItemBooks": "หนังสือ",
+  "@petItemBooks": {
+    "description": "Collectible name for books."
+  },
+  "petItemBlanket": "ผ้าห่ม",
+  "@petItemBlanket": {
+    "description": "Collectible name for blanket."
+  },
+  "petItemLamp": "โคมอ่านหนังสือ",
+  "@petItemLamp": {
+    "description": "Collectible name for lamp."
+  },
+  "petItemTeacup": "ชุดน้ำชา",
+  "@petItemTeacup": {
+    "description": "Collectible name for teacup."
+  },
+  "petItemFlowers": "ดอกไม้",
+  "@petItemFlowers": {
+    "description": "Collectible name for flowers."
+  },
+  "petItemBanner": "ธง",
+  "@petItemBanner": {
+    "description": "Collectible name for banner."
+  },
+  "petItemSignpost": "ป้ายทาง",
+  "@petItemSignpost": {
+    "description": "Collectible name for signpost."
+  },
+  "petItemBowl": "ชามน้ำ",
+  "@petItemBowl": {
+    "description": "Collectible name for bowl."
+  },
+  "petItemBall": "ลูกบอล",
+  "@petItemBall": {
+    "description": "Collectible name for ball."
+  },
+  "petItemRope": "เชือกแข็งแรง",
+  "@petItemRope": {
+    "description": "Collectible name for rope."
+  },
+  "petItemBadge": "ตราลาดตระเวน",
+  "@petItemBadge": {
+    "description": "Collectible name for badge."
+  },
+  "petItemBasket": "ตะกร้า",
+  "@petItemBasket": {
+    "description": "Collectible name for basket."
+  },
+  "petItemTreats": "ขนม",
+  "@petItemTreats": {
+    "description": "Collectible name for treats."
+  },
+  "petItemKite": "ว่าว",
+  "@petItemKite": {
+    "description": "Collectible name for kite."
+  },
+  "petItemCompass": "เข็มทิศ",
+  "@petItemCompass": {
+    "description": "Collectible name for compass."
+  },
+  "petItemRibbon": "โบ",
+  "@petItemRibbon": {
+    "description": "Collectible name for ribbon."
+  },
+  "petItemFlags": "ธงเทศกาล",
+  "@petItemFlags": {
+    "description": "Collectible name for flags."
+  },
+  "petItemDrum": "กลอง",
+  "@petItemDrum": {
+    "description": "Collectible name for drum."
+  },
+  "petItemMedal": "เหรียญ",
+  "@petItemMedal": {
+    "description": "Collectible name for medal."
+  },
+  "petItemToolbox": "กล่องเครื่องมือ",
+  "@petItemToolbox": {
+    "description": "Collectible name for toolbox."
+  },
+  "petItemGears": "เฟือง",
+  "@petItemGears": {
+    "description": "Collectible name for gears."
+  },
+  "petItemClock": "นาฬิกา",
+  "@petItemClock": {
+    "description": "Collectible name for clock."
+  },
+  "petItemCoins": "เหรียญแวววาว",
+  "@petItemCoins": {
+    "description": "Collectible name for coins."
+  },
+  "petItemMap": "แผนที่สมบัติ",
+  "@petItemMap": {
+    "description": "Collectible name for map."
+  },
+  "petItemBoat": "เรือเล็ก",
+  "@petItemBoat": {
+    "description": "Collectible name for boat."
+  },
+  "petItemShell": "เปลือกหอยร้องเพลง",
+  "@petItemShell": {
+    "description": "Collectible name for shell."
+  },
+  "petItemCrate": "ลังกระถาง",
+  "@petItemCrate": {
+    "description": "Collectible name for crate."
+  },
+  "petItemWateringCan": "บัวรดน้ำ",
+  "@petItemWateringCan": {
+    "description": "Collectible name for wateringCan."
+  },
+  "petItemWindmill": "กังหันลม",
+  "@petItemWindmill": {
+    "description": "Collectible name for windmill."
+  },
+  "petItemMug": "แก้วคาเฟ่",
+  "@petItemMug": {
+    "description": "Collectible name for mug."
+  },
+  "petItemCookies": "คุกกี้",
+  "@petItemCookies": {
+    "description": "Collectible name for cookies."
+  },
+  "petItemTracks": "รางรถไฟ",
+  "@petItemTracks": {
+    "description": "Collectible name for tracks."
+  },
+  "petItemCart": "รถเข็นจิ๋ว",
+  "@petItemCart": {
+    "description": "Collectible name for cart."
+  },
+  "petItemStation": "สถานี",
+  "@petItemStation": {
+    "description": "Collectible name for station."
+  },
+  "petItemSeedBag": "ถุงเมล็ด",
+  "@petItemSeedBag": {
+    "description": "Collectible name for seedBag."
+  },
+  "petItemShelf": "ชั้นวาง",
+  "@petItemShelf": {
+    "description": "Collectible name for shelf."
+  },
+  "petItemJar": "โหลห้องเก็บ",
+  "@petItemJar": {
+    "description": "Collectible name for jar."
+  },
+  "petItemLadder": "บันได",
+  "@petItemLadder": {
+    "description": "Collectible name for ladder."
+  },
+  "petItemStar": "ดาวดวงใหม่",
+  "@petItemStar": {
+    "description": "Collectible name for star."
+  },
+  "petItemPot": "กระถางสวน",
+  "@petItemPot": {
+    "description": "Collectible name for pot."
+  },
+  "petItemBridge": "สะพานจิ๋ว",
+  "@petItemBridge": {
+    "description": "Collectible name for bridge."
+  },
+  "petItemMushroom": "บ้านเห็ด",
+  "@petItemMushroom": {
+    "description": "Collectible name for mushroom."
+  },
+  "petItemHat": "หมวกปาร์ตี้",
+  "@petItemHat": {
+    "description": "Collectible name for hat."
+  },
+  "petItemCake": "เค้กเบอร์รี",
+  "@petItemCake": {
+    "description": "Collectible name for cake."
+  },
+  "petItemConfetti": "คอนเฟตติ",
+  "@petItemConfetti": {
+    "description": "Collectible name for confetti."
+  },
+  "petItemClearing": "มุมโล่งสงบ",
+  "@petItemClearing": {
+    "description": "Collectible name for clearing."
+  },
+  "petItemBed": "ที่นอนนุ่ม",
+  "@petItemBed": {
+    "description": "Collectible name for bed."
+  },
+  "petItemToy": "ของเล่นโปรด",
+  "@petItemToy": {
+    "description": "Collectible name for toy."
+  },
+  "petItemFireflies": "หิ่งห้อย",
+  "@petItemFireflies": {
+    "description": "Collectible name for fireflies."
+  },
+  "petItemMailbox": "ตู้จดหมาย",
+  "@petItemMailbox": {
+    "description": "Collectible name for mailbox."
+  },
+  "petItemLetters": "จดหมาย",
+  "@petItemLetters": {
+    "description": "Collectible name for letters."
+  },
+  "petItemSatchel": "กระเป๋าไปรษณีย์",
+  "@petItemSatchel": {
+    "description": "Collectible name for satchel."
+  },
+  "petItemEasel": "ขาตั้งภาพ",
+  "@petItemEasel": {
+    "description": "Collectible name for easel."
+  },
+  "petItemPaints": "สี",
+  "@petItemPaints": {
+    "description": "Collectible name for paints."
+  },
+  "petItemFrame": "กรอบรูป",
+  "@petItemFrame": {
+    "description": "Collectible name for frame."
+  },
+  "petItemTent": "เต็นท์",
+  "@petItemTent": {
+    "description": "Collectible name for tent."
+  },
+  "petItemCampfire": "กองไฟ",
+  "@petItemCampfire": {
+    "description": "Collectible name for campfire."
+  }
+}

@@ -5,8 +5,9 @@ import 'package:flutter/material.dart';
 import '../l10n/l10n.dart';
 import 'game_hud.dart';
 import 'premium_ui.dart';
+import 'table_theme.dart';
 
-/// Нижний ряд бустов: четыре медных круга с белой иконкой и красным баджем.
+/// Нижний ряд бустов: четыре круга с иконкой и красным баджем.
 class GameActionBar extends StatelessWidget {
   const GameActionBar({
     super.key,
@@ -22,6 +23,7 @@ class GameActionBar extends StatelessWidget {
     required this.onMagnet,
     required this.onHint,
     required this.onUndo,
+    this.shuffleAllowed = true,
   });
 
   final int shufflesLeft;
@@ -29,6 +31,7 @@ class GameActionBar extends StatelessWidget {
   final int hintsLeft;
   final int undosLeft;
   final bool enabled;
+  final bool shuffleAllowed;
   final bool canUndo;
   final bool canUndoViaAd;
   final bool adsAvailable;
@@ -39,32 +42,36 @@ class GameActionBar extends StatelessWidget {
 
   static const buttonSize = 56.0;
   static const gap = 22.0;
-  static const badgeColor = Color(0xFFD32F2F);
 
   static String badgeLabel(int count) => count > 0 ? '$count' : '+';
 
   @override
   Widget build(BuildContext context) {
-    final l10n = L10n.of(context);
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           GameActionButton(
-            tooltip: l10n.boostTooltip(
-              l10n.shuffle,
-              shufflesLeft,
-              adsAvailable: adsAvailable,
-            ),
-            semanticLabel: l10n.boostSemantic(
-              l10n.shuffle,
-              shufflesLeft,
-              adsAvailable: adsAvailable,
-            ),
+            tooltip: !shuffleAllowed
+                ? l10n.shuffleLockedChallenge
+                : l10n.boostTooltip(
+                    l10n.shuffle,
+                    shufflesLeft,
+                    adsAvailable: adsAvailable,
+                  ),
+            semanticLabel: !shuffleAllowed
+                ? l10n.shuffleLockedChallenge
+                : l10n.boostSemantic(
+                    l10n.shuffle,
+                    shufflesLeft,
+                    adsAvailable: adsAvailable,
+                  ),
             icon: Icons.shuffle_rounded,
-            badge: badgeLabel(shufflesLeft),
-            enabled: enabled && (shufflesLeft > 0 || adsAvailable),
+            badge: shuffleAllowed ? badgeLabel(shufflesLeft) : '—',
+            enabled:
+                enabled && shuffleAllowed && (shufflesLeft > 0 || adsAvailable),
             onPressed: onShuffle,
           ),
           const SizedBox(width: gap),
@@ -82,7 +89,7 @@ class GameActionBar extends StatelessWidget {
             badge: badgeLabel(magnetsLeft),
             enabled: enabled && (magnetsLeft > 0 || adsAvailable),
             onPressed: onMagnet,
-            child: const MagnetGlyph(size: 28, color: Colors.white),
+            child: const MagnetGlyph(size: 28, color: TableUi.ivory),
           ),
           const SizedBox(width: gap),
           GameActionButton(
@@ -148,6 +155,7 @@ class GameActionButton extends StatefulWidget {
   final String? semanticLabel;
   final String badge;
   final bool enabled;
+
   final VoidCallback onPressed;
   final IconData? icon;
   final Widget? child;
@@ -209,7 +217,7 @@ class _GameActionButtonState extends State<GameActionButton>
             ),
             Positioned(
               right: 0,
-              top: 0,
+              top: 1,
               child: ExcludeSemantics(
                 child: _CountBadge(
                   label: widget.badge,
@@ -233,12 +241,13 @@ class _CountBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      width: 22,
+      height: 22,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: enabled ? GameActionBar.badgeColor : const Color(0xFF7A7A7A),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white, width: 1.2),
+        shape: BoxShape.circle,
+        color: enabled ? TableUi.badge : const Color(0xFF7A7A7A),
+        border: Border.all(color: TableUi.badgeRing, width: 1.6),
         boxShadow: const [
           BoxShadow(
             color: Color(0x66000000),
@@ -247,13 +256,12 @@ class _CountBadge extends StatelessWidget {
           ),
         ],
       ),
-      alignment: Alignment.center,
       child: Text(
         label,
         textAlign: TextAlign.center,
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: FontWeight.w800,
           height: 1.0,
         ),

@@ -196,4 +196,5 @@ dependencies {
     // with AGP 9 + R8 full mode (WorkDatabase initialization via androidx.startup).
     // https://github.com/googleads/googleads-mobile-flutter/issues/1444
     implementation("androidx.work:work-runtime:2.11.2")
+    implementation("androidx.activity:activity-ktx:1.10.1")
 }

@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import 'l10n.dart';
+import 'package:mahjong/l10n/app_localizations.dart';
+
 import '../services/locale_store.dart';
 
 class LocaleController extends ChangeNotifier {
@@ -22,7 +23,7 @@ class LocaleController extends ChangeNotifier {
 
   Locale get locale => Locale(code);
 
-  L10n get l10n => L10n(code);
+  AppLocalizations get l10n => lookupAppLocalizations(locale);
 
   void attachStore(LocaleStore store) {
     _store = store;
@@ -67,6 +68,8 @@ class LocaleScope extends InheritedNotifier<LocaleController> {
   }
 
   static LocaleController? maybeOf(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<LocaleScope>()?.controller;
+    return context
+        .dependOnInheritedWidgetOfExactType<LocaleScope>()
+        ?.controller;
   }
 }

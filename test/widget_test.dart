@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mahjong/main.dart';
-import 'package:mahjong/models/levels.dart';
 import 'package:mahjong/widgets/courtyard/courtyard_estate.dart';
 import 'package:mahjong/widgets/courtyard/courtyard_progress.dart';
+import 'package:mahjong/models/leaderboard_entry.dart';
+import 'package:mahjong/models/rank_climb.dart';
 import 'package:mahjong/widgets/courtyard/courtyard_win_overlay.dart';
 import 'package:mahjong/widgets/courtyard/courtyard_world.dart';
 import 'package:mahjong/widgets/game_hud.dart';
+import 'package:mahjong/widgets/rank_climb_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -42,11 +44,13 @@ void main() {
 
     expect(find.textContaining('MAHJONG RISE'), findsNothing);
     expect(find.textContaining('Continue'), findsOneWidget);
-    expect(find.text(Levels.plotKindOf(1).titleEn), findsOneWidget);
+    expect(find.text('4 levels until the next House look'), findsNothing);
+    expect(find.text('House · 1/24'), findsOneWidget);
     expect(find.text('Today'), findsNothing);
     expect(find.text('Levels'), findsNothing);
     expect(find.text('Pet'), findsNothing);
-    expect(find.text('A friend is waiting'), findsOneWidget);
+    expect(find.text('A friend is waiting'), findsNothing);
+    expect(find.byKey(const ValueKey('courtyard-pets')), findsOneWidget);
     expect(find.text('Garden week'), findsNothing);
     expect(find.text('Courtyard week'), findsNothing);
     expect(find.text('Lantern week'), findsNothing);
@@ -63,19 +67,25 @@ void main() {
       findsNothing,
     );
 
-    await tester.tap(find.text('A friend is waiting'));
+    await tester.tap(find.byKey(const ValueKey('courtyard-pets')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 420));
-    expect(find.text('Choose a companion'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(Scaffold).last,
+        matching: find.text('Choose a companion'),
+      ),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byTooltip('Back'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 340));
 
-    expect(find.text(Levels.plotKindOf(1).titleEn), findsOneWidget);
+    expect(find.text('House · 1/24'), findsOneWidget);
   });
 
-  testWidgets('courtyard hub shows a one-shot pan hint until a gesture', (
+  testWidgets('courtyard hub is a world map with one home and pet', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({
@@ -89,94 +99,93 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Drag to look around the courtyard'), findsOneWidget);
-
-    tester
-        .widget<CourtyardWorld>(find.byType(CourtyardWorld))
-        .onPanHint!
-        .call();
-    await tester.pump();
-
-    expect(find.text('Drag to look around the courtyard'), findsNothing);
+    expect(find.byKey(courtyardHomeKey), findsOneWidget);
+    expect(find.byKey(courtyardPetAreaKey), findsOneWidget);
+    expect(find.byType(InteractiveViewer), findsOneWidget);
   });
 
-  testWidgets('courtyard pan hint hides after a few seconds', (tester) async {
+  testWidgets('win celebration is followed by a rank climb', (tester) async {
     SharedPreferences.setMockInitialValues({
       'progress.maxUnlocked': 2,
       'progress.stars.1': 1,
       'progress.best.1': 400,
       'progress.lastPlayed': 1,
+      'progress.courtyardPanHintDone': true,
     });
     await tester.pumpWidget(const MahjongApp());
     await tester.pump();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Drag to look around the courtyard'), findsOneWidget);
+    await tester.tap(find.textContaining('Continue'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 280));
+    expect(find.byType(GameHud), findsOneWidget);
 
-    await tester.pump(const Duration(seconds: 6));
+    const climb = RankClimb(
+      rankFrom: 4,
+      rankTo: 2,
+      ratingFrom: 200,
+      ratingTo: 450,
+      player: LeaderboardEntry(
+        id: 'me',
+        name: 'Jade',
+        rating: 450,
+        totalStars: 4,
+        levelsUnlocked: 2,
+        isCurrentPlayer: true,
+      ),
+      passed: [
+        LeaderboardEntry(
+          id: 'b',
+          name: 'Bob',
+          rating: 400,
+          totalStars: 3,
+          levelsUnlocked: 2,
+          isCurrentPlayer: false,
+        ),
+      ],
+      stillAbove: [
+        LeaderboardEntry(
+          id: 'a',
+          name: 'Ada',
+          rating: 500,
+          totalStars: 5,
+          levelsUnlocked: 3,
+          isCurrentPlayer: false,
+        ),
+      ],
+    );
+    final from = CourtyardEstate.fromFocus(
+      CourtyardSnapshot.fromStep(step: 2, totalStars: 3),
+    );
+    final to = CourtyardEstate.fromFocus(
+      CourtyardSnapshot.fromStep(step: 3, totalStars: 5),
+    );
+    Navigator.of(tester.element(find.byType(GameHud))).pop(
+      CourtyardWinReveal(
+        estateFrom: from,
+        estateTo: to,
+        climb: Future.value(climb),
+      ),
+    );
+    await tester.pump();
+    expect(find.byType(CourtyardWinOverlay), findsOneWidget);
+    expect(find.byKey(rankClimbOverlayKey), findsNothing);
 
-    expect(find.text('Drag to look around the courtyard'), findsNothing);
+    await tester.pump(CourtyardWinOverlay.displayDuration);
+    await tester.pump();
+    expect(find.byType(CourtyardWinOverlay), findsNothing);
+    expect(find.byKey(rankClimbOverlayKey), findsOneWidget);
+    expect(find.text('You climbed!'), findsOneWidget);
+    expect(find.text('Place 4 → 2'), findsOneWidget);
+    expect(find.text('Jade'), findsOneWidget);
+    expect(find.text('Bob'), findsOneWidget);
+
+    await tester.pump(RankClimbOverlay.displayDurationFor(climb));
+    await tester.pump();
+    expect(find.byKey(rankClimbOverlayKey), findsNothing);
   });
-
-  testWidgets(
-    'courtyard pan hint returns after a win until the map is dragged',
-    (tester) async {
-      SharedPreferences.setMockInitialValues({
-        'progress.maxUnlocked': 2,
-        'progress.stars.1': 1,
-        'progress.best.1': 400,
-        'progress.lastPlayed': 1,
-      });
-      await tester.pumpWidget(const MahjongApp());
-      await tester.pump();
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.text('Drag to look around the courtyard'), findsOneWidget);
-      await tester.pump(const Duration(seconds: 6));
-      expect(find.text('Drag to look around the courtyard'), findsNothing);
-
-      await tester.tap(find.textContaining('Continue'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 280));
-      expect(find.byType(GameHud), findsOneWidget);
-
-      final from = CourtyardEstate.fromFocus(
-        CourtyardSnapshot.fromStep(step: 2, totalStars: 3),
-      );
-      final to = CourtyardEstate.fromFocus(
-        CourtyardSnapshot.fromStep(step: 3, totalStars: 5),
-      );
-      Navigator.of(
-        tester.element(find.byType(GameHud)),
-      ).pop(CourtyardWinReveal(estateFrom: from, estateTo: to));
-      await tester.pump();
-      expect(find.byType(CourtyardWinOverlay), findsOneWidget);
-      expect(find.text('Drag to look around the courtyard'), findsNothing);
-
-      await tester.pump(CourtyardWinOverlay.displayDuration);
-      expect(find.byType(CourtyardWinOverlay), findsNothing);
-      expect(find.text('Drag to look around the courtyard'), findsOneWidget);
-
-      tester
-          .widget<CourtyardWorld>(find.byType(CourtyardWorld))
-          .onPanHint!
-          .call();
-      await tester.pump();
-      expect(find.text('Drag to look around the courtyard'), findsNothing);
-
-      await tester.tap(find.textContaining('Continue'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 280));
-      Navigator.of(
-        tester.element(find.byType(GameHud)),
-      ).pop(CourtyardWinReveal(estateFrom: from, estateTo: to));
-      await tester.pump();
-      await tester.pump(CourtyardWinOverlay.displayDuration);
-      expect(find.text('Drag to look around the courtyard'), findsNothing);
-    },
-  );
 
   testWidgets(
     'campaign hub shows the last played plot, not a new-plot button',
@@ -193,17 +202,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text(Levels.plotKindOf(24).titleEn), findsOneWidget);
+      expect(find.text('House fully upgraded'), findsOneWidget);
       expect(find.text('New plot'), findsNothing);
-      expect(
-        find.byWidgetPredicate((widget) {
-          if (widget is! Image) return false;
-          final image = widget.image;
-          return image is AssetImage &&
-              image.assetName.endsWith('world/country_base.png');
-        }),
-        findsWidgets,
-      );
+      expect(find.byType(InteractiveViewer), findsOneWidget);
     },
   );
 
@@ -223,11 +224,12 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text(Levels.plotKindOf(1).titleRu), findsOneWidget);
+    expect(find.text('Дом · 1/24'), findsOneWidget);
     expect(find.textContaining('Продолжить'), findsOneWidget);
     expect(find.text('Сегодня'), findsNothing);
     expect(find.text('Уровни'), findsNothing);
-    expect(find.text('Друг ждёт тебя'), findsOneWidget);
+    expect(find.text('Друг ждёт тебя'), findsNothing);
+    expect(find.byKey(const ValueKey('courtyard-pets')), findsOneWidget);
     expect(find.text('Росток'), findsNothing);
   });
 
@@ -248,9 +250,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('English'), findsOneWidget);
     expect(find.text('Русский'), findsOneWidget);
+    expect(find.text('Українська'), findsOneWidget);
     expect(find.text('Sound'), findsOneWidget);
     expect(find.text('Music'), findsOneWidget);
     expect(find.text('Haptic feedback'), findsOneWidget);
+    expect(find.text('Classic mahjong'), findsOneWidget);
+    expect(find.text('Bright match'), findsOneWidget);
 
     await tester.ensureVisible(find.text('Русский'));
     await tester.pump();
@@ -258,7 +263,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text(Levels.plotKindOf(1).titleRu), findsOneWidget);
+    expect(find.text('Дом · 1/24'), findsOneWidget);
     expect(find.textContaining('Продолжить'), findsOneWidget);
     expect(find.byTooltip('Настройки'), findsOneWidget);
   });
@@ -282,8 +287,10 @@ void main() {
     expect(find.text('Sound'), findsOneWidget);
     expect(find.text('Music'), findsOneWidget);
     expect(find.text('Haptic feedback'), findsOneWidget);
-    expect(find.text('Q mode'), findsOneWidget);
+    expect(find.text('Q mode'), findsNothing);
     expect(find.text('Dim covered tiles'), findsOneWidget);
+    expect(find.text('Classic mahjong'), findsOneWidget);
+    expect(find.text('Bright match'), findsOneWidget);
 
     final hapticToggle = find.descendant(
       of: find.widgetWithText(SwitchListTile, 'Haptic feedback'),
@@ -304,37 +311,8 @@ void main() {
     expect(find.text('Звук'), findsOneWidget);
     expect(find.text('Музыка'), findsOneWidget);
     expect(find.text('Тактильный отклик'), findsOneWidget);
-    expect(find.text('Режим Q'), findsOneWidget);
+    expect(find.text('Режим Q'), findsNothing);
     expect(find.text('Затемнять закрытые'), findsOneWidget);
-  });
-
-  testWidgets('settings can turn Q mode on', (tester) async {
-    SharedPreferences.setMockInitialValues({
-      'progress.maxUnlocked': 2,
-      'progress.stars.1': 1,
-      'progress.best.1': 400,
-      'progress.lastPlayed': 1,
-    });
-    await tester.pumpWidget(const MahjongApp());
-    await tester.pump();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
-
-    await tester.tap(find.byTooltip('Settings'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-
-    final qToggle = find.descendant(
-      of: find.widgetWithText(SwitchListTile, 'Q mode'),
-      matching: find.byType(Switch),
-    );
-    expect(tester.widget<Switch>(qToggle).value, isFalse);
-
-    await tester.tap(qToggle);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
-
-    expect(tester.widget<Switch>(qToggle).value, isTrue);
   });
 
   testWidgets('settings can turn covered-tile dimming on', (tester) async {
@@ -487,18 +465,9 @@ void main() {
 
     expect(find.byType(GameHud), findsNothing);
     expect(find.byType(CourtyardWinOverlay), findsOneWidget);
-    expect(find.text('Drag to look around the courtyard'), findsNothing);
     expect(find.text('You win!'), findsOneWidget);
     expect(find.text('Next'), findsNothing);
     expect(find.text('Play again'), findsNothing);
-    expect(
-      find.byWidgetPredicate((widget) {
-        if (widget is! Image) return false;
-        final image = widget.image;
-        return image is AssetImage &&
-            image.assetName.endsWith('world/country_base.png');
-      }),
-      findsWidgets,
-    );
+    expect(find.byType(InteractiveViewer), findsOneWidget);
   });
 }

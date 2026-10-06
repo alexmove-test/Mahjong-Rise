@@ -4,15 +4,29 @@
 
 Язык по умолчанию: **English (United States)** — интерфейс игры на английском. Русскую витрину можно добавить вторым языком.
 
+Не обещать в витрине то, чего нет на хабе: ежедневный стол, квесты недели и «10 дворов» в игру не входят.
+
+Play ругается на слова про цену и акции. В текстах ниже нет: free, special, gift, best, new, rewarded, bonus, sale, offer, свободно, подарок, награда, особое, скидка, бесплатно.
+
+---
+
+## Название (до 30 символов)
+
+### English (12)
+Mahjong Rise
+
+### Русский (12)
+Mahjong Rise
+
 ---
 
 ## Краткое описание (до 80 символов)
 
-### English (63)
-Match free tiles, clear boards, and grow 10 mahjong courtyards.
+### English (61)
+Match tiles, grow your courtyard, and collect pet adventures.
 
-### Русский (50)
-Снимайте пары плиток, растите двор на 10 участках.
+### Русский (57)
+Снимайте пары, растите двор и собирайте истории питомцев.
 
 ---
 
@@ -20,20 +34,24 @@ Match free tiles, clear boards, and grow 10 mahjong courtyards.
 
 ### English
 
-Mahjong Rise is a relaxing tile-matching puzzle — not four-player mahjong. Free tiles go into a 4-slot tray; matching pairs clear automatically. Fill the tray with no pair and the round is over.
+Mahjong Rise is a relaxing tile-matching puzzle — not four-player mahjong. Open tiles go into a 4-slot tray; matching pairs clear automatically. Fill the tray with no pair and the round is over.
 
-Grow 10 courtyards. Each plot has 24 layouts that get harder as you go, with themed decks: bamboo, fruit, flowers, classic mahjong, and more. Earn stars, raise your score, and see how you rank on the online leaderboard.
+Wins grow a single courtyard: a house that changes as you play, a living pet area beside it, and decorations you choose along the way — a pond, a garden swing, a flower bed, or another look for the table. Invite companions and open illustrated adventure chapters as you clear campaign tables.
 
-Stuck? Shuffle the board, magnet a match, take a hint, or undo a move. Extra boosts can be earned by watching an optional rewarded ad.
+Layouts return in a 24-table cycle and get harder as you go, with themed decks: fruit, flowers, animals, classic mahjong, and more. Challenge tables appear as you rise: a compact layered tower, starred goal tiles, and a full clear without shuffling.
 
-Play offline whenever you like. The leaderboard syncs when you are online. No account or email required.
+Stuck? Shuffle the board, magnet a match, take a hint, or undo a move. You can also watch a short video for more shuffle, magnet, hint, or undo charges.
 
-Features
-• 10 courtyards with 24 layouts each
+Play offline whenever you like. Stars and high scores feed an online leaderboard, and neighboring yards appear on the hills around your home. No account or email required.
+
+In the game
+• One courtyard that grows: house, pets, and garden decorations
 • Layered mahjong boards and a 4-tile tray
-• Shuffle, magnet, hint, and undo boosts
-• Stars, best scores, and an online ranking
-• Optional rewarded ads for extra boosts
+• Themed layouts, plus challenge tables
+• Shuffle, magnet, hint, and undo
+• Companion adventures as you play
+• Stars, high scores, and an online ranking
+• Short videos for more boosts, if you want them
 • Works offline
 
 Privacy Policy:
@@ -41,20 +59,24 @@ https://github.com/alexmove-test/Mahjong-Rise/wiki/Privacy-Policy
 
 ### Русский
 
-Mahjong Rise — спокойный пасьянс с плитками, а не классический маджонг на четырёх игроков. Свободные плитки отправляются в лоток на 4 места; одинаковые пары снимаются сами. Если лоток забит и пары нет — партия проиграна.
+Mahjong Rise — спокойный пасьянс с плитками, а не классический маджонг на четырёх игроков. Открытые плитки отправляются в лоток на 4 места; одинаковые пары снимаются сами. Если лоток забит и пары нет — партия проиграна.
 
-Вырастите 10 дворов. На каждом участке 24 раскладки, которые усложняются по ходу, и свои колоды: бамбук, фрукты, цветы, классический маджонг и другие темы. Собирайте звёзды, улучшайте счёт и сравнивайте результат в онлайн-рейтинге.
+Победы растят один двор: дом, который меняется по ходу игры, живой уголок питомца рядом и украшения на выбор — прудик, садовые качели, клумба или другое оформление стола. Приглашайте компаньонов и открывайте иллюстрированные главы приключений, проходя столы кампании.
 
-Застряли? Перемешайте стол, притяните пару магнитом, возьмите подсказку или отмените ход. Дополнительные бусты можно получить за просмотр необязательной рекламы с наградой.
+Раскладки идут циклом из 24 столов и усложняются, колоды меняют тему: фрукты, цветы, животные, классический маджонг и другие. По пути встречаются столы-испытания: компактная башня, плитки со звездой и полная сборка без перемешивания.
 
-Играть можно без интернета. Рейтинг синхронизируется, когда есть сеть. Аккаунт и почта не нужны.
+Застряли? Перемешайте стол, притяните пару магнитом, возьмите подсказку или отмените ход. Ещё заряды перемешивания, магнита, подсказки и отмены можно взять после короткого видео.
 
-Особенности
-• 10 участков по 24 раскладки
+Играть можно без интернета. Звёзды и рекорды идут в онлайн-рейтинг, а соседские дворы стоят на холмах вокруг дома. Аккаунт и почта не нужны.
+
+В игре
+• Один двор, который растёт: дом, питомцы и украшения сада
 • Многослойные столы и лоток на 4 плитки
-• Бусты: перемешивание, магнит, подсказка, отмена
+• Тематические раскладки и столы-испытания
+• Перемешивание, магнит, подсказка, отмена
+• Приключения компаньонов по ходу кампании
 • Звёзды, рекорды и онлайн-рейтинг
-• Необязательная реклама с наградой за бусты
+• Короткие видео, если нужны ещё заряды
 • Офлайн-режим
 
 Политика конфиденциальности:
@@ -62,12 +84,44 @@ https://github.com/alexmove-test/Mahjong-Rise/wiki/Privacy-Policy
 
 ---
 
+## Что нового (до 500 символов)
+
+Если это обновление уже опубликованной страницы, а не первая публикация.
+
+### English
+Your home is one courtyard now: grow the house, decorate the yard, and collect pet adventures. Campaign tables still rise in harder layouts, with challenge tables along the way.
+
+### Русский
+Дом теперь один двор: растите дом, украшайте участок и собирайте приключения питомцев. Столы кампании по-прежнему усложняются, а по пути встречаются столы-испытания.
+
+---
+
+## Категория и теги
+
+- Категория: **Puzzle**
+- Теги только из списка Play: Mahjong, Solitaire, Single player, Casual. Свои слова вроде free / special / gift не вводить.
+- Не ставить Board / Multiplayer: это пасьянс, не партия на четырёх игроков.
+
+---
+
 ## Feature graphic
 
 Файл: `store/feature-graphic.png`  
-Размер: 1024 × 500, PNG без прозрачности.
+Размер: 1024 × 500, PNG без прозрачности.  
+Слоган на баннере («Match tiles. Rise higher.») совпадает с игрой — дворы на графике упоминать не нужно.
 
 ## Иконка магазина (512×512)
 
 Файл: `store/play-icon-512.png`  
 Квадрат без скругления — Google Play скруглит сам.
+
+## Скриншоты (телефон, не меньше двух)
+
+Порядок, который продаёт текущую игру, а не сетку из десяти участков:
+
+1. Стол в партии: слои, лоток на 4, пара в полёте.
+2. Двор целиком: дом слева, питомец справа, холмы с соседями.
+3. Выбор украшения: пруд, качели, клумба или оформление стола.
+4. Страница питомца с главой приключения.
+5. Победа: дом подрастает.
+6. Лидерборд или подпись соседского двора.

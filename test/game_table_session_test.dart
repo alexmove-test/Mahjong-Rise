@@ -166,6 +166,23 @@ void main() {
     expect(session.magnetsLeft, magnets + 50);
   });
 
+  test('snapshot puts a flying tile back on the board', () {
+    final last = _tile(0, 'A');
+    last.flying = true;
+    final session = _session(Board(tiles: [last], layoutName: 'petal'));
+
+    expect(last.isOnBoard, isFalse);
+    expect(session.isWon, isFalse);
+    expect(session.hasProgressToSave, isTrue);
+
+    final restored = GameTableSession()..restore(session.snapshotFor(1));
+    expect(restored.board.tiles, hasLength(1));
+    expect(restored.board.tiles.single.isOnBoard, isTrue);
+    expect(restored.board.tiles.single.flying, isFalse);
+    expect(restored.board.tray, isEmpty);
+    expect(restored.isWon, isFalse);
+  });
+
   test('snapshot round-trips score and boosts', () {
     final a = _tile(0, 'A');
     final b = _tile(1, 'B', x: 4);
@@ -197,11 +214,22 @@ void main() {
     expect(session.hasProgressToSave, isFalse);
   });
 
-  test('resetFromLevel can keep a leftover hint count', () {
+  test('resetFromLevel can keep leftover boost counts', () {
     final session = GameTableSession()
-      ..resetFromLevel(Levels.byId(1), hintsLeft: 3);
+      ..resetFromLevel(
+        Levels.byId(1),
+        hintsLeft: 3,
+        shufflesLeft: 4,
+        magnetsLeft: 2,
+        undosLeft: 6,
+      );
     expect(session.hintsLeft, 3);
     expect(session.startHints, 3);
-    expect(session.magnetsLeft, Levels.byId(1).hints);
+    expect(session.shufflesLeft, 4);
+    expect(session.startShuffles, 4);
+    expect(session.magnetsLeft, 2);
+    expect(session.startMagnets, 2);
+    expect(session.undosLeft, 6);
+    expect(session.startUndos, 6);
   });
 }

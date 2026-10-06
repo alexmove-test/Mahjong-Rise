@@ -5,7 +5,6 @@
       <stop offset="1" stop-color="#e53935"/>
     </linearGradient>
   </defs>
-  <ellipse cx="40" cy="93" rx="24" ry="4.2" fill="#000" opacity=".2"/>
   <path d="M12 28l56 8-28 52z" fill="#2e7d32" stroke="#1b5e20" stroke-width="2.2" stroke-linejoin="round"/>
   <path d="M18 30l46 7-24 44z" fill="#a5d6a7"/>
   <path d="M22 32l40 6-22 40z" fill="url(#melonFlesh)" stroke="#b71c1c" stroke-width="1.4" stroke-linejoin="round"/>

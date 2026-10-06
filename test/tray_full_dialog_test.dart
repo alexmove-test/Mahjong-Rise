@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mahjong/widgets/tray_full_dialog.dart';
+import 'package:mahjong/l10n/app_localizations.dart';
 
 void main() {
   testWidgets('continue is the primary action when ads are available', (
@@ -9,6 +10,8 @@ void main() {
     var continued = false;
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: TrayFullDialog(
           levelTitle: 'Sprout',
           score: 120,
@@ -31,6 +34,8 @@ void main() {
   testWidgets('hides continue when ads cannot revive the hand', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: TrayFullDialog(
           levelTitle: 'Sprout',
           score: 0,

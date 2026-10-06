@@ -6,7 +6,6 @@
       <stop offset="1" stop-color="#ef6c00"/>
     </linearGradient>
   </defs>
-  <ellipse cx="40" cy="93" rx="22" ry="4" fill="#000" opacity=".2"/>
   <path d="M28 22c14-10 32-4 36 16 4 20-4 40-16 50-14 12-30 6-34-12-4-18 2-44 14-54z" fill="url(#mangoBody)" stroke="#e65100" stroke-width="2.4" stroke-linejoin="round"/>
   <ellipse cx="32" cy="42" rx="8" ry="14" fill="#fff" opacity=".28"/>
   <path d="M36 18c2-8 8-12 14-12" fill="none" stroke="#5d4037" stroke-width="3" stroke-linecap="round"/>

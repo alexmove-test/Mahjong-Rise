@@ -1,79 +1,69 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
-import '../../models/plot_kind.dart';
+import '../../models/courtyard_reward.dart';
 import 'courtyard_lot_build.dart';
 
-/// Нормированная раскладка `country_base.png` (3:2): свой двор в центре, соседи на холмах.
+/// Нормированная раскладка `country_base.png` (9:16): двор по центру экрана.
 abstract final class CourtyardWorldLayout {
-  static const mapWidth = 1536.0;
-  static const mapHeight = 1024.0;
+  static const mapWidth = 720.0;
+  static const mapHeight = 1280.0;
   static const mapAspect = mapWidth / mapHeight;
 
   static const countryBase = 'assets/courtyard/world/country_base.png';
 
-  static const lotWidth = 0.136;
-  static const lotHeight = 0.155;
+  /// Лужайка внутри ограды, в долях карты. Небо над ней закрывает верхняя панель.
+  static const lawn = Rect.fromLTRB(0.06, 0.38, 0.94, 0.70);
 
-  /// Центры в пикселях `country_base.png` (1536×1024).
-  /// Дом: 594,470 (47 на карте — верх плато, не 47 px).
-  static final lots = <PlotKind, Rect>{
-    PlotKind.house: lotAtPx(594, 470),
-    PlotKind.pond: lotAtPx(971, 474),
-    PlotKind.pets: lotAtPx(979, 766),
-    PlotKind.guest: lotAtPx(574, 715),
-  };
+  /// Дом на каменном круге: низ рамки — линия земли, примерно середина экрана.
+  static const homeYard = Rect.fromLTWH(0.111, 0.359, 0.278, 0.156);
 
-  static Rect lotAtPx(double x, double y) {
-    return Rect.fromCenter(
-      center: Offset(x / mapWidth, y / mapHeight),
-      width: lotWidth,
-      height: lotHeight,
-    );
-  }
+  /// Голая земля справа от развилки. Пруд встаёт сюда, когда дом достроен.
+  static const pondYard = Rect.fromLTWH(0.64, 0.345, 0.26, 0.15);
 
-  static const neighbors = <Rect>[
-    Rect.fromLTWH(0.13, 0.26, 0.14, 0.14),
-    Rect.fromLTWH(0.40, 0.12, 0.14, 0.14),
-    Rect.fromLTWH(0.64, 0.18, 0.16, 0.16),
-    Rect.fromLTWH(0.78, 0.38, 0.14, 0.14),
+  /// Знак производства семян: в зазоре между домом и качелями, не на доме и не на питомцах.
+  static const seedBadge = Rect.fromLTWH(0.393, 0.414, 0.083, 0.047);
+
+  /// Три грядки на траве сразу перед домом: ниже дома и выше клумбы.
+  static const gardenBeds = <Rect>[
+    Rect.fromLTWH(0.06, 0.522, 0.105, 0.038),
+    Rect.fromLTWH(0.175, 0.522, 0.105, 0.038),
+    Rect.fromLTWH(0.290, 0.522, 0.105, 0.038),
   ];
+
+  static Rect gardenBed(int index) => gardenBeds[index];
+
+  /// Склад на передней траве справа, ниже питомцев и в стороне от пруда.
+  static const warehouse = Rect.fromLTWH(0.64, 0.648, 0.22, 0.050);
+
+  /// Питомцы на поляне впереди-справа, у развилки дорожки.
+  /// Шире одной фигурки: на лужайке может стоять вся компания.
+  static const petYard = Rect.fromLTWH(0.52, 0.50, 0.32, 0.14);
+
+  /// Соседние дворы вырезаны из кадра, тапать на карте нечего.
+  static const neighbors = <Rect>[];
 
   static int get neighborCount => neighbors.length;
 
-  static Rect get plateau {
-    var left = lots[PlotKind.house]!.left;
-    var top = lots[PlotKind.house]!.top;
-    var right = lots[PlotKind.house]!.right;
-    var bottom = lots[PlotKind.house]!.bottom;
-    for (final lot in lots.values) {
-      left = math.min(left, lot.left);
-      top = math.min(top, lot.top);
-      right = math.max(right, lot.right);
-      bottom = math.max(bottom, lot.bottom);
-    }
-    return Rect.fromLTRB(left, top, right, bottom);
-  }
+  /// Кадр камеры: вся лужайка с запасом на ограду.
+  static Rect get yardCover => lawn.inflate(0.02);
 
-  static Rect lotOf(PlotKind kind) => lots[kind]!;
-
-  static Rect neighborOf(int slot) => neighbors[slot];
-
-  /// Экранный 2×2 двора: дом|пруд / гости|питомцы.
-  static (int col, int row) lotCell(PlotKind kind) => switch (kind) {
-    PlotKind.house => (0, 0),
-    PlotKind.pond => (1, 0),
-    PlotKind.guest => (0, 1),
-    PlotKind.pets => (1, 1),
+  /// Награды стоят на свободной траве, в стороне от дома и питомца.
+  /// Спрайты квадратные, поэтому рамка тоже квадратная в пикселях карты:
+  /// доля высоты больше доли ширины во столько же раз, во сколько карта шире.
+  static Rect rewardOf(CourtyardReward reward) => switch (reward) {
+    CourtyardReward.pond => _standing(0.78, 0.47, 0.16),
+    CourtyardReward.swing => _standing(0.55, 0.46, 0.14),
+    CourtyardReward.flowerBed => _standing(0.22, 0.64, 0.14),
   };
 
-  static Rect neighborLotOf(int slot, PlotKind kind) {
-    final hill = neighborOf(slot);
-    final (col, row) = lotCell(kind);
-    final w = hill.width / 2;
-    final h = hill.height / 2;
-    return Rect.fromLTWH(hill.left + col * w, hill.top + row * h, w, h);
+  /// Квадратная рамка ширины [width], стоящая низом на точке ([x], [ground]).
+  static Rect _standing(double x, double ground, double width) {
+    final height = width * mapAspect;
+    return Rect.fromLTWH(x - width / 2, ground - height, width, height);
   }
+
+  static Rect neighborOf(int slot) => neighbors[slot];
 
   static Rect mapRect(Rect norm) {
     return Rect.fromLTWH(

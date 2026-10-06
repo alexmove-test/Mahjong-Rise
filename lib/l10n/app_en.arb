@@ -1,0 +1,3608 @@
+{
+  "@@locale": "en",
+  "continueGame": "Continue",
+  "@continueGame": {
+    "description": "Resumes the current activity."
+  },
+  "noShuffleMoves": "No pair available — try undo, a hint or a magnet",
+  "shuffleLockedChallenge": "Shuffling is disabled for this challenge",
+  "specialTile": "Starred goal tile",
+  "@specialTile": {
+    "description": "Semantics name of a starred challenge tile."
+  },
+  "continueWith": "Continue · {title}",
+  "@continueWith": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "newPlot": "New plot",
+  "@newPlot": {
+    "description": "Semantics label for a courtyard plot that is not built yet."
+  },
+  "previousPlot": "Previous plot",
+  "@previousPlot": {
+    "description": "Short interface label: Previous plot"
+  },
+  "nextPlot": "Next plot",
+  "@nextPlot": {
+    "description": "Short interface label: Next plot"
+  },
+  "plotLockedHint": "Next wins will grow this plot",
+  "neighborYard": "{name}'s courtyard",
+  "@neighborYard": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "neighborRating": "{name} · {rating}",
+  "@neighborRating": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "rating": {
+        "type": "int"
+      }
+    }
+  },
+  "neighboringCourtyard": "A neighboring courtyard",
+  "courtyardPanHint": "Drag to look around the courtyard",
+  "houseStateTitle": "House · {state}/{total}",
+  "@houseStateTitle": {
+    "placeholders": {
+      "state": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "houseFullyUpgraded": "House fully upgraded",
+  "houseDetailsShow": "Details",
+  "@houseDetailsShow": {
+    "description": "Expands the house upgrade details."
+  },
+  "houseDetailsHide": "Hide",
+  "@houseDetailsHide": {
+    "description": "Collapses the house upgrade details."
+  },
+  "upgradeHouseForText": "Upgrade for {price}",
+  "@upgradeHouseForText": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "pointsShortfallText": "{amount} points short",
+  "@pointsShortfallText": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "houseUpgradeOfferText": "House upgrade · {cost}",
+  "@houseUpgradeOfferText": {
+    "placeholders": {
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
+  "nextHouseLook": "Next house look",
+  "@nextHouseLook": {
+    "description": "Short interface label: Next house look"
+  },
+  "houseLookLine": "House looks built: {built} of {total}",
+  "@houseLookLine": {
+    "placeholders": {
+      "built": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "hubLevelUnlocksPet": "Level {id} unlocks a pet",
+  "@hubLevelUnlocksPet": {
+    "placeholders": {
+      "id": {
+        "type": "int"
+      }
+    }
+  },
+  "hubQuestRewardReady": "Weekly reward is ready",
+  "hubThreeStarUntilReward": "A 3★ clear unlocks the reward",
+  "today": "Today",
+  "@today": {
+    "description": "Label of the daily table."
+  },
+  "clearedToday": "Cleared today",
+  "@clearedToday": {
+    "description": "Short interface label: Cleared today"
+  },
+  "streakNights": "Day {n} of 3",
+  "@streakNights": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "streakKept": "Three nights kept",
+  "streakAtRisk": "Goes out at midnight",
+  "keepTheLight": "Keep the light",
+  "@keepTheLight": {
+    "description": "Short interface label: Keep the light"
+  },
+  "openedProgress": "{unlocked}/{total} open",
+  "@openedProgress": {
+    "placeholders": {
+      "unlocked": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "courtyard": "Courtyard",
+  "@courtyard": {
+    "description": "Button that leaves the table and returns to the courtyard."
+  },
+  "howToPlay": "How to play",
+  "@howToPlay": {
+    "description": "Short interface label: How to play"
+  },
+  "levels": "Levels",
+  "@levels": {
+    "description": "Short interface label: Levels"
+  },
+  "retry": "Retry",
+  "@retry": {
+    "description": "Restarts the current level."
+  },
+  "playAgain": "Play again",
+  "@playAgain": {
+    "description": "Starts the cleared level over."
+  },
+  "next": "Next",
+  "@next": {
+    "description": "Button that advances to the next level."
+  },
+  "menu": "Menu",
+  "@menu": {
+    "description": "Opens the in-game menu."
+  },
+  "close": "Close",
+  "@close": {
+    "description": "Dismisses a dialog or sheet."
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Abandons the current dialog without saving."
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Saves the edited player name."
+  },
+  "back": "Back",
+  "@back": {
+    "description": "Returns to the previous screen."
+  },
+  "privacyPolicy": "Privacy Policy",
+  "@privacyPolicy": {
+    "description": "Short interface label: Privacy Policy"
+  },
+  "privacySettings": "Privacy settings",
+  "@privacySettings": {
+    "description": "Short interface label: Privacy settings"
+  },
+  "hideBannerButton": "24 hours",
+  "@hideBannerButton": {
+    "description": "Short label for hiding the banner ad for a day."
+  },
+  "hideBannerTitle": "Hide the banner for 24 hours",
+  "hideBannerSubtitle": "Watch an ad. It stays off on this device.",
+  "hideBannerWatch": "Watch ad",
+  "@hideBannerWatch": {
+    "description": "Short interface label: Watch ad"
+  },
+  "hideBannerNotNow": "Not now",
+  "@hideBannerNotNow": {
+    "description": "Dismisses the hide-banner offer."
+  },
+  "aboutGame": "About game",
+  "@aboutGame": {
+    "description": "Opens the build-info dialog."
+  },
+  "builtAt": "Built: {time}",
+  "@builtAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Opens the settings sheet."
+  },
+  "sound": "Sound",
+  "@sound": {
+    "description": "Toggle for sound effects."
+  },
+  "music": "Music",
+  "@music": {
+    "description": "Toggle for background music."
+  },
+  "hapticFeedback": "Haptic feedback",
+  "@hapticFeedback": {
+    "description": "Short interface label: Haptic feedback"
+  },
+  "qMode": "Q mode",
+  "@qMode": {
+    "description": "Settings name of the high-charge magnet mode."
+  },
+  "qModeHint": "Magnet ads grant 50",
+  "dimCoveredTiles": "Dim covered tiles",
+  "dimCoveredTilesHint": "Gray out tiles you cannot pick",
+  "tableLook": "Table look",
+  "@tableLook": {
+    "description": "Short interface label: Table look"
+  },
+  "tableLookClassic": "Classic mahjong",
+  "@tableLookClassic": {
+    "description": "Short interface label: Classic mahjong"
+  },
+  "tableLookClassicHint": "3D tiles and copper buttons",
+  "tableLookCasual": "Bright match",
+  "@tableLookCasual": {
+    "description": "Short interface label: Bright match"
+  },
+  "tableLookCasualHint": "Flat tiles, green and gold",
+  "tableLookPremium": "New",
+  "@tableLookPremium": {
+    "description": "Name of the newest table theme."
+  },
+  "tableLookPremiumHint": "Ivory tiles, warm wood table",
+  "tableLookGift": "Table",
+  "@tableLookGift": {
+    "description": "Short label for a table theme unlocked as a courtyard gift."
+  },
+  "tableLookUse": "Use",
+  "@tableLookUse": {
+    "description": "Selects a table theme."
+  },
+  "tableLookLockedHint": "Unlock as a courtyard gift",
+  "tableLookSettingsHint": "You can choose different table themes in the menu",
+  "language": "Language",
+  "@language": {
+    "description": "Short interface label: Language"
+  },
+  "languageSystem": "System",
+  "@languageSystem": {
+    "description": "Short interface label: System"
+  },
+  "tileLocked": "Tile is locked",
+  "@tileLocked": {
+    "description": "Toast when the player taps a covered tile."
+  },
+  "trayFull": "Tray is full",
+  "@trayFull": {
+    "description": "Toast when the tray cannot take another tile."
+  },
+  "trayFullHint": "No matching pair.",
+  "noMovesShuffle": "No moves — shuffle",
+  "youWin": "You win!",
+  "@youWin": {
+    "description": "Win headline on the result overlay."
+  },
+  "noFreeTiles": "No free tiles",
+  "@noFreeTiles": {
+    "description": "Short interface label: No free tiles"
+  },
+  "shuffled": "Shuffled",
+  "@shuffled": {
+    "description": "Short interface label: Shuffled"
+  },
+  "stillNoMoves": "Still no moves",
+  "@stillNoMoves": {
+    "description": "Short interface label: Still no moves"
+  },
+  "loadingAd": "Loading ad…",
+  "@loadingAd": {
+    "description": "Short interface label: Loading ad…"
+  },
+  "rewardNotEarned": "Reward not earned",
+  "adUnavailable": "Could not load ad. Try again.",
+  "noUsefulMoves": "No useful moves",
+  "@noUsefulMoves": {
+    "description": "Short interface label: No useful moves"
+  },
+  "continuing": "Continuing",
+  "@continuing": {
+    "description": "Short interface label: Continuing"
+  },
+  "moveUndone": "Move undone",
+  "@moveUndone": {
+    "description": "Short interface label: Move undone"
+  },
+  "noMatchingTiles": "No matching tiles",
+  "couldNotOpenLink": "Could not open link",
+  "dailyComplete": "Daily complete",
+  "@dailyComplete": {
+    "description": "Short interface label: Daily complete"
+  },
+  "streakLabel": "Streak: {n}",
+  "@streakLabel": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "score": "Score: {value}",
+  "@score": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "starsCount": "{n} stars",
+  "@starsCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyBonus": "Bonus: +1 hint and shuffle",
+  "points": "Points",
+  "@points": {
+    "description": "Name of the soft currency."
+  },
+  "pointsBalanceText": "Points: {value}",
+  "@pointsBalanceText": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "pointsShopTitle": "Points",
+  "@pointsShopTitle": {
+    "description": "Short interface label: Points"
+  },
+  "pointsShopSubtitle": "Earned on every cleared table. Top up any time.",
+  "pointsEarnRuleText": "Clear a level: +{perClear}, plus +{perStar} per star.",
+  "@pointsEarnRuleText": {
+    "placeholders": {
+      "perClear": {
+        "type": "int"
+      },
+      "perStar": {
+        "type": "int"
+      }
+    }
+  },
+  "pointsPackBonus": "+{percent}% bonus",
+  "@pointsPackBonus": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "pointsPackPopular": "Most taken",
+  "@pointsPackPopular": {
+    "description": "Short interface label: Most taken"
+  },
+  "pointsPackBest": "Best value",
+  "@pointsPackBest": {
+    "description": "Short interface label: Best value"
+  },
+  "pointsBuy": "Buy",
+  "@pointsBuy": {
+    "description": "Buys a points pack."
+  },
+  "pointsCreditedText": "Credited +{value}",
+  "@pointsCreditedText": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "pointsPurchaseCancelled": "Purchase cancelled",
+  "pointsPurchaseUnavailable": "Store is unavailable",
+  "pointsDemoNote": "Payments are not wired up yet — the pack lands right away.",
+  "pointsWatchAd": "Watch ad",
+  "@pointsWatchAd": {
+    "description": "Short interface label: Watch ad"
+  },
+  "pointsWatchAdRewardText": "Free +{value}",
+  "@pointsWatchAdRewardText": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "level": "Level {id}",
+  "@level": {
+    "placeholders": {
+      "id": {
+        "type": "int"
+      }
+    }
+  },
+  "anotherLevelCleared": "Another level cleared",
+  "@anotherLevelCleared": {
+    "description": "Win headline after a campaign clear."
+  },
+  "newBest": "New best!",
+  "@newBest": {
+    "description": "Shown when the score beats the previous best."
+  },
+  "levelUnlocked": "Level {id} unlocked",
+  "@levelUnlocked": {
+    "placeholders": {
+      "id": {
+        "type": "int"
+      }
+    }
+  },
+  "shuffle": "Shuffle",
+  "@shuffle": {
+    "description": "Booster that rearranges the board."
+  },
+  "magnet": "Magnet",
+  "@magnet": {
+    "description": "Booster that pulls a match off the board."
+  },
+  "hint": "Hint",
+  "@hint": {
+    "description": "Booster that highlights a matching pair."
+  },
+  "undo": "Undo",
+  "@undo": {
+    "description": "Booster that takes back the last move. Also the cancel verb in some dialogs."
+  },
+  "watchAd": "Watch ad → {name}",
+  "@watchAd": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "boostEarnedText": "+{count} {name}",
+  "@boostEarnedText": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noneLeft": "none left",
+  "@noneLeft": {
+    "description": "Tooltip when a booster has no charges and ads are unavailable."
+  },
+  "coachTapFree": "Take a free tile — open on top and one side",
+  "coachMatchPair": "A pair in the tray clears",
+  "coachTrayLimit": "The tray holds 4 — fill it with no pair and you lose",
+  "easy": "Easy",
+  "@easy": {
+    "description": "Difficulty label for the first campaign levels."
+  },
+  "normal": "Normal",
+  "@normal": {
+    "description": "Difficulty label for mid-early campaign levels."
+  },
+  "hard": "Hard",
+  "@hard": {
+    "description": "Difficulty label for later campaign levels."
+  },
+  "expert": "Expert",
+  "@expert": {
+    "description": "Difficulty label for the hardest campaign levels."
+  },
+  "you": "You",
+  "@you": {
+    "description": "Leaderboard label for the local player."
+  },
+  "player": "Player",
+  "@player": {
+    "description": "Fallback name before the player chooses one."
+  },
+  "yourName": "Your name",
+  "@yourName": {
+    "description": "Short interface label: Your name"
+  },
+  "youClimbed": "You climbed!",
+  "@youClimbed": {
+    "description": "Short interface label: You climbed!"
+  },
+  "rankClimbPlaces": "Place {from} → {to}",
+  "@rankClimbPlaces": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
+    }
+  },
+  "leaderboard": "Leaderboard",
+  "@leaderboard": {
+    "description": "Short interface label: Leaderboard"
+  },
+  "refresh": "Refresh",
+  "@refresh": {
+    "description": "Reloads the online leaderboard."
+  },
+  "changeName": "Change name",
+  "@changeName": {
+    "description": "Short interface label: Change name"
+  },
+  "nameNotAllowed": "That name isn’t allowed. Choose another.",
+  "rankingNamesNote": "Names are chosen by players. Report or hide anyone who breaks the rules.",
+  "reportPlayer": "Report or hide",
+  "@reportPlayer": {
+    "description": "Short interface label: Report or hide"
+  },
+  "reportName": "Report this name",
+  "@reportName": {
+    "description": "Short interface label: Report this name"
+  },
+  "hidePlayer": "Hide this player",
+  "@hidePlayer": {
+    "description": "Short interface label: Hide this player"
+  },
+  "reportThanks": "Thanks. We’ll review this name.",
+  "playerHidden": "This player is hidden on your device.",
+  "name": "Name",
+  "@name": {
+    "description": "Column header for a leaderboard name."
+  },
+  "onlineRanking": "Online ranking · top {top}",
+  "@onlineRanking": {
+    "placeholders": {
+      "top": {
+        "type": "int"
+      }
+    }
+  },
+  "offlineRanking": "Offline: only your result is shown.",
+  "rankingFormula": "Rating: stars × 100,000 + best scores + campaign progress.",
+  "scorePlotsLegend": "Score : plots",
+  "@scorePlotsLegend": {
+    "description": "Leaderboard legend pairing score with courtyard plots."
+  },
+  "loadRankingFailed": "Could not load the online ranking",
+  "starsLevel": "{stars} ★ · lv. {unlocked}",
+  "@starsLevel": {
+    "placeholders": {
+      "stars": {
+        "type": "int"
+      },
+      "unlocked": {
+        "type": "int"
+      }
+    }
+  },
+  "ad": "AD",
+  "@ad": {
+    "description": "Short badge on the simulated advertisement."
+  },
+  "done": "Done",
+  "@done": {
+    "description": "Finishes the simulated ad."
+  },
+  "closeWithoutReward": "Close without reward",
+  "simulatedAd": "Simulated ad",
+  "@simulatedAd": {
+    "description": "Short interface label: Simulated ad"
+  },
+  "watchClipForBoost": "Watch the clip to earn a boost",
+  "claimReward": "Claim reward",
+  "@claimReward": {
+    "description": "Short interface label: Claim reward"
+  },
+  "watchingAd": "Watching ad…",
+  "@watchingAd": {
+    "description": "Short interface label: Watching ad…"
+  },
+  "weeklyQuests": "Weekly quests",
+  "@weeklyQuests": {
+    "description": "Short interface label: Weekly quests"
+  },
+  "claim": "Claim",
+  "@claim": {
+    "description": "Collects a completed weekly quest reward."
+  },
+  "claimed": "Claimed",
+  "@claimed": {
+    "description": "Shown after a weekly quest reward was collected."
+  },
+  "questBonus": "+1 hint and shuffle",
+  "extraBoostThisWeek": "+1 boost on today’s table",
+  "seasonClosed": "Season closed",
+  "@seasonClosed": {
+    "description": "Short interface label: Season closed"
+  },
+  "lastWeekPlace": "Last week: place {rank}",
+  "@lastWeekPlace": {
+    "placeholders": {
+      "rank": {
+        "type": "int"
+      }
+    }
+  },
+  "lastWeekScore": "Score {rating}",
+  "@lastWeekScore": {
+    "placeholders": {
+      "rating": {
+        "type": "String"
+      }
+    }
+  },
+  "reminders": "Daily reminders",
+  "@reminders": {
+    "description": "Short interface label: Daily reminders"
+  },
+  "reminderDailyTitle": "Your courtyard is waiting",
+  "reminderDailyBody": "A new table is ready today.",
+  "reminderStreakTitle": "Your streak is at risk",
+  "reminderStreakBody": "The third lantern goes out at midnight.",
+  "reminderWeekTitle": "A new courtyard season",
+  "reminderWeekBody": "Weekly quests and ranking have reset.",
+  "pet": "Pet",
+  "@pet": {
+    "description": "Singular label for one companion."
+  },
+  "pets": "Pets",
+  "@pets": {
+    "description": "Label for more than one companion."
+  },
+  "chooseAPet": "Choose a companion",
+  "addPet": "Add a companion",
+  "@addPet": {
+    "description": "Short interface label: Add a companion"
+  },
+  "petInviteAdopt": "A friend is waiting",
+  "petInviteShow": "Show pets",
+  "@petInviteShow": {
+    "description": "Short interface label: Show pets"
+  },
+  "petYardStartAdventure": "Start an adventure",
+  "petYardVisit": "Visit the den",
+  "@petYardVisit": {
+    "description": "Short interface label: Visit the den"
+  },
+  "petYardShow": "Show in yard",
+  "@petYardShow": {
+    "description": "Short interface label: Show in yard"
+  },
+  "petYardShowing": "In the yard",
+  "@petYardShowing": {
+    "description": "Short interface label: In the yard"
+  },
+  "petYardShowAll": "Show everyone in the yard",
+  "petCareHint": "Wins help them play and rest. Feed harvested plants from the warehouse.",
+  "petStarvingLine": "They are starving. Feed a harvested plant from the warehouse.",
+  "petRemindersPromptTitle": "Hungry reminders?",
+  "petRemindersPromptBody": "We can ping you when they get hungry.",
+  "petRemindersYes": "Remind me",
+  "@petRemindersYes": {
+    "description": "Short interface label: Remind me"
+  },
+  "petRemindersLater": "Not now",
+  "@petRemindersLater": {
+    "description": "Dismisses the hungry-pet reminder prompt."
+  },
+  "reminderPetHungerTitle": "{name} is hungry",
+  "@reminderPetHungerTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderPetHungerBody": "Feed a harvested plant from the warehouse.",
+  "reminderPetPlayTitle": "{name} wants to play",
+  "@reminderPetPlayTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderPetPlayBody": "Clear a table to play with them.",
+  "reminderPetRestTitle": "{name} wants to rest",
+  "@reminderPetRestTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderPetRestBody": "Clear a table so they can rest.",
+  "reminderPetStarveTitle": "{name} is starving",
+  "@reminderPetStarveTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderPetStarveBody": "Feed a harvested plant from the warehouse.",
+  "petLevelLabel": "Level {level}",
+  "@petLevelLabel": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "petLevelShort": "Lv {level}",
+  "@petLevelShort": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "petMaxLevel": "Maximum level",
+  "@petMaxLevel": {
+    "description": "Short interface label: Maximum level"
+  },
+  "petXpLabel": "Experience {xp} / {need}",
+  "@petXpLabel": {
+    "placeholders": {
+      "xp": {
+        "type": "int"
+      },
+      "need": {
+        "type": "int"
+      }
+    }
+  },
+  "petStrengthLineText": "{stat} {total} = base {base} + item {main} + accessory {accessory}",
+  "@petStrengthLineText": {
+    "placeholders": {
+      "stat": {
+        "type": "String"
+      },
+      "total": {
+        "type": "int"
+      },
+      "base": {
+        "type": "int"
+      },
+      "main": {
+        "type": "int"
+      },
+      "accessory": {
+        "type": "int"
+      }
+    }
+  },
+  "petLevelChange": "Level {from} → {to}",
+  "@petLevelChange": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
+    }
+  },
+  "petStatChange": "{stat} {from} → {to}",
+  "@petStatChange": {
+    "placeholders": {
+      "stat": {
+        "type": "String"
+      },
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
+    }
+  },
+  "petFeed": "Feed",
+  "@petFeed": {
+    "description": "Opens the plant feeding sheet."
+  },
+  "petFeedTitle": "Choose a plant",
+  "@petFeedTitle": {
+    "description": "Short interface label: Choose a plant"
+  },
+  "petFeedEmpty": "No harvested plants in the warehouse.",
+  "petFeedPointless": "Fully fed, and already at maximum level.",
+  "petFeedXp": "Experience: {xp}",
+  "@petFeedXp": {
+    "placeholders": {
+      "xp": {
+        "type": "int"
+      }
+    }
+  },
+  "petFeedSatiety": "Restores hunger. Strength will not grow.",
+  "petFeedConfirm": "Feed this plant",
+  "@petFeedConfirm": {
+    "description": "Short interface label: Feed this plant"
+  },
+  "petFedReaction": "{name} enjoys the meal.",
+  "@petFedReaction": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petFeedFailed": "Could not save. The plant was not spent.",
+  "petFeedMissing": "That plant is no longer in the warehouse.",
+  "petSlotEmpty": "Empty",
+  "@petSlotEmpty": {
+    "description": "Short interface label: Empty"
+  },
+  "petGuardAction": "Guard the garden",
+  "@petGuardAction": {
+    "description": "Short interface label: Guard the garden"
+  },
+  "petGuarding": "Guarding the garden",
+  "petStopGuard": "Stop guarding",
+  "@petStopGuard": {
+    "description": "Short interface label: Stop guarding"
+  },
+  "petRaidAction": "Choose for raids",
+  "@petRaidAction": {
+    "description": "Short interface label: Choose for raids"
+  },
+  "petRaiding": "Chosen for raids",
+  "@petRaiding": {
+    "description": "Short interface label: Chosen for raids"
+  },
+  "petStopRaid": "Clear raid choice",
+  "gearBonus": "+{bonus} strength",
+  "@gearBonus": {
+    "placeholders": {
+      "bonus": {
+        "type": "int"
+      }
+    }
+  },
+  "gearPriceText": "{price} points",
+  "@gearPriceText": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "gearLevelRequired": "Requires level {level}",
+  "@gearLevelRequired": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "gearIfEquipped": "If equipped: {stat} {from} → {to}",
+  "@gearIfEquipped": {
+    "placeholders": {
+      "stat": {
+        "type": "String"
+      },
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
+    }
+  },
+  "gearBuy": "Buy",
+  "@gearBuy": {
+    "description": "Buys a pet item."
+  },
+  "gearEquip": "Equip",
+  "@gearEquip": {
+    "description": "Equips an owned pet item."
+  },
+  "gearUnequip": "Take off",
+  "@gearUnequip": {
+    "description": "Removes an equipped pet item."
+  },
+  "gearWornBy": "Worn by {name}",
+  "@gearWornBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gearShortfallText": "Need {shortfall} more points",
+  "@gearShortfallText": {
+    "placeholders": {
+      "shortfall": {
+        "type": "String"
+      }
+    }
+  },
+  "gearBuyFailed": "Could not save. Points were not spent.",
+  "gardenGuardLabel": "{name} guards the garden. Defense {power}",
+  "@gardenGuardLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "power": {
+        "type": "int"
+      }
+    }
+  },
+  "gardenNoDefender": "No defender yet",
+  "@gardenNoDefender": {
+    "description": "Short interface label: No defender yet"
+  },
+  "gardenUnguarded": "Garden is unguarded",
+  "boardSemantic": "Board",
+  "@boardSemantic": {
+    "description": "Short interface label: Board"
+  },
+  "traySemantic": "Tray, {filled} of {capacity}",
+  "@traySemantic": {
+    "placeholders": {
+      "filled": {
+        "type": "int"
+      },
+      "capacity": {
+        "type": "int"
+      }
+    }
+  },
+  "trayEmptySlot": "Empty slot",
+  "@trayEmptySlot": {
+    "description": "Short interface label: Empty slot"
+  },
+  "trayAlmostFull": "One space left — find a pair",
+  "houseCardTitle": "House",
+  "@houseCardTitle": {
+    "description": "Short interface label: House"
+  },
+  "seedsHeading": "Seeds",
+  "@seedsHeading": {
+    "description": "Short interface label: Seeds"
+  },
+  "seedsButton": "Seeds · {count}",
+  "@seedsButton": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "seedPowerStep": "Seed power: {from} → {to}",
+  "@seedPowerStep": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
+    }
+  },
+  "seedCostStep": "Production cost: {from} → {to} points",
+  "@seedCostStep": {
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      }
+    }
+  },
+  "seedSpeciesUnlock": "New seed: {name}",
+  "@seedSpeciesUnlock": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "seedDurationStep": "Production time: {from} → {to}",
+  "@seedDurationStep": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "seedChanceStep": "Chances: {summary}",
+  "@seedChanceStep": {
+    "placeholders": {
+      "summary": {
+        "type": "String"
+      }
+    }
+  },
+  "seedClassCommon": "Common",
+  "@seedClassCommon": {
+    "description": "Seed class whose plants grow quickly and feed for 10 experience."
+  },
+  "seedClassNutrient": "Nutrient",
+  "@seedClassNutrient": {
+    "description": "Seed class whose plants grow longer and feed for 25 experience."
+  },
+  "seedClassRare": "Rare",
+  "@seedClassRare": {
+    "description": "Seed class whose plants grow longest and feed for 60 experience."
+  },
+  "seedClassLine": "{name} {percent}%",
+  "@seedClassLine": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "seedSpan": "{minutes} min {seconds} sec",
+  "@seedSpan": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "seedPowerLabel": "Feed: {power}",
+  "@seedPowerLabel": {
+    "placeholders": {
+      "power": {
+        "type": "int"
+      }
+    }
+  },
+  "seedPowerPending": "Expected seed power: {power}",
+  "@seedPowerPending": {
+    "placeholders": {
+      "power": {
+        "type": "int"
+      }
+    }
+  },
+  "seedMinutes": "{minutes} min",
+  "@seedMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "seedSpeciesHeading": "Possible seeds",
+  "@seedSpeciesHeading": {
+    "description": "Short interface label: Possible seeds"
+  },
+  "seedEqualChance": "Both species in a class are equally likely",
+  "@seedEqualChance": {
+    "description": "Short interface label: Equal chance"
+  },
+  "produceSeedForText": "Produce a seed · {price} points",
+  "@produceSeedForText": {
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "claimSeed": "Collect seed",
+  "@claimSeed": {
+    "description": "Short interface label: Collect seed"
+  },
+  "seedAdded": "Seed added to storage",
+  "openSeedStorage": "Open storage",
+  "@openSeedStorage": {
+    "description": "Short interface label: Open storage"
+  },
+  "seedPurpose": "A plant can be grown from this seed.",
+  "seedHouseLevel": "Grown by house level {level}",
+  "@seedHouseLevel": {
+    "placeholders": {
+      "level": {
+        "type": "int"
+      }
+    }
+  },
+  "seedReceived": "Received {date}",
+  "@seedReceived": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "seedGroupCount": "×{count}",
+  "@seedGroupCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "seedSortPower": "By feed",
+  "@seedSortPower": {
+    "description": "Short interface label: By power"
+  },
+  "seedSortTime": "By time received",
+  "@seedSortTime": {
+    "description": "Short interface label: By time received"
+  },
+  "seedProducing": "A seed is growing",
+  "seedReadyTitle": "The seed is ready",
+  "seedUnknown": "Unknown seed",
+  "@seedUnknown": {
+    "description": "Short interface label: Unknown seed"
+  },
+  "seedTimeLeft": "{minutes} min {seconds} sec left",
+  "@seedTimeLeft": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "seedBadgeIdle": "Seed production is available",
+  "seedBadgeProducing": "Seed growing, {time} left",
+  "@seedBadgeProducing": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "seedBadgeReady": "Seed ready to collect",
+  "seedReadyMark": "Ready",
+  "@seedReadyMark": {
+    "description": "Badge shown when a seed can be collected."
+  },
+  "seedPlayMahjong": "Play mahjong",
+  "@seedPlayMahjong": {
+    "description": "Short interface label: Play mahjong"
+  },
+  "produceFirstSeed": "Produce the first seed",
+  "seedsEmptyBody": "The house has not produced a seed yet.",
+  "seedStackLabel": "{name}, feed {power}, {count}",
+  "@seedStackLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "power": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "seedProductionTitle": "Seed production",
+  "@seedProductionTitle": {
+    "description": "Short interface label: Seed production"
+  },
+  "plantsButton": "Plants · {count}",
+  "@plantsButton": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "warehouseTitle": "Warehouse",
+  "@warehouseTitle": {
+    "description": "Short interface label: Warehouse"
+  },
+  "warehouseSemantic": "Warehouse, {count} plants",
+  "@warehouseSemantic": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "warehouseEmptyBody": "Harvested plants will be kept here",
+  "openGarden": "Open the garden",
+  "@openGarden": {
+    "description": "Short interface label: Open the garden"
+  },
+  "plantActionText": "Plant · {seeds} seed + {points} points",
+  "@plantActionText": {
+    "placeholders": {
+      "seeds": {
+        "type": "int"
+      },
+      "points": {
+        "type": "String"
+      }
+    }
+  },
+  "chooseSeedTitle": "Choose a seed",
+  "@chooseSeedTitle": {
+    "description": "Short interface label: Choose a seed"
+  },
+  "noSeedsBody": "There are no seeds yet. Produce one in the house.",
+  "openHouseProduction": "Open production",
+  "@openHouseProduction": {
+    "description": "Short interface label: Open production"
+  },
+  "gardenBedEmpty": "Bed {number}, empty",
+  "@gardenBedEmpty": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "bedTitle": "Bed {number}",
+  "@bedTitle": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "harvestAction": "Collect",
+  "@harvestAction": {
+    "description": "Collects a ripe garden plant."
+  },
+  "harvestMark": "Collect",
+  "@harvestMark": {
+    "description": "Short badge on a ripe garden bed."
+  },
+  "plantPower": "Feed: {power}",
+  "@plantPower": {
+    "placeholders": {
+      "power": {
+        "type": "int"
+      }
+    }
+  },
+  "plantCostLabelText": "Planting cost: {points} points",
+  "@plantCostLabelText": {
+    "placeholders": {
+      "points": {
+        "type": "String"
+      }
+    }
+  },
+  "growDurationLabel": "Growing time: {minutes} min",
+  "@growDurationLabel": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "seedsAvailable": "Available: {count}",
+  "@seedsAvailable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "plantPreviewLabel": "Future plant",
+  "@plantPreviewLabel": {
+    "description": "Short interface label: Future plant"
+  },
+  "plantVariant": "Look: {variant}",
+  "@plantVariant": {
+    "placeholders": {
+      "variant": {
+        "type": "String"
+      }
+    }
+  },
+  "plantedOn": "Planted {date}",
+  "@plantedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "maturedOn": "Matured {date}",
+  "@maturedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "harvestedOn": "Collected {date}",
+  "@harvestedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "gardenSaveFailed": "Could not save. Nothing was spent.",
+  "gardenNotReady": "Not ready yet",
+  "@gardenNotReady": {
+    "description": "Short interface label: Not ready yet"
+  },
+  "languageEnglish": "English",
+  "@languageEnglish": {
+    "description": "Language name shown in the picker. Stays English in every locale."
+  },
+  "languageRussian": "Русский",
+  "@languageRussian": {
+    "description": "Language name shown in the picker. Stays Russian in every locale."
+  },
+  "languageThai": "ไทย",
+  "@languageThai": {
+    "description": "Language name shown in the picker. Stays Thai in every locale."
+  },
+  "challengeCompactTower": "Tower: clear every layer",
+  "@challengeCompactTower": {
+    "description": "Goal for the compact tower challenge."
+  },
+  "challengeSpecialPair": "Remove the two starred tiles · {cleared}/2",
+  "@challengeSpecialPair": {
+    "description": "Goal while the two starred tiles are still on the board.",
+    "placeholders": {
+      "cleared": {
+        "type": "int"
+      }
+    }
+  },
+  "challengeNoShuffle": "Clear the board without shuffling",
+  "@challengeNoShuffle": {
+    "description": "Goal for the no-shuffle challenge."
+  },
+  "plotKindTitle": "{kind, select, house{House} pond{Pond} pets{Pets} guest{Guest house} other{House}}",
+  "@plotKindTitle": {
+    "description": "Display name of a courtyard plot.",
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "plotKindTitleToward": "{kind, select, house{House} pond{Pond} pets{Pets} guest{Guest house} other{House}}",
+  "@plotKindTitleToward": {
+    "description": "Plot name used inside a sentence, including the Russian genitive.",
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "plotLookComplete": "{name} is complete",
+  "@plotLookComplete": {
+    "description": "The courtyard plot art has reached its last look.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "plotLookNextOne": "1 level until the next {name} look",
+  "@plotLookNextOne": {
+    "description": "Exactly one level remains before the plot art changes.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "plotLookProgressText": "{count, plural, other{{count} levels until the next {name} look}}",
+  "@plotLookProgressText": {
+    "description": "How many levels remain before the plot art changes. Used when more than one level remains.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "nextWinUpgradesHouse": "Your next win upgrades the house",
+  "@nextWinUpgradesHouse": {
+    "description": "Shown when exactly one win remains before the house look changes."
+  },
+  "winsUntilHouseUpgradeText": "{count, plural, one{{count} win until the house upgrade} other{{count} wins until the house upgrade}}",
+  "@winsUntilHouseUpgradeText": {
+    "description": "Wins remaining before the house look changes.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nextWinImprovesPond": "Your next win improves the pond",
+  "@nextWinImprovesPond": {
+    "description": "Shown when exactly one win remains before the pond look changes."
+  },
+  "winsUntilPondUpgradeText": "{count, plural, one{{count} win until the pond grows} other{{count} wins until the pond grows}}",
+  "@winsUntilPondUpgradeText": {
+    "description": "Wins remaining before the pond look changes.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nextPondLook": "Next pond look",
+  "@nextPondLook": {
+    "description": "Heading for the upcoming pond art."
+  },
+  "hubStarsUntilPlotText": "{count, plural, =0{1 more star until the {dest}} =1{1 more star until the {dest}} other{{count} more stars until the {dest}}}",
+  "@hubStarsUntilPlotText": {
+    "description": "Stars remaining before the next courtyard plot unlocks.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "dest": {
+        "type": "String"
+      }
+    }
+  },
+  "oneDailyUntilReward": "One daily until the reward",
+  "@oneDailyUntilReward": {
+    "description": "Shown when one or fewer daily clears remain before a reward."
+  },
+  "hubDailiesUntilRewardText": "{count, plural, one{{count} daily until the reward} other{{count} dailies until the reward}}",
+  "@hubDailiesUntilRewardText": {
+    "description": "Daily clears remaining before a reward.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "oneLevelUntilReward": "One level until the reward",
+  "@oneLevelUntilReward": {
+    "description": "Shown when one or fewer campaign levels remain before a reward."
+  },
+  "hubLevelsUntilRewardText": "{count, plural, one{{count} level until the reward} other{{count} levels until the reward}}",
+  "@hubLevelsUntilRewardText": {
+    "description": "Campaign levels remaining before a reward.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courtyardLevelsUntilGift": "{count, plural, =0{One level until a courtyard gift} =1{One level until a courtyard gift} other{{count} levels until a courtyard gift}}",
+  "@courtyardLevelsUntilGift": {
+    "description": "First-time clears remaining before a courtyard gift.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hubStarsUntilReward": "{count, plural, =0{1 more star until the reward} =1{1 more star until the reward} other{{count} more stars until the reward}}",
+  "@hubStarsUntilReward": {
+    "description": "Stars remaining before the weekly reward.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pointsRewardText": "{count, plural, one{+{amount} point} other{+{amount} points}}",
+  "@pointsRewardText": {
+    "description": "Points just earned, with the currency word inflected.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "styleFruit": "Fruit",
+  "@styleFruit": {
+    "description": "Tile-set name on a level card."
+  },
+  "styleNature": "Nature",
+  "@styleNature": {
+    "description": "Tile-set name on a level card."
+  },
+  "styleCourt": "Court",
+  "@styleCourt": {
+    "description": "Tile-set name on a level card."
+  },
+  "styleMyth": "Myth",
+  "@styleMyth": {
+    "description": "Tile-set name on a level card."
+  },
+  "styleClassic": "Classic",
+  "@styleClassic": {
+    "description": "Tile-set name on a level card."
+  },
+  "styleShape": "Shapes",
+  "@styleShape": {
+    "description": "Tile-set name on a level card."
+  },
+  "styleNumber": "Numbers",
+  "@styleNumber": {
+    "description": "Tile-set name on a level card."
+  },
+  "styleMix": "Mix",
+  "@styleMix": {
+    "description": "Tile-set name when the style is unknown."
+  },
+  "questDaily3": "Clear daily 3 times",
+  "@questDaily3": {
+    "description": "Weekly quest title."
+  },
+  "questStars8": "Earn 8 stars",
+  "@questStars8": {
+    "description": "Weekly quest title."
+  },
+  "questClears4": "Clear 4 campaign levels",
+  "@questClears4": {
+    "description": "Weekly quest title."
+  },
+  "questThreeStar1": "Score 3★ on a level",
+  "@questThreeStar1": {
+    "description": "Weekly quest title."
+  },
+  "questStreak3": "Keep three nights lit",
+  "@questStreak3": {
+    "description": "Weekly quest title."
+  },
+  "weekGarden": "Garden week",
+  "@weekGarden": {
+    "description": "Name of the garden week event."
+  },
+  "weekCourt": "Courtyard week",
+  "@weekCourt": {
+    "description": "Name of the courtyard week event."
+  },
+  "weekLanterns": "Lantern week",
+  "@weekLanterns": {
+    "description": "Name of the lantern week event."
+  },
+  "weekMyth": "Myth week",
+  "@weekMyth": {
+    "description": "Name of the myth week event."
+  },
+  "weekHarvest": "Harvest week",
+  "@weekHarvest": {
+    "description": "Name of the harvest week event."
+  },
+  "weekDefault": "This week’s table",
+  "@weekDefault": {
+    "description": "Fallback name of the weekly table."
+  },
+  "petCat": "Cat",
+  "@petCat": {
+    "description": "Companion name."
+  },
+  "petDog": "Dog",
+  "@petDog": {
+    "description": "Companion name."
+  },
+  "petRaccoon": "Raccoon",
+  "@petRaccoon": {
+    "description": "Companion name."
+  },
+  "petHamster": "Hamster",
+  "@petHamster": {
+    "description": "Companion name."
+  },
+  "petFox": "Fox",
+  "@petFox": {
+    "description": "Companion name."
+  },
+  "petNeedHunger": "Hunger",
+  "@petNeedHunger": {
+    "description": "Pet need name."
+  },
+  "petNeedPlay": "Play",
+  "@petNeedPlay": {
+    "description": "Pet need name. Not the play button."
+  },
+  "petNeedRest": "Rest",
+  "@petNeedRest": {
+    "description": "Pet need name."
+  },
+  "petMoodContent": "{name} is content.",
+  "@petMoodContent": {
+    "description": "Pet status when nothing is needed.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petMoodAsking": "{name} needs you.",
+  "@petMoodAsking": {
+    "description": "Pet status when a need is waiting.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petMoodStarving": "{name} is starving.",
+  "@petMoodStarving": {
+    "description": "Pet status when hunger is critical.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petCareHunger": "You fed {name}.",
+  "@petCareHunger": {
+    "description": "Result line after feeding.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petCarePlay": "You played with {name}.",
+  "@petCarePlay": {
+    "description": "Result line after playing.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petCareRest": "{name} rested.",
+  "@petCareRest": {
+    "description": "Result line after rest.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petRoleAttacker": "Attacker",
+  "@petRoleAttacker": {
+    "description": "Pet combat role."
+  },
+  "petRoleDefender": "Defender",
+  "@petRoleDefender": {
+    "description": "Pet combat role."
+  },
+  "petStatAttack": "Attack",
+  "@petStatAttack": {
+    "description": "Attack stat name."
+  },
+  "petStatDefense": "Defense",
+  "@petStatDefense": {
+    "description": "Defense stat name."
+  },
+  "gearSlotMain": "Main item",
+  "@gearSlotMain": {
+    "description": "Primary gear slot."
+  },
+  "gearSlotAccessory": "Accessory",
+  "@gearSlotAccessory": {
+    "description": "Secondary gear slot."
+  },
+  "growthSown": "Seed planted",
+  "@growthSown": {
+    "description": "Garden stage after planting."
+  },
+  "growthSprout": "Sprout",
+  "@growthSprout": {
+    "description": "Garden stage when the plant has sprouted."
+  },
+  "growthGrowing": "Growing",
+  "@growthGrowing": {
+    "description": "Garden stage while the plant is growing."
+  },
+  "growthRipe": "Ready to collect",
+  "@growthRipe": {
+    "description": "Garden stage when the plant can be harvested."
+  },
+  "seedAmberbell": "Amber Bell",
+  "@seedAmberbell": {
+    "description": "Seed species name."
+  },
+  "seedMistfern": "Mist Fern",
+  "@seedMistfern": {
+    "description": "Seed species name."
+  },
+  "seedGlassreed": "Glass Reed",
+  "@seedGlassreed": {
+    "description": "Seed species name."
+  },
+  "seedCrimsonplum": "Crimson Plum",
+  "@seedCrimsonplum": {
+    "description": "Seed species name."
+  },
+  "seedNightlotus": "Night Lotus",
+  "@seedNightlotus": {
+    "description": "Seed species name."
+  },
+  "seedStarbamboo": "Star Bamboo",
+  "@seedStarbamboo": {
+    "description": "Seed species name."
+  },
+  "seedBlurbAmberbell": "A warm seed with a tiny bell inside.",
+  "@seedBlurbAmberbell": {
+    "description": "Short description of Amber Bell."
+  },
+  "seedBlurbMistfern": "A pale frond folded into a seed.",
+  "@seedBlurbMistfern": {
+    "description": "Short description of Mist Fern."
+  },
+  "seedBlurbGlassreed": "A clear reed that rings when the light hits it.",
+  "@seedBlurbGlassreed": {
+    "description": "Short description of Glass Reed."
+  },
+  "seedBlurbCrimsonplum": "A dark sweet stone from a courtyard plum.",
+  "@seedBlurbCrimsonplum": {
+    "description": "Short description of Crimson Plum."
+  },
+  "seedBlurbNightlotus": "A violet bud that opens only after dusk.",
+  "@seedBlurbNightlotus": {
+    "description": "Short description of Night Lotus."
+  },
+  "seedBlurbStarbamboo": "A jointed grain with a spark at the tip.",
+  "@seedBlurbStarbamboo": {
+    "description": "Short description of Star Bamboo."
+  },
+  "plantOriginHouse": "Origin: house production",
+  "@plantOriginHouse": {
+    "description": "Where a seed came from when the house produced it."
+  },
+  "plantOriginOther": "Origin: {source}",
+  "@plantOriginOther": {
+    "description": "Where a seed came from when the source is not the house.",
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "firstPhraseHouse": "The next house look is bought with points.",
+  "@firstPhraseHouse": {
+    "description": "First-win line for the house plot."
+  },
+  "firstPhrasePond": "This pond fills as you play.",
+  "@firstPhrasePond": {
+    "description": "First-win line for the pond plot."
+  },
+  "firstPhrasePets": "This pet house grows as you play.",
+  "@firstPhrasePets": {
+    "description": "First-win line for the pet plot."
+  },
+  "firstPhraseGuest": "This yard comes online as you play.",
+  "@firstPhraseGuest": {
+    "description": "First-win line for the guest plot."
+  },
+  "pathLifeHouse": "The house feels warmer.",
+  "@pathLifeHouse": {
+    "description": "Line when the house gains life without a new build step."
+  },
+  "pathLifePond": "The pond feels alive.",
+  "@pathLifePond": {
+    "description": "Line when the pond gains life."
+  },
+  "pathLifePets": "The pet house feels warmer.",
+  "@pathLifePets": {
+    "description": "Line when the pet house gains life."
+  },
+  "pathLifeGuest": "The yard hums a little.",
+  "@pathLifeGuest": {
+    "description": "Line when the guest yard gains life."
+  },
+  "rewardPond": "Little pond",
+  "@rewardPond": {
+    "description": "Name of the pond courtyard gift."
+  },
+  "rewardSwing": "Garden swing",
+  "@rewardSwing": {
+    "description": "Name of the swing courtyard gift."
+  },
+  "rewardFlowerBed": "Flower bed",
+  "@rewardFlowerBed": {
+    "description": "Name of the flower bed courtyard gift."
+  },
+  "tileStateFree": "free",
+  "@tileStateFree": {
+    "description": "Tile state: it can be picked."
+  },
+  "tileStateLocked": "locked",
+  "@tileStateLocked": {
+    "description": "Tile state: it is covered."
+  },
+  "tileRemoving": "{name}, matching",
+  "@tileRemoving": {
+    "description": "Semantics while a matched tile is leaving.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tileInTrayHinted": "{name} in tray, hinted",
+  "@tileInTrayHinted": {
+    "description": "Semantics for a hinted tile in the tray.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tileInTray": "{name} in tray",
+  "@tileInTray": {
+    "description": "Semantics for a tile sitting in the tray.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tileFreeHinted": "{name}, free, hinted",
+  "@tileFreeHinted": {
+    "description": "Semantics for a free hinted tile on the board.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tileLockedHinted": "{name}, locked, hinted",
+  "@tileLockedHinted": {
+    "description": "Semantics for a covered hinted tile.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tileFreeState": "{name}, free",
+  "@tileFreeState": {
+    "description": "Semantics for a free tile.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tileLockedState": "{name}, locked",
+  "@tileLockedState": {
+    "description": "Semantics for a covered tile.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "levelCardLocked": "Level {id}, locked",
+  "@levelCardLocked": {
+    "description": "Semantics for a locked level card.",
+    "placeholders": {
+      "id": {
+        "type": "int"
+      }
+    }
+  },
+  "levelCardOpen": "Level {id}, {title}, {stars}{progress}",
+  "@levelCardOpen": {
+    "description": "Semantics for an unlocked level card.",
+    "placeholders": {
+      "id": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      },
+      "stars": {
+        "type": "String"
+      },
+      "progress": {
+        "type": "String"
+      }
+    }
+  },
+  "levelStarsNone": "no stars",
+  "@levelStarsNone": {
+    "description": "Level card semantics when no stars were earned."
+  },
+  "levelStarsSome": "{count} stars",
+  "@levelStarsSome": {
+    "description": "Level card semantics for a star count. Russian keeps the star mark.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "levelInProgress": ", in progress",
+  "@levelInProgress": {
+    "description": "Suffix when a level was started and not finished."
+  },
+  "boostLeft": "{name}, {count} left",
+  "@boostLeft": {
+    "description": "Semantics when a booster still has charges.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "boostNone": "{name}, none left",
+  "@boostNone": {
+    "description": "Semantics when a booster is exhausted.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "petsNeedCare": "Pets, need care",
+  "@petsNeedCare": {
+    "description": "Semantics when a pet needs attention."
+  },
+  "dailyButtonSemanticText": "{today}. {status}",
+  "@dailyButtonSemanticText": {
+    "description": "Semantics for the daily button, joining the day label and streak status.",
+    "placeholders": {
+      "today": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "courtyardSemanticText": "{name} courtyard",
+  "@courtyardSemanticText": {
+    "description": "Semantics for a plot on the courtyard map.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gardenBedReady": "Bed {number}, {name}, ready to collect",
+  "@gardenBedReady": {
+    "description": "Semantics for a ripe garden bed.",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "gardenBedGrowing": "Bed {number}, {name}, {stage}, {time} left",
+  "@gardenBedGrowing": {
+    "description": "Semantics for a growing garden bed.",
+    "placeholders": {
+      "number": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "stage": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "storyNextItem": "Next: {item}",
+  "@storyNextItem": {
+    "description": "Names the next collectible in a pet adventure.",
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "newGiftItem": "New gift: {item}",
+  "@newGiftItem": {
+    "description": "Headline of a newly earned story item.",
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "storyProgressLine": "{title} · {progress}/3",
+  "@storyProgressLine": {
+    "description": "Active story title with chapter progress.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "progress": {
+        "type": "int"
+      }
+    }
+  },
+  "newChapterProgress": "New chapter · {progress}/3",
+  "@newChapterProgress": {
+    "description": "Yard label when a story chapter is waiting.",
+    "placeholders": {
+      "progress": {
+        "type": "int"
+      }
+    }
+  },
+  "storyReadyProgress": "Story ready · {stage}/3",
+  "@storyReadyProgress": {
+    "description": "Legacy fox story label when a scene is ready.",
+    "placeholders": {
+      "stage": {
+        "type": "int"
+      }
+    }
+  },
+  "foxStoryProgress": "Fox’s story · {stage}/3",
+  "@foxStoryProgress": {
+    "description": "Legacy fox story progress.",
+    "placeholders": {
+      "stage": {
+        "type": "int"
+      }
+    }
+  },
+  "gearOfferText": "{role} · {slot}",
+  "@gearOfferText": {
+    "description": "Gear shop line joining the role and the slot.",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      },
+      "slot": {
+        "type": "String"
+      }
+    }
+  },
+  "petBadgeText": "{role}, {level}",
+  "@petBadgeText": {
+    "description": "Compact pet badge joining role and level.",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      },
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "chooseAPetYard": "Choose a companion",
+  "@chooseAPetYard": {
+    "description": "Empty pet yard prompt. Infinitive, unlike the sheet title."
+  },
+  "chooseAPetStatus": "Choose a pet",
+  "@chooseAPetStatus": {
+    "description": "Status line when the yard has no pet yet."
+  },
+  "homeSemantic": "Home",
+  "@homeSemantic": {
+    "description": "Semantics label for the house on the map. Not the plot name used in sentences."
+  },
+  "petAdventures": "Pet adventures",
+  "@petAdventures": {
+    "description": "Yard label before a story is chosen."
+  },
+  "adventures": "Adventures",
+  "@adventures": {
+    "description": "Section title on the pet page."
+  },
+  "adventureComplete": "Adventure complete",
+  "@adventureComplete": {
+    "description": "Status when all three chapters of a story are done."
+  },
+  "adventureCompleteBang": "Adventure complete!",
+  "@adventureCompleteBang": {
+    "description": "Button after the last story gift."
+  },
+  "play": "Play",
+  "@play": {
+    "description": "Starts the campaign from the active pet story."
+  },
+  "storyLocked": "Complete the previous story",
+  "@storyLocked": {
+    "description": "Locked story row."
+  },
+  "fiveAdventures": "5 adventures",
+  "@fiveAdventures": {
+    "description": "Caption under a pet that has five stories."
+  },
+  "foxTitle": "A cozy corner for Fox",
+  "@foxTitle": {
+    "description": "Title of the legacy fox story."
+  },
+  "foxGoal0": "One win to prepare a spot",
+  "@foxGoal0": {
+    "description": "Fox story goal before the first win."
+  },
+  "foxGoal1": "One win to make a bed",
+  "@foxGoal1": {
+    "description": "Fox story goal before the second win."
+  },
+  "foxGoal2": "One win to bring a toy",
+  "@foxGoal2": {
+    "description": "Fox story goal before the third win."
+  },
+  "foxGoalDone": "Fox feels at home!",
+  "@foxGoalDone": {
+    "description": "Fox story goal after the corner is finished."
+  },
+  "foxSeeWhatChanged": "See what changed!",
+  "@foxSeeWhatChanged": {
+    "description": "Fox banner when a new scene is waiting."
+  },
+  "foxHelpSettle": "Help Fox settle in · 3 wins",
+  "@foxHelpSettle": {
+    "description": "Fox banner before the story starts."
+  },
+  "foxSaveFailed": "Could not save. Please try again.",
+  "@foxSaveFailed": {
+    "description": "Error when the fox story fails to save."
+  },
+  "foxIntro": "Fox found a quiet spot in your courtyard. Three campaign wins will turn it into a home.",
+  "@foxIntro": {
+    "description": "Opening text of the fox story."
+  },
+  "foxStage0": "Let’s clear the leaves. Win a campaign level to prepare the spot.",
+  "@foxStage0": {
+    "description": "Fox story text for the first chapter."
+  },
+  "foxStage1": "The spot is ready! One more win will bring a soft bed.",
+  "@foxStage1": {
+    "description": "Fox story text for the second chapter."
+  },
+  "foxStage2": "A soft bed! Pick a color. One more win will bring a toy.",
+  "@foxStage2": {
+    "description": "Fox story text for the color choice."
+  },
+  "foxStageDone": "Fox feels at home! Tap Fox to play. This corner stays in your courtyard.",
+  "@foxStageDone": {
+    "description": "Fox story text after the corner is complete."
+  },
+  "foxHoney": "Honey",
+  "@foxHoney": {
+    "description": "Bed color choice."
+  },
+  "foxSkyBlue": "Sky blue",
+  "@foxSkyBlue": {
+    "description": "Bed color choice."
+  },
+  "foxBall": "Ball",
+  "@foxBall": {
+    "description": "Toy choice in the fox story."
+  },
+  "foxPlushToy": "Plush toy",
+  "@foxPlushToy": {
+    "description": "Toy choice in the fox story."
+  },
+  "later": "Later",
+  "@later": {
+    "description": "Closes the fox story for now."
+  },
+  "foxHelpStages": "Help · 3 stages",
+  "@foxHelpStages": {
+    "description": "Button that starts the fox story."
+  },
+  "foxLovely": "Lovely!",
+  "@foxLovely": {
+    "description": "Button after the fox story is complete."
+  },
+  "foxIsHome": "Fox is home · 3/3",
+  "@foxIsHome": {
+    "description": "Yard label when the fox story is finished."
+  },
+  "foxStory": "Fox’s story",
+  "@foxStory": {
+    "description": "Yard label for the fox story before it starts."
+  },
+  "windEast": "East wind",
+  "@windEast": {
+    "description": "Tile name."
+  },
+  "windSouth": "South wind",
+  "@windSouth": {
+    "description": "Tile name."
+  },
+  "windWest": "West wind",
+  "@windWest": {
+    "description": "Tile name."
+  },
+  "windNorth": "North wind",
+  "@windNorth": {
+    "description": "Tile name."
+  },
+  "familyFruit": "Fruit",
+  "@familyFruit": {
+    "description": "Singular tile family. Not the level style name."
+  },
+  "familyFlower": "Flower",
+  "@familyFlower": {
+    "description": "Tile family."
+  },
+  "familyAnimal": "Animal",
+  "@familyAnimal": {
+    "description": "Tile family."
+  },
+  "familyBamboo": "Bamboo",
+  "@familyBamboo": {
+    "description": "Tile family."
+  },
+  "familyCharacter": "Character",
+  "@familyCharacter": {
+    "description": "Tile family."
+  },
+  "familyDot": "Dot",
+  "@familyDot": {
+    "description": "Tile family."
+  },
+  "familyDragon": "Dragon",
+  "@familyDragon": {
+    "description": "Tile family."
+  },
+  "familyWind": "Wind",
+  "@familyWind": {
+    "description": "Tile family."
+  },
+  "familySeason": "Season",
+  "@familySeason": {
+    "description": "Tile family."
+  },
+  "familyNumber": "Number",
+  "@familyNumber": {
+    "description": "Singular tile family. Not the level style name."
+  },
+  "familyShape": "Shape",
+  "@familyShape": {
+    "description": "Singular tile family. Not the level style name."
+  },
+  "familyTile": "Tile",
+  "@familyTile": {
+    "description": "Generic tile family."
+  },
+  "familyArt": "Art",
+  "@familyArt": {
+    "description": "Tile family."
+  },
+  "familyClown": "Clown",
+  "@familyClown": {
+    "description": "Tile family."
+  },
+  "familyEmperor": "Emperor",
+  "@familyEmperor": {
+    "description": "Tile family."
+  },
+  "familyJoker": "Joker",
+  "@familyJoker": {
+    "description": "Tile family."
+  },
+  "familyProfession": "Profession",
+  "@familyProfession": {
+    "description": "Tile family."
+  },
+  "familyQueen": "Queen",
+  "@familyQueen": {
+    "description": "Tile family."
+  },
+  "familyEast": "East",
+  "@familyEast": {
+    "description": "Wind direction on a tile."
+  },
+  "familySouth": "South",
+  "@familySouth": {
+    "description": "Wind direction on a tile."
+  },
+  "familyWest": "West",
+  "@familyWest": {
+    "description": "Wind direction on a tile."
+  },
+  "familyNorth": "North",
+  "@familyNorth": {
+    "description": "Wind direction on a tile."
+  },
+  "familySpring": "Spring",
+  "@familySpring": {
+    "description": "Season on a tile."
+  },
+  "familySummer": "Summer",
+  "@familySummer": {
+    "description": "Season on a tile."
+  },
+  "familyAutumn": "Autumn",
+  "@familyAutumn": {
+    "description": "Season on a tile."
+  },
+  "familyWinter": "Winter",
+  "@familyWinter": {
+    "description": "Season on a tile."
+  },
+  "gearAttackerMain1": "Silk Sash",
+  "@gearAttackerMain1": {
+    "description": "Pet item name for id attacker_main_1."
+  },
+  "gearAttackerMain2": "Night Claw",
+  "@gearAttackerMain2": {
+    "description": "Pet item name for id attacker_main_2."
+  },
+  "gearAttackerMain3": "Raid Lantern",
+  "@gearAttackerMain3": {
+    "description": "Pet item name for id attacker_main_3."
+  },
+  "gearAttackerAccessory1": "Scout Bell",
+  "@gearAttackerAccessory1": {
+    "description": "Pet item name for id attacker_accessory_1."
+  },
+  "gearAttackerAccessory2": "Prowl Pouch",
+  "@gearAttackerAccessory2": {
+    "description": "Pet item name for id attacker_accessory_2."
+  },
+  "gearAttackerAccessory3": "Moon Charm",
+  "@gearAttackerAccessory3": {
+    "description": "Pet item name for id attacker_accessory_3."
+  },
+  "gearDefenderMain1": "Padded Vest",
+  "@gearDefenderMain1": {
+    "description": "Pet item name for id defender_main_1."
+  },
+  "gearDefenderMain2": "Guard Vest",
+  "@gearDefenderMain2": {
+    "description": "Pet item name for id defender_main_2."
+  },
+  "gearDefenderMain3": "Lantern Plate",
+  "@gearDefenderMain3": {
+    "description": "Pet item name for id defender_main_3."
+  },
+  "gearDefenderAccessory1": "Leather Collar",
+  "@gearDefenderAccessory1": {
+    "description": "Pet item name for id defender_accessory_1."
+  },
+  "gearDefenderAccessory2": "Watch Band",
+  "@gearDefenderAccessory2": {
+    "description": "Pet item name for id defender_accessory_2."
+  },
+  "gearDefenderAccessory3": "Gate Charm",
+  "@gearDefenderAccessory3": {
+    "description": "Pet item name for id defender_accessory_3."
+  },
+  "storyCampaign0": "Sprout",
+  "@storyCampaign0": {
+    "description": "Campaign chapter name 1."
+  },
+  "storyCampaign1": "Bud",
+  "@storyCampaign1": {
+    "description": "Campaign chapter name 2."
+  },
+  "storyCampaign2": "Bloom",
+  "@storyCampaign2": {
+    "description": "Campaign chapter name 3."
+  },
+  "storyCampaign3": "Glade",
+  "@storyCampaign3": {
+    "description": "Campaign chapter name 4."
+  },
+  "storyCampaign4": "Lawn",
+  "@storyCampaign4": {
+    "description": "Campaign chapter name 5."
+  },
+  "storyCampaign5": "Grove",
+  "@storyCampaign5": {
+    "description": "Campaign chapter name 6."
+  },
+  "storyCampaign6": "Wave",
+  "@storyCampaign6": {
+    "description": "Campaign chapter name 7."
+  },
+  "storyCampaign7": "Stream",
+  "@storyCampaign7": {
+    "description": "Campaign chapter name 8."
+  },
+  "storyCampaign8": "Garden",
+  "@storyCampaign8": {
+    "description": "Campaign chapter name 9."
+  },
+  "storyCampaign9": "Gazebo",
+  "@storyCampaign9": {
+    "description": "Campaign chapter name 10."
+  },
+  "storyCampaign10": "Fan",
+  "@storyCampaign10": {
+    "description": "Campaign chapter name 11."
+  },
+  "storyCampaign11": "Peacock Fan",
+  "@storyCampaign11": {
+    "description": "Campaign chapter name 12."
+  },
+  "storyCampaign12": "Lotus",
+  "@storyCampaign12": {
+    "description": "Campaign chapter name 13."
+  },
+  "storyCampaign13": "Pond",
+  "@storyCampaign13": {
+    "description": "Campaign chapter name 14."
+  },
+  "storyCampaign14": "Carp",
+  "@storyCampaign14": {
+    "description": "Campaign chapter name 15."
+  },
+  "storyCampaign15": "Lake",
+  "@storyCampaign15": {
+    "description": "Campaign chapter name 16."
+  },
+  "storyCampaign16": "Vine",
+  "@storyCampaign16": {
+    "description": "Campaign chapter name 17."
+  },
+  "storyCampaign17": "Ivy",
+  "@storyCampaign17": {
+    "description": "Campaign chapter name 18."
+  },
+  "storyCampaign18": "Festival",
+  "@storyCampaign18": {
+    "description": "Campaign chapter name 19."
+  },
+  "storyCampaign19": "Lanterns",
+  "@storyCampaign19": {
+    "description": "Campaign chapter name 20."
+  },
+  "storyCampaign20": "Pavilion",
+  "@storyCampaign20": {
+    "description": "Campaign chapter name 21."
+  },
+  "storyCampaign21": "Wind Temple",
+  "@storyCampaign21": {
+    "description": "Campaign chapter name 22."
+  },
+  "storyCampaign22": "Dragon",
+  "@storyCampaign22": {
+    "description": "Campaign chapter name 23."
+  },
+  "storyCampaign23": "Sky Dragon",
+  "@storyCampaign23": {
+    "description": "Campaign chapter name 24."
+  },
+  "houseEraName0": "Clearing",
+  "@houseEraName0": {
+    "description": "Era name 1 of the house plot."
+  },
+  "houseEraPhrase0": "A house will stand here.",
+  "@houseEraPhrase0": {
+    "description": "Era narration 1 of the house plot."
+  },
+  "houseEraName1": "Shack",
+  "@houseEraName1": {
+    "description": "Era name 2 of the house plot."
+  },
+  "houseEraPhrase1": "A shack leans on the plot.",
+  "@houseEraPhrase1": {
+    "description": "Era narration 2 of the house plot."
+  },
+  "houseEraName2": "Hut",
+  "@houseEraName2": {
+    "description": "Era name 3 of the house plot."
+  },
+  "houseEraPhrase2": "The hut has a door.",
+  "@houseEraPhrase2": {
+    "description": "Era narration 3 of the house plot."
+  },
+  "houseEraName3": "Cabin",
+  "@houseEraName3": {
+    "description": "Era name 4 of the house plot."
+  },
+  "houseEraPhrase3": "The cabin is timber now.",
+  "@houseEraPhrase3": {
+    "description": "Era narration 4 of the house plot."
+  },
+  "houseEraName4": "House",
+  "@houseEraName4": {
+    "description": "Era name 5 of the house plot."
+  },
+  "houseEraPhrase4": "A real house stands here.",
+  "@houseEraPhrase4": {
+    "description": "Era narration 5 of the house plot."
+  },
+  "houseEraName5": "Cottage",
+  "@houseEraName5": {
+    "description": "Era name 6 of the house plot."
+  },
+  "houseEraPhrase5": "The cottage has two floors.",
+  "@houseEraPhrase5": {
+    "description": "Era narration 6 of the house plot."
+  },
+  "houseEraName6": "Estate",
+  "@houseEraName6": {
+    "description": "Era name 7 of the house plot."
+  },
+  "houseEraPhrase6": "The estate spreads its wings.",
+  "@houseEraPhrase6": {
+    "description": "Era narration 7 of the house plot."
+  },
+  "houseEraName7": "Mansion",
+  "@houseEraName7": {
+    "description": "Era name 8 of the house plot."
+  },
+  "houseEraPhrase7": "The mansion is stone.",
+  "@houseEraPhrase7": {
+    "description": "Era narration 8 of the house plot."
+  },
+  "houseEraName8": "Keep",
+  "@houseEraName8": {
+    "description": "Era name 9 of the house plot."
+  },
+  "houseEraPhrase8": "The walls become a keep.",
+  "@houseEraPhrase8": {
+    "description": "Era narration 9 of the house plot."
+  },
+  "houseEraName9": "Castle",
+  "@houseEraName9": {
+    "description": "Era name 10 of the house plot."
+  },
+  "houseEraPhrase9": "A castle rises.",
+  "@houseEraPhrase9": {
+    "description": "Era narration 10 of the house plot."
+  },
+  "houseEraName10": "Grand castle",
+  "@houseEraName10": {
+    "description": "Era name 11 of the house plot."
+  },
+  "houseEraPhrase10": "The castle fills the hill.",
+  "@houseEraPhrase10": {
+    "description": "Era narration 11 of the house plot."
+  },
+  "houseEraName11": "Residence",
+  "@houseEraName11": {
+    "description": "Era name 12 of the house plot."
+  },
+  "houseEraPhrase11": "The residence is complete.",
+  "@houseEraPhrase11": {
+    "description": "Era narration 12 of the house plot."
+  },
+  "pondEraName0": "Hollow",
+  "@pondEraName0": {
+    "description": "Era name 1 of the pond plot."
+  },
+  "pondEraPhrase0": "A pond will fill this hollow.",
+  "@pondEraPhrase0": {
+    "description": "Era narration 1 of the pond plot."
+  },
+  "pondEraName1": "Puddle",
+  "@pondEraName1": {
+    "description": "Era name 2 of the pond plot."
+  },
+  "pondEraPhrase1": "The puddle holds.",
+  "@pondEraPhrase1": {
+    "description": "Era narration 2 of the pond plot."
+  },
+  "pondEraName2": "Pond",
+  "@pondEraName2": {
+    "description": "Era name 3 of the pond plot."
+  },
+  "pondEraPhrase2": "Reeds take the shore.",
+  "@pondEraPhrase2": {
+    "description": "Era narration 3 of the pond plot."
+  },
+  "pondEraName3": "Walkway",
+  "@pondEraName3": {
+    "description": "Era name 4 of the pond plot."
+  },
+  "pondEraPhrase3": "The walkway is down.",
+  "@pondEraPhrase3": {
+    "description": "Era narration 4 of the pond plot."
+  },
+  "pondEraName4": "Koi pond",
+  "@pondEraName4": {
+    "description": "Era name 5 of the pond plot."
+  },
+  "pondEraPhrase4": "Koi have a home.",
+  "@pondEraPhrase4": {
+    "description": "Era narration 5 of the pond plot."
+  },
+  "pondEraName5": "Pavilion",
+  "@pondEraName5": {
+    "description": "Era name 6 of the pond plot."
+  },
+  "pondEraPhrase5": "A pavilion watches the water.",
+  "@pondEraPhrase5": {
+    "description": "Era narration 6 of the pond plot."
+  },
+  "pondEraName6": "Water garden",
+  "@pondEraName6": {
+    "description": "Era name 7 of the pond plot."
+  },
+  "pondEraPhrase6": "The pond is a garden.",
+  "@pondEraPhrase6": {
+    "description": "Era narration 7 of the pond plot."
+  },
+  "pondEraName7": "Stone banks",
+  "@pondEraName7": {
+    "description": "Era name 8 of the pond plot."
+  },
+  "pondEraPhrase7": "Stone banks and lanterns.",
+  "@pondEraPhrase7": {
+    "description": "Era narration 8 of the pond plot."
+  },
+  "pondEraName8": "Bridge",
+  "@pondEraName8": {
+    "description": "Era name 9 of the pond plot."
+  },
+  "pondEraPhrase8": "A bridge crosses the water.",
+  "@pondEraPhrase8": {
+    "description": "Era narration 9 of the pond plot."
+  },
+  "pondEraName9": "Water court",
+  "@pondEraName9": {
+    "description": "Era name 10 of the pond plot."
+  },
+  "pondEraPhrase9": "The water court is walled.",
+  "@pondEraPhrase9": {
+    "description": "Era narration 10 of the pond plot."
+  },
+  "pondEraName10": "Palace pond",
+  "@pondEraName10": {
+    "description": "Era name 11 of the pond plot."
+  },
+  "pondEraPhrase10": "Palace gardens reach the pond.",
+  "@pondEraPhrase10": {
+    "description": "Era narration 11 of the pond plot."
+  },
+  "pondEraName11": "Water garden complete",
+  "@pondEraName11": {
+    "description": "Era name 12 of the pond plot."
+  },
+  "pondEraPhrase11": "The water garden is complete.",
+  "@pondEraPhrase11": {
+    "description": "Era narration 12 of the pond plot."
+  },
+  "petsEraName0": "Yard",
+  "@petsEraName0": {
+    "description": "Era name 1 of the pets plot."
+  },
+  "petsEraPhrase0": "A pet house will stand here.",
+  "@petsEraPhrase0": {
+    "description": "Era narration 1 of the pets plot."
+  },
+  "petsEraName1": "Bowls",
+  "@petsEraName1": {
+    "description": "Era name 2 of the pets plot."
+  },
+  "petsEraPhrase1": "Bowls wait in the grass.",
+  "@petsEraPhrase1": {
+    "description": "Era narration 2 of the pets plot."
+  },
+  "petsEraName2": "Kennel",
+  "@petsEraName2": {
+    "description": "Era name 3 of the pets plot."
+  },
+  "petsEraPhrase2": "A kennel leans on the plot.",
+  "@petsEraPhrase2": {
+    "description": "Era narration 3 of the pets plot."
+  },
+  "petsEraName3": "Hutch",
+  "@petsEraName3": {
+    "description": "Era name 4 of the pets plot."
+  },
+  "petsEraPhrase3": "The hutch has a door.",
+  "@petsEraPhrase3": {
+    "description": "Era narration 4 of the pets plot."
+  },
+  "petsEraName4": "Pet house",
+  "@petsEraName4": {
+    "description": "Era name 5 of the pets plot."
+  },
+  "petsEraPhrase4": "The pets have a house.",
+  "@petsEraPhrase4": {
+    "description": "Era narration 5 of the pets plot."
+  },
+  "petsEraName5": "Play yard",
+  "@petsEraName5": {
+    "description": "Era name 6 of the pets plot."
+  },
+  "petsEraPhrase5": "A play yard opens.",
+  "@petsEraPhrase5": {
+    "description": "Era narration 6 of the pets plot."
+  },
+  "petsEraName6": "Garden",
+  "@petsEraName6": {
+    "description": "Era name 7 of the pets plot."
+  },
+  "petsEraPhrase6": "The garden is theirs.",
+  "@petsEraPhrase6": {
+    "description": "Era narration 7 of the pets plot."
+  },
+  "petsEraName7": "Den",
+  "@petsEraName7": {
+    "description": "Era name 8 of the pets plot."
+  },
+  "petsEraPhrase7": "A den is lined.",
+  "@petsEraPhrase7": {
+    "description": "Era narration 8 of the pets plot."
+  },
+  "petsEraName8": "Lodge",
+  "@petsEraName8": {
+    "description": "Era name 9 of the pets plot."
+  },
+  "petsEraPhrase8": "The lodge is warm.",
+  "@petsEraPhrase8": {
+    "description": "Era narration 9 of the pets plot."
+  },
+  "petsEraName9": "Menagerie",
+  "@petsEraName9": {
+    "description": "Era name 10 of the pets plot."
+  },
+  "petsEraPhrase9": "A menagerie gathers.",
+  "@petsEraPhrase9": {
+    "description": "Era narration 10 of the pets plot."
+  },
+  "petsEraName10": "Sanctuary",
+  "@petsEraName10": {
+    "description": "Era name 11 of the pets plot."
+  },
+  "petsEraPhrase10": "The sanctuary is fenced.",
+  "@petsEraPhrase10": {
+    "description": "Era narration 11 of the pets plot."
+  },
+  "petsEraName11": "Pet home complete",
+  "@petsEraName11": {
+    "description": "Era name 12 of the pets plot."
+  },
+  "petsEraPhrase11": "The pet house is complete.",
+  "@petsEraPhrase11": {
+    "description": "Era narration 12 of the pets plot."
+  },
+  "guestEraName0": "Quiet yard",
+  "@guestEraName0": {
+    "description": "Era name 1 of the guest plot."
+  },
+  "guestEraPhrase0": "A signal will reach this yard.",
+  "@guestEraPhrase0": {
+    "description": "Era narration 1 of the guest plot."
+  },
+  "guestEraName1": "Pole",
+  "@guestEraName1": {
+    "description": "Era name 2 of the guest plot."
+  },
+  "guestEraPhrase1": "The pole holds the line.",
+  "@guestEraPhrase1": {
+    "description": "Era narration 2 of the guest plot."
+  },
+  "guestEraName2": "Cable",
+  "@guestEraName2": {
+    "description": "Era name 3 of the guest plot."
+  },
+  "guestEraPhrase2": "Cable finds the house.",
+  "@guestEraPhrase2": {
+    "description": "Era narration 3 of the guest plot."
+  },
+  "guestEraName3": "Dish",
+  "@guestEraName3": {
+    "description": "Era name 4 of the guest plot."
+  },
+  "guestEraPhrase3": "The dish is up.",
+  "@guestEraPhrase3": {
+    "description": "Era narration 4 of the guest plot."
+  },
+  "guestEraName4": "Screens",
+  "@guestEraName4": {
+    "description": "Era name 5 of the guest plot."
+  },
+  "guestEraPhrase4": "Screens glow in the yard.",
+  "@guestEraPhrase4": {
+    "description": "Era narration 5 of the guest plot."
+  },
+  "guestEraName5": "Line lamp",
+  "@guestEraName5": {
+    "description": "Era name 6 of the guest plot."
+  },
+  "guestEraPhrase5": "A lamp of the line.",
+  "@guestEraPhrase5": {
+    "description": "Era narration 6 of the guest plot."
+  },
+  "guestEraName6": "Far talk",
+  "@guestEraName6": {
+    "description": "Era name 7 of the guest plot."
+  },
+  "guestEraPhrase6": "The yard talks farther.",
+  "@guestEraPhrase6": {
+    "description": "Era narration 7 of the guest plot."
+  },
+  "guestEraName7": "Signal tower",
+  "@guestEraName7": {
+    "description": "Era name 8 of the guest plot."
+  },
+  "guestEraPhrase7": "A tower of the signal.",
+  "@guestEraPhrase7": {
+    "description": "Era narration 8 of the guest plot."
+  },
+  "guestEraName8": "Observatory",
+  "@guestEraName8": {
+    "description": "Era name 9 of the guest plot."
+  },
+  "guestEraPhrase8": "The observatory rises.",
+  "@guestEraPhrase8": {
+    "description": "Era narration 9 of the guest plot."
+  },
+  "guestEraName9": "Crystal line",
+  "@guestEraName9": {
+    "description": "Era name 10 of the guest plot."
+  },
+  "guestEraPhrase9": "Crystal and wire.",
+  "@guestEraPhrase9": {
+    "description": "Era narration 10 of the guest plot."
+  },
+  "guestEraName10": "Beacon",
+  "@guestEraName10": {
+    "description": "Era name 11 of the guest plot."
+  },
+  "guestEraPhrase10": "A beacon on the hill.",
+  "@guestEraPhrase10": {
+    "description": "Era narration 11 of the guest plot."
+  },
+  "guestEraName11": "Yard online",
+  "@guestEraName11": {
+    "description": "Era name 12 of the guest plot."
+  },
+  "guestEraPhrase11": "The yard is fully online.",
+  "@guestEraPhrase11": {
+    "description": "Era narration 12 of the guest plot."
+  },
+  "houseWarm0": "Another step along the path.",
+  "@houseWarm0": {
+    "description": "Small progress line 1 for the house plot."
+  },
+  "houseWarm1": "The plot is yours now.",
+  "@houseWarm1": {
+    "description": "Small progress line 2 for the house plot."
+  },
+  "houseWarm2": "The house is a little closer.",
+  "@houseWarm2": {
+    "description": "Small progress line 3 for the house plot."
+  },
+  "pondWarm0": "The water rose a little.",
+  "@pondWarm0": {
+    "description": "Small progress line 1 for the pond plot."
+  },
+  "pondWarm1": "The pond is more yours now.",
+  "@pondWarm1": {
+    "description": "Small progress line 2 for the pond plot."
+  },
+  "pondWarm2": "The banks sit closer.",
+  "@pondWarm2": {
+    "description": "Small progress line 3 for the pond plot."
+  },
+  "petsWarm0": "The pet house grew a little.",
+  "@petsWarm0": {
+    "description": "Small progress line 1 for the pets plot."
+  },
+  "petsWarm1": "The yard is more theirs now.",
+  "@petsWarm1": {
+    "description": "Small progress line 2 for the pets plot."
+  },
+  "petsWarm2": "The kennel sits closer.",
+  "@petsWarm2": {
+    "description": "Small progress line 3 for the pets plot."
+  },
+  "guestWarm0": "The signal grew a little.",
+  "@guestWarm0": {
+    "description": "Small progress line 1 for the guest plot."
+  },
+  "guestWarm1": "The yard is more connected.",
+  "@guestWarm1": {
+    "description": "Small progress line 2 for the guest plot."
+  },
+  "guestWarm2": "The line sits closer.",
+  "@guestWarm2": {
+    "description": "Small progress line 3 for the guest plot."
+  },
+  "storyCatWindowTitle": "Sunny Windowsill",
+  "@storyCatWindowTitle": {
+    "description": "Title of pet story cat_window."
+  },
+  "storyCatWindowChapter0": "Find the warmest patch of sunlight.",
+  "@storyCatWindowChapter0": {
+    "description": "Chapter 1 of pet story cat_window."
+  },
+  "storyCatWindowChapter1": "Bring a soft cushion and a ball of yarn.",
+  "@storyCatWindowChapter1": {
+    "description": "Chapter 2 of pet story cat_window."
+  },
+  "storyCatWindowChapter2": "Hang a curtain for the perfect afternoon nap.",
+  "@storyCatWindowChapter2": {
+    "description": "Chapter 3 of pet story cat_window."
+  },
+  "storyCatWatchTitle": "Midnight Watch",
+  "@storyCatWatchTitle": {
+    "description": "Title of pet story cat_watch."
+  },
+  "storyCatWatchChapter0": "Light a quiet path across the courtyard.",
+  "@storyCatWatchChapter0": {
+    "description": "Chapter 1 of pet story cat_watch."
+  },
+  "storyCatWatchChapter1": "Add a bell to hear every visitor.",
+  "@storyCatWatchChapter1": {
+    "description": "Chapter 2 of pet story cat_watch."
+  },
+  "storyCatWatchChapter2": "Watch the moon through a tiny telescope.",
+  "@storyCatWatchChapter2": {
+    "description": "Chapter 3 of pet story cat_watch."
+  },
+  "storyCatGardenTitle": "Secret Garden",
+  "@storyCatGardenTitle": {
+    "description": "Title of pet story cat_garden."
+  },
+  "storyCatGardenChapter0": "Plant a hidden green corner.",
+  "@storyCatGardenChapter0": {
+    "description": "Chapter 1 of pet story cat_garden."
+  },
+  "storyCatGardenChapter1": "Invite bright butterflies to visit.",
+  "@storyCatGardenChapter1": {
+    "description": "Chapter 2 of pet story cat_garden."
+  },
+  "storyCatGardenChapter2": "Finish the garden with a murmuring fountain.",
+  "@storyCatGardenChapter2": {
+    "description": "Chapter 3 of pet story cat_garden."
+  },
+  "storyCatLibraryTitle": "Little Library",
+  "@storyCatLibraryTitle": {
+    "description": "Title of pet story cat_library."
+  },
+  "storyCatLibraryChapter0": "Collect three favorite storybooks.",
+  "@storyCatLibraryChapter0": {
+    "description": "Chapter 1 of pet story cat_library."
+  },
+  "storyCatLibraryChapter1": "Spread a blanket beside the shelves.",
+  "@storyCatLibraryChapter1": {
+    "description": "Chapter 2 of pet story cat_library."
+  },
+  "storyCatLibraryChapter2": "Light a reading lamp for long evenings.",
+  "@storyCatLibraryChapter2": {
+    "description": "Chapter 3 of pet story cat_library."
+  },
+  "storyCatTeaTitle": "Tea House Keeper",
+  "@storyCatTeaTitle": {
+    "description": "Title of pet story cat_tea."
+  },
+  "storyCatTeaChapter0": "Set out the first tiny teacup.",
+  "@storyCatTeaChapter0": {
+    "description": "Chapter 1 of pet story cat_tea."
+  },
+  "storyCatTeaChapter1": "Decorate the table with fresh flowers.",
+  "@storyCatTeaChapter1": {
+    "description": "Chapter 2 of pet story cat_tea."
+  },
+  "storyCatTeaChapter2": "Raise the tea-house banner for guests.",
+  "@storyCatTeaChapter2": {
+    "description": "Chapter 3 of pet story cat_tea."
+  },
+  "storyDogTrailTitle": "Welcome Trail",
+  "@storyDogTrailTitle": {
+    "description": "Title of pet story dog_trail."
+  },
+  "storyDogTrailChapter0": "Mark a friendly trail through the yard.",
+  "@storyDogTrailChapter0": {
+    "description": "Chapter 1 of pet story dog_trail."
+  },
+  "storyDogTrailChapter1": "Leave fresh water for travelers.",
+  "@storyDogTrailChapter1": {
+    "description": "Chapter 2 of pet story dog_trail."
+  },
+  "storyDogTrailChapter2": "Put a ball at the finish for a joyful welcome.",
+  "@storyDogTrailChapter2": {
+    "description": "Chapter 3 of pet story dog_trail."
+  },
+  "storyDogBridgeTitle": "Bridge Patrol",
+  "@storyDogBridgeTitle": {
+    "description": "Title of pet story dog_bridge."
+  },
+  "storyDogBridgeChapter0": "Secure the old bridge with a strong rope.",
+  "@storyDogBridgeChapter0": {
+    "description": "Chapter 1 of pet story dog_bridge."
+  },
+  "storyDogBridgeChapter1": "Hang a lantern for foggy mornings.",
+  "@storyDogBridgeChapter1": {
+    "description": "Chapter 2 of pet story dog_bridge."
+  },
+  "storyDogBridgeChapter2": "Earn the golden courtyard patrol badge.",
+  "@storyDogBridgeChapter2": {
+    "description": "Chapter 3 of pet story dog_bridge."
+  },
+  "storyDogPicnicTitle": "Picnic Day",
+  "@storyDogPicnicTitle": {
+    "description": "Title of pet story dog_picnic."
+  },
+  "storyDogPicnicChapter0": "Pack a basket for every friend.",
+  "@storyDogPicnicChapter0": {
+    "description": "Chapter 1 of pet story dog_picnic."
+  },
+  "storyDogPicnicChapter1": "Choose a sunny place for the blanket.",
+  "@storyDogPicnicChapter1": {
+    "description": "Chapter 2 of pet story dog_picnic."
+  },
+  "storyDogPicnicChapter2": "Share the treats when everyone arrives.",
+  "@storyDogPicnicChapter2": {
+    "description": "Chapter 3 of pet story dog_picnic."
+  },
+  "storyDogKiteTitle": "The Lost Kite",
+  "@storyDogKiteTitle": {
+    "description": "Title of pet story dog_kite."
+  },
+  "storyDogKiteChapter0": "Spot the kite beyond the hills.",
+  "@storyDogKiteChapter0": {
+    "description": "Chapter 1 of pet story dog_kite."
+  },
+  "storyDogKiteChapter1": "Follow the wind with a compass.",
+  "@storyDogKiteChapter1": {
+    "description": "Chapter 2 of pet story dog_kite."
+  },
+  "storyDogKiteChapter2": "Bring it home and tie on a new ribbon.",
+  "@storyDogKiteChapter2": {
+    "description": "Chapter 3 of pet story dog_kite."
+  },
+  "storyDogFestivalTitle": "Festival Helper",
+  "@storyDogFestivalTitle": {
+    "description": "Title of pet story dog_festival."
+  },
+  "storyDogFestivalChapter0": "Carry colorful flags to the square.",
+  "@storyDogFestivalChapter0": {
+    "description": "Chapter 1 of pet story dog_festival."
+  },
+  "storyDogFestivalChapter1": "Lead the parade with a little drum.",
+  "@storyDogFestivalChapter1": {
+    "description": "Chapter 2 of pet story dog_festival."
+  },
+  "storyDogFestivalChapter2": "Receive a medal for helping everyone.",
+  "@storyDogFestivalChapter2": {
+    "description": "Chapter 3 of pet story dog_festival."
+  },
+  "storyRaccoonWorkshopTitle": "Shiny Workshop",
+  "@storyRaccoonWorkshopTitle": {
+    "description": "Title of pet story raccoon_workshop."
+  },
+  "storyRaccoonWorkshopChapter0": "Open a toolbox of curious inventions.",
+  "@storyRaccoonWorkshopChapter0": {
+    "description": "Chapter 1 of pet story raccoon_workshop."
+  },
+  "storyRaccoonWorkshopChapter1": "Fit the brightest gears together.",
+  "@storyRaccoonWorkshopChapter1": {
+    "description": "Chapter 2 of pet story raccoon_workshop."
+  },
+  "storyRaccoonWorkshopChapter2": "Build a clock that chimes at sunset.",
+  "@storyRaccoonWorkshopChapter2": {
+    "description": "Chapter 3 of pet story raccoon_workshop."
+  },
+  "storyRaccoonMarketTitle": "Moonlit Market",
+  "@storyRaccoonMarketTitle": {
+    "description": "Title of pet story raccoon_market."
+  },
+  "storyRaccoonMarketChapter0": "Weave a basket for unusual finds.",
+  "@storyRaccoonMarketChapter0": {
+    "description": "Chapter 1 of pet story raccoon_market."
+  },
+  "storyRaccoonMarketChapter1": "Light a stall beneath the moon.",
+  "@storyRaccoonMarketChapter1": {
+    "description": "Chapter 2 of pet story raccoon_market."
+  },
+  "storyRaccoonMarketChapter2": "Trade three shiny coins for a surprise.",
+  "@storyRaccoonMarketChapter2": {
+    "description": "Chapter 3 of pet story raccoon_market."
+  },
+  "storyRaccoonRiverTitle": "River Treasure",
+  "@storyRaccoonRiverTitle": {
+    "description": "Title of pet story raccoon_river."
+  },
+  "storyRaccoonRiverChapter0": "Read the map hidden under a stone.",
+  "@storyRaccoonRiverChapter0": {
+    "description": "Chapter 1 of pet story raccoon_river."
+  },
+  "storyRaccoonRiverChapter1": "Patch a tiny boat for the crossing.",
+  "@storyRaccoonRiverChapter1": {
+    "description": "Chapter 2 of pet story raccoon_river."
+  },
+  "storyRaccoonRiverChapter2": "Find the singing shell on the far bank.",
+  "@storyRaccoonRiverChapter2": {
+    "description": "Chapter 3 of pet story raccoon_river."
+  },
+  "storyRaccoonRecycleTitle": "Second-Chance Garden",
+  "@storyRaccoonRecycleTitle": {
+    "description": "Title of pet story raccoon_recycle."
+  },
+  "storyRaccoonRecycleChapter0": "Turn an old crate into a planter.",
+  "@storyRaccoonRecycleChapter0": {
+    "description": "Chapter 1 of pet story raccoon_recycle."
+  },
+  "storyRaccoonRecycleChapter1": "Repair a dented watering can.",
+  "@storyRaccoonRecycleChapter1": {
+    "description": "Chapter 2 of pet story raccoon_recycle."
+  },
+  "storyRaccoonRecycleChapter2": "Build a windmill from forgotten pieces.",
+  "@storyRaccoonRecycleChapter2": {
+    "description": "Chapter 3 of pet story raccoon_recycle."
+  },
+  "storyRaccoonCafeTitle": "Night Café",
+  "@storyRaccoonCafeTitle": {
+    "description": "Title of pet story raccoon_cafe."
+  },
+  "storyRaccoonCafeChapter0": "Polish a mug for the first guest.",
+  "@storyRaccoonCafeChapter0": {
+    "description": "Chapter 1 of pet story raccoon_cafe."
+  },
+  "storyRaccoonCafeChapter1": "Bake a plate of moon-shaped cookies.",
+  "@storyRaccoonCafeChapter1": {
+    "description": "Chapter 2 of pet story raccoon_cafe."
+  },
+  "storyRaccoonCafeChapter2": "Hang the café sign before nightfall.",
+  "@storyRaccoonCafeChapter2": {
+    "description": "Chapter 3 of pet story raccoon_cafe."
+  },
+  "storyHamsterRailwayTitle": "Tiny Railway",
+  "@storyHamsterRailwayTitle": {
+    "description": "Title of pet story hamster_railway."
+  },
+  "storyHamsterRailwayChapter0": "Lay tracks around the flower bed.",
+  "@storyHamsterRailwayChapter0": {
+    "description": "Chapter 1 of pet story hamster_railway."
+  },
+  "storyHamsterRailwayChapter1": "Build a cart just the right size.",
+  "@storyHamsterRailwayChapter1": {
+    "description": "Chapter 2 of pet story hamster_railway."
+  },
+  "storyHamsterRailwayChapter2": "Open the courtyard’s smallest station.",
+  "@storyHamsterRailwayChapter2": {
+    "description": "Chapter 3 of pet story hamster_railway."
+  },
+  "storyHamsterPantryTitle": "Great Pantry",
+  "@storyHamsterPantryTitle": {
+    "description": "Title of pet story hamster_pantry."
+  },
+  "storyHamsterPantryChapter0": "Gather a winter bag of seeds.",
+  "@storyHamsterPantryChapter0": {
+    "description": "Chapter 1 of pet story hamster_pantry."
+  },
+  "storyHamsterPantryChapter1": "Build shelves from smooth twigs.",
+  "@storyHamsterPantryChapter1": {
+    "description": "Chapter 2 of pet story hamster_pantry."
+  },
+  "storyHamsterPantryChapter2": "Label the finest jar in the pantry.",
+  "@storyHamsterPantryChapter2": {
+    "description": "Chapter 3 of pet story hamster_pantry."
+  },
+  "storyHamsterCloudsTitle": "Cloud Observatory",
+  "@storyHamsterCloudsTitle": {
+    "description": "Title of pet story hamster_clouds."
+  },
+  "storyHamsterCloudsChapter0": "Raise a ladder above the tall grass.",
+  "@storyHamsterCloudsChapter0": {
+    "description": "Chapter 1 of pet story hamster_clouds."
+  },
+  "storyHamsterCloudsChapter1": "Aim the telescope between the clouds.",
+  "@storyHamsterCloudsChapter1": {
+    "description": "Chapter 2 of pet story hamster_clouds."
+  },
+  "storyHamsterCloudsChapter2": "Name a new star after the courtyard.",
+  "@storyHamsterCloudsChapter2": {
+    "description": "Chapter 3 of pet story hamster_clouds."
+  },
+  "storyHamsterGardenTitle": "Miniature Garden",
+  "@storyHamsterGardenTitle": {
+    "description": "Title of pet story hamster_garden."
+  },
+  "storyHamsterGardenChapter0": "Plant a garden in a clay pot.",
+  "@storyHamsterGardenChapter0": {
+    "description": "Chapter 1 of pet story hamster_garden."
+  },
+  "storyHamsterGardenChapter1": "Place a bridge over a pebble stream.",
+  "@storyHamsterGardenChapter1": {
+    "description": "Chapter 2 of pet story hamster_garden."
+  },
+  "storyHamsterGardenChapter2": "Add a mushroom house for visitors.",
+  "@storyHamsterGardenChapter2": {
+    "description": "Chapter 3 of pet story hamster_garden."
+  },
+  "storyHamsterBirthdayTitle": "Birthday Parade",
+  "@storyHamsterBirthdayTitle": {
+    "description": "Title of pet story hamster_birthday."
+  },
+  "storyHamsterBirthdayChapter0": "Make the tiniest party hat.",
+  "@storyHamsterBirthdayChapter0": {
+    "description": "Chapter 1 of pet story hamster_birthday."
+  },
+  "storyHamsterBirthdayChapter1": "Bake a cake with three berries.",
+  "@storyHamsterBirthdayChapter1": {
+    "description": "Chapter 2 of pet story hamster_birthday."
+  },
+  "storyHamsterBirthdayChapter2": "Start the parade in a shower of confetti.",
+  "@storyHamsterBirthdayChapter2": {
+    "description": "Chapter 3 of pet story hamster_birthday."
+  },
+  "storyFoxCozyTitle": "A Cozy Corner",
+  "@storyFoxCozyTitle": {
+    "description": "Title of pet story fox_cozy."
+  },
+  "storyFoxCozyChapter0": "Clear the leaves from a quiet corner.",
+  "@storyFoxCozyChapter0": {
+    "description": "Chapter 1 of pet story fox_cozy."
+  },
+  "storyFoxCozyChapter1": "Bring a soft bed for afternoon naps.",
+  "@storyFoxCozyChapter1": {
+    "description": "Chapter 2 of pet story fox_cozy."
+  },
+  "storyFoxCozyChapter2": "Choose a favorite toy and make it home.",
+  "@storyFoxCozyChapter2": {
+    "description": "Chapter 3 of pet story fox_cozy."
+  },
+  "storyFoxFirefliesTitle": "Firefly Path",
+  "@storyFoxFirefliesTitle": {
+    "description": "Title of pet story fox_fireflies."
+  },
+  "storyFoxFirefliesChapter0": "Place a lantern at the forest edge.",
+  "@storyFoxFirefliesChapter0": {
+    "description": "Chapter 1 of pet story fox_fireflies."
+  },
+  "storyFoxFirefliesChapter1": "Plant night flowers along the path.",
+  "@storyFoxFirefliesChapter1": {
+    "description": "Chapter 2 of pet story fox_fireflies."
+  },
+  "storyFoxFirefliesChapter2": "Welcome a sparkling cloud of fireflies.",
+  "@storyFoxFirefliesChapter2": {
+    "description": "Chapter 3 of pet story fox_fireflies."
+  },
+  "storyFoxPostTitle": "Forest Post",
+  "@storyFoxPostTitle": {
+    "description": "Title of pet story fox_post."
+  },
+  "storyFoxPostChapter0": "Build a red mailbox beneath the oak.",
+  "@storyFoxPostChapter0": {
+    "description": "Chapter 1 of pet story fox_post."
+  },
+  "storyFoxPostChapter1": "Sort letters for every courtyard friend.",
+  "@storyFoxPostChapter1": {
+    "description": "Chapter 2 of pet story fox_post."
+  },
+  "storyFoxPostChapter2": "Carry the first delivery in a new satchel.",
+  "@storyFoxPostChapter2": {
+    "description": "Chapter 3 of pet story fox_post."
+  },
+  "storyFoxStudioTitle": "Autumn Studio",
+  "@storyFoxStudioTitle": {
+    "description": "Title of pet story fox_studio."
+  },
+  "storyFoxStudioChapter0": "Set an easel among the golden leaves.",
+  "@storyFoxStudioChapter0": {
+    "description": "Chapter 1 of pet story fox_studio."
+  },
+  "storyFoxStudioChapter1": "Mix colors for an autumn portrait.",
+  "@storyFoxStudioChapter1": {
+    "description": "Chapter 2 of pet story fox_studio."
+  },
+  "storyFoxStudioChapter2": "Frame the painting for the courtyard house.",
+  "@storyFoxStudioChapter2": {
+    "description": "Chapter 3 of pet story fox_studio."
+  },
+  "storyFoxCampTitle": "Starry Camp",
+  "@storyFoxCampTitle": {
+    "description": "Title of pet story fox_camp."
+  },
+  "storyFoxCampChapter0": "Raise a tent beneath the pines.",
+  "@storyFoxCampChapter0": {
+    "description": "Chapter 1 of pet story fox_camp."
+  },
+  "storyFoxCampChapter1": "Light a warm and careful campfire.",
+  "@storyFoxCampChapter1": {
+    "description": "Chapter 2 of pet story fox_camp."
+  },
+  "storyFoxCampChapter2": "Stay awake to find a falling star.",
+  "@storyFoxCampChapter2": {
+    "description": "Chapter 3 of pet story fox_camp."
+  },
+  "petItemCushion": "Cushion",
+  "@petItemCushion": {
+    "description": "Collectible name for cushion."
+  },
+  "petItemYarn": "Yarn",
+  "@petItemYarn": {
+    "description": "Collectible name for yarn."
+  },
+  "petItemCurtain": "Curtain",
+  "@petItemCurtain": {
+    "description": "Collectible name for curtain."
+  },
+  "petItemLantern": "Lantern",
+  "@petItemLantern": {
+    "description": "Collectible name for lantern."
+  },
+  "petItemBell": "Bell",
+  "@petItemBell": {
+    "description": "Collectible name for bell."
+  },
+  "petItemTelescope": "Telescope",
+  "@petItemTelescope": {
+    "description": "Collectible name for telescope."
+  },
+  "petItemSeedling": "Seedling",
+  "@petItemSeedling": {
+    "description": "Collectible name for seedling."
+  },
+  "petItemButterflies": "Butterflies",
+  "@petItemButterflies": {
+    "description": "Collectible name for butterflies."
+  },
+  "petItemFountain": "Fountain",
+  "@petItemFountain": {
+    "description": "Collectible name for fountain."
+  },
+  "petItemBooks": "Books",
+  "@petItemBooks": {
+    "description": "Collectible name for books."
+  },
+  "petItemBlanket": "Blanket",
+  "@petItemBlanket": {
+    "description": "Collectible name for blanket."
+  },
+  "petItemLamp": "Reading lamp",
+  "@petItemLamp": {
+    "description": "Collectible name for lamp."
+  },
+  "petItemTeacup": "Tea set",
+  "@petItemTeacup": {
+    "description": "Collectible name for teacup."
+  },
+  "petItemFlowers": "Flowers",
+  "@petItemFlowers": {
+    "description": "Collectible name for flowers."
+  },
+  "petItemBanner": "Banner",
+  "@petItemBanner": {
+    "description": "Collectible name for banner."
+  },
+  "petItemSignpost": "Signpost",
+  "@petItemSignpost": {
+    "description": "Collectible name for signpost."
+  },
+  "petItemBowl": "Water bowl",
+  "@petItemBowl": {
+    "description": "Collectible name for bowl."
+  },
+  "petItemBall": "Ball",
+  "@petItemBall": {
+    "description": "Collectible name for ball."
+  },
+  "petItemRope": "Strong rope",
+  "@petItemRope": {
+    "description": "Collectible name for rope."
+  },
+  "petItemBadge": "Patrol badge",
+  "@petItemBadge": {
+    "description": "Collectible name for badge."
+  },
+  "petItemBasket": "Basket",
+  "@petItemBasket": {
+    "description": "Collectible name for basket."
+  },
+  "petItemTreats": "Treats",
+  "@petItemTreats": {
+    "description": "Collectible name for treats."
+  },
+  "petItemKite": "Kite",
+  "@petItemKite": {
+    "description": "Collectible name for kite."
+  },
+  "petItemCompass": "Compass",
+  "@petItemCompass": {
+    "description": "Collectible name for compass."
+  },
+  "petItemRibbon": "Ribbon",
+  "@petItemRibbon": {
+    "description": "Collectible name for ribbon."
+  },
+  "petItemFlags": "Festival flags",
+  "@petItemFlags": {
+    "description": "Collectible name for flags."
+  },
+  "petItemDrum": "Drum",
+  "@petItemDrum": {
+    "description": "Collectible name for drum."
+  },
+  "petItemMedal": "Medal",
+  "@petItemMedal": {
+    "description": "Collectible name for medal."
+  },
+  "petItemToolbox": "Toolbox",
+  "@petItemToolbox": {
+    "description": "Collectible name for toolbox."
+  },
+  "petItemGears": "Gears",
+  "@petItemGears": {
+    "description": "Collectible name for gears."
+  },
+  "petItemClock": "Clock",
+  "@petItemClock": {
+    "description": "Collectible name for clock."
+  },
+  "petItemCoins": "Shiny coins",
+  "@petItemCoins": {
+    "description": "Collectible name for coins."
+  },
+  "petItemMap": "Treasure map",
+  "@petItemMap": {
+    "description": "Collectible name for map."
+  },
+  "petItemBoat": "Tiny boat",
+  "@petItemBoat": {
+    "description": "Collectible name for boat."
+  },
+  "petItemShell": "Singing shell",
+  "@petItemShell": {
+    "description": "Collectible name for shell."
+  },
+  "petItemCrate": "Planter crate",
+  "@petItemCrate": {
+    "description": "Collectible name for crate."
+  },
+  "petItemWateringCan": "Watering can",
+  "@petItemWateringCan": {
+    "description": "Collectible name for wateringCan."
+  },
+  "petItemWindmill": "Windmill",
+  "@petItemWindmill": {
+    "description": "Collectible name for windmill."
+  },
+  "petItemMug": "Café mug",
+  "@petItemMug": {
+    "description": "Collectible name for mug."
+  },
+  "petItemCookies": "Cookies",
+  "@petItemCookies": {
+    "description": "Collectible name for cookies."
+  },
+  "petItemTracks": "Railway tracks",
+  "@petItemTracks": {
+    "description": "Collectible name for tracks."
+  },
+  "petItemCart": "Tiny cart",
+  "@petItemCart": {
+    "description": "Collectible name for cart."
+  },
+  "petItemStation": "Station",
+  "@petItemStation": {
+    "description": "Collectible name for station."
+  },
+  "petItemSeedBag": "Seed bag",
+  "@petItemSeedBag": {
+    "description": "Collectible name for seedBag."
+  },
+  "petItemShelf": "Shelves",
+  "@petItemShelf": {
+    "description": "Collectible name for shelf."
+  },
+  "petItemJar": "Pantry jar",
+  "@petItemJar": {
+    "description": "Collectible name for jar."
+  },
+  "petItemLadder": "Ladder",
+  "@petItemLadder": {
+    "description": "Collectible name for ladder."
+  },
+  "petItemStar": "New star",
+  "@petItemStar": {
+    "description": "Collectible name for star."
+  },
+  "petItemPot": "Garden pot",
+  "@petItemPot": {
+    "description": "Collectible name for pot."
+  },
+  "petItemBridge": "Tiny bridge",
+  "@petItemBridge": {
+    "description": "Collectible name for bridge."
+  },
+  "petItemMushroom": "Mushroom house",
+  "@petItemMushroom": {
+    "description": "Collectible name for mushroom."
+  },
+  "petItemHat": "Party hat",
+  "@petItemHat": {
+    "description": "Collectible name for hat."
+  },
+  "petItemCake": "Berry cake",
+  "@petItemCake": {
+    "description": "Collectible name for cake."
+  },
+  "petItemConfetti": "Confetti",
+  "@petItemConfetti": {
+    "description": "Collectible name for confetti."
+  },
+  "petItemClearing": "Quiet clearing",
+  "@petItemClearing": {
+    "description": "Collectible name for clearing."
+  },
+  "petItemBed": "Soft bed",
+  "@petItemBed": {
+    "description": "Collectible name for bed."
+  },
+  "petItemToy": "Favorite toy",
+  "@petItemToy": {
+    "description": "Collectible name for toy."
+  },
+  "petItemFireflies": "Fireflies",
+  "@petItemFireflies": {
+    "description": "Collectible name for fireflies."
+  },
+  "petItemMailbox": "Mailbox",
+  "@petItemMailbox": {
+    "description": "Collectible name for mailbox."
+  },
+  "petItemLetters": "Letters",
+  "@petItemLetters": {
+    "description": "Collectible name for letters."
+  },
+  "petItemSatchel": "Mail satchel",
+  "@petItemSatchel": {
+    "description": "Collectible name for satchel."
+  },
+  "petItemEasel": "Easel",
+  "@petItemEasel": {
+    "description": "Collectible name for easel."
+  },
+  "petItemPaints": "Paints",
+  "@petItemPaints": {
+    "description": "Collectible name for paints."
+  },
+  "petItemFrame": "Picture frame",
+  "@petItemFrame": {
+    "description": "Collectible name for frame."
+  },
+  "petItemTent": "Tent",
+  "@petItemTent": {
+    "description": "Collectible name for tent."
+  },
+  "petItemCampfire": "Campfire",
+  "@petItemCampfire": {
+    "description": "Collectible name for campfire."
+  }
+}

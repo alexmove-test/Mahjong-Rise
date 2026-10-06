@@ -1,13 +1,14 @@
 import 'board.dart';
 import 'game_snapshot.dart';
 import 'levels.dart';
+import 'level_challenge.dart';
 import 'tile.dart';
 
 enum UndoKind { collect, match }
 
 enum RewardedBoost { shuffle, magnet, hint, undo }
 
-enum ShuffleFail { ended, noCharge, noFreeTiles }
+enum ShuffleFail { ended, noCharge, noFreeTiles, challenge }
 
 class UndoEntry {
   const UndoEntry.collect({
@@ -77,8 +78,12 @@ class GameTableSession {
   int _startMagnets = 0;
 
   int get startHints => _startHints;
+  int get startShuffles => _startShuffles;
+  int get startUndos => _startUndos;
+  int get startMagnets => _startMagnets;
 
   bool get isWon => board.isWon;
+  bool get shuffleAllowed => board.challenge != LevelChallenge.noShuffle;
   bool get isLost => board.isLost;
   bool get canUndoCharge => undosLeft > 0 && undoStack.isNotEmpty;
   bool get canUndoViaAd => undosLeft <= 0 && undoStack.isNotEmpty;
@@ -93,6 +98,9 @@ class GameTableSession {
     int bankedHints = 0,
     int bankedShuffles = 0,
     int? hintsLeft,
+    int? shufflesLeft,
+    int? undosLeft,
+    int? magnetsLeft,
   }) {
     board = Board.fromLayout(
       level.layout,
@@ -103,11 +111,12 @@ class GameTableSession {
       guestTypes: level.guestTileTypes,
     );
     score = 0;
+    board.configureChallenge(level.challenge);
     combo = 0;
-    shufflesLeft = level.shuffles + bankedShuffles;
+    this.shufflesLeft = shufflesLeft ?? (level.shuffles + bankedShuffles);
     this.hintsLeft = hintsLeft ?? (level.hints + bankedHints);
-    undosLeft = level.undos;
-    magnetsLeft = level.hints;
+    this.undosLeft = undosLeft ?? level.undos;
+    this.magnetsLeft = magnetsLeft ?? level.hints;
     undoStack.clear();
     _rememberBoostBaseline();
   }
@@ -247,6 +256,13 @@ class GameTableSession {
   }
 
   ShuffleOutcome shuffle() {
+    if (!shuffleAllowed) {
+      return const ShuffleOutcome(
+        applied: false,
+        useful: false,
+        fail: ShuffleFail.challenge,
+      );
+    }
     if (board.isWon || board.isLost) {
       return const ShuffleOutcome(
         applied: false,

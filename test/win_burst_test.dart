@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mahjong/widgets/win_burst.dart';
 
@@ -67,5 +68,46 @@ void main() {
     expect(layout.pieces, hasLength(12));
     expect(layout.shards, hasLength(4));
     expect(layout.rays, hasLength(5));
+  });
+
+  test('title painters repaint when the celebration moves', () {
+    const halo = WinTitleHaloPainter(spin: 0.1, glow: 0.8);
+    expect(
+      halo.shouldRepaint(const WinTitleHaloPainter(spin: 0.2, glow: 0.8)),
+      isTrue,
+    );
+    expect(
+      halo.shouldRepaint(const WinTitleHaloPainter(spin: 0.1, glow: 0.8)),
+      isFalse,
+    );
+
+    const glyphs = WinTitleGlyphPainter(
+      text: 'You win!',
+      textDirection: TextDirection.ltr,
+      shimmer: 0.2,
+      glow: 1,
+    );
+    expect(
+      glyphs.shouldRepaint(
+        const WinTitleGlyphPainter(
+          text: 'You win!',
+          textDirection: TextDirection.ltr,
+          shimmer: 0.4,
+          glow: 1,
+        ),
+      ),
+      isTrue,
+    );
+    expect(
+      glyphs.shouldRepaint(
+        const WinTitleGlyphPainter(
+          text: 'You win!',
+          textDirection: TextDirection.ltr,
+          shimmer: 0.2,
+          glow: 1,
+        ),
+      ),
+      isFalse,
+    );
   });
 }

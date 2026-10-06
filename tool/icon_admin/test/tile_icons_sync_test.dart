@@ -7,7 +7,7 @@ import 'package:icon_admin/tile_icons_sync.dart';
 
 void main() {
   test('assetPathFor matches game mapping', () {
-    expect(assetPathFor('fruit-01'), 'assets/titles/fruit/01.svg');
+    expect(assetPathFor('fruit-01'), 'assets/titles/fruit/01.png');
     expect(assetPathFor('tile-02-05'), 'assets/titles/tile/02/05.svg');
     expect(assetPathFor('dragon-03'), 'assets/titles/dragon/03.svg');
   });
@@ -21,7 +21,7 @@ void main() {
 ''';
     final used = parseUsedIcons(source);
     final byId = {for (final item in used) item.id: item.assetPath};
-    expect(byId['fruit-01'], 'assets/titles/fruit/01.svg');
+    expect(byId['fruit-01'], 'assets/titles/fruit/01.png');
     expect(byId['set1-bamboo-01'], 'assets/titles/1/Bamboo 1.png');
   });
 

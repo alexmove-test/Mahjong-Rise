@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../services/table_look_controller.dart';
+import 'table_theme.dart';
+
 /// Верхняя полоса стола: назад и меню, без баллов.
 class GameHud extends StatelessWidget {
   const GameHud({
@@ -21,6 +24,7 @@ class GameHud extends StatelessWidget {
   static const copperRim = Color(0xFFF0C888);
 
   static const buttonSize = 40.0;
+  static const chromeAsset = 'assets/ui/button_chrome.png';
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +80,7 @@ class GameHudCircleButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final dimmed = !enabled;
     final label = semanticLabel ?? tooltip;
+    final casual = TableLookScope.lookOf(context).isCasual;
     return Semantics(
       button: true,
       enabled: enabled,
@@ -90,41 +95,113 @@ class GameHudCircleButton extends StatelessWidget {
             child: InkWell(
               onTap: enabled ? onPressed : null,
               customBorder: const CircleBorder(),
-              child: Ink(
-                width: size,
-                height: size,
+              child: casual
+                  ? _CasualCircleButton(
+                      size: size,
+                      iconSize: iconSize,
+                      icon: icon,
+                      child: child,
+                    )
+                  : Ink(
+                      width: size,
+                      height: size,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            GameHud.copperHi,
+                            GameHud.copperMid,
+                            GameHud.copperLo,
+                          ],
+                          stops: [0.0, 0.45, 1.0],
+                        ),
+                        border: Border.fromBorderSide(
+                          BorderSide(color: GameHud.copperRim, width: 1.6),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color(0x66000000),
+                            offset: Offset(0, 2),
+                            blurRadius: 3,
+                          ),
+                        ],
+                      ),
+                      child: ExcludeSemantics(
+                        child: Center(
+                          child:
+                              child ??
+                              Icon(icon!, size: iconSize, color: Colors.white),
+                        ),
+                      ),
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// PNG-хром с мокапа: иконка и бейдж рисуются сверху.
+class _CasualCircleButton extends StatelessWidget {
+  const _CasualCircleButton({
+    required this.size,
+    required this.iconSize,
+    this.icon,
+    this.child,
+  });
+
+  final double size;
+  final double iconSize;
+  final IconData? icon;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Image.asset(
+            GameHud.chromeAsset,
+            width: size,
+            height: size,
+            filterQuality: FilterQuality.high,
+            errorBuilder: (context, error, stack) => SizedBox(
+              width: size,
+              height: size,
+              child: const DecoratedBox(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      GameHud.copperHi,
-                      GameHud.copperMid,
-                      GameHud.copperLo,
-                    ],
-                    stops: [0.0, 0.45, 1.0],
-                  ),
-                  border: Border.all(color: GameHud.copperRim, width: 1.6),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x66000000),
-                      offset: Offset(0, 2),
-                      blurRadius: 3,
-                    ),
-                  ],
-                ),
-                child: ExcludeSemantics(
-                  child: Center(
-                    child:
-                        child ??
-                        Icon(icon!, size: iconSize, color: Colors.white),
+                  color: TableUi.buttonTop,
+                  border: Border.fromBorderSide(
+                    BorderSide(color: TableUi.goldRing, width: 4),
                   ),
                 ),
               ),
             ),
           ),
-        ),
+          ExcludeSemantics(
+            child:
+                child ??
+                Icon(
+                  icon!,
+                  size: iconSize,
+                  color: TableUi.ivory,
+                  shadows: const [
+                    Shadow(
+                      color: Color(0x66000000),
+                      offset: Offset(0, 1),
+                      blurRadius: 1.2,
+                    ),
+                  ],
+                ),
+          ),
+        ],
       ),
     );
   }

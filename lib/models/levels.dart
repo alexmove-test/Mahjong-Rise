@@ -1,4 +1,5 @@
 import 'plot_kind.dart';
+import 'level_challenge.dart';
 import 'week_event.dart';
 import 'week_id.dart';
 import '../utils/layouts.dart';
@@ -13,6 +14,7 @@ class LevelDef {
     required this.hints,
     required this.undos,
     this.style,
+    this.challenge = LevelChallenge.none,
     this.pairSize = 4,
     this.uniqueCap,
     this.starsThresholds = const (400, 700, 1000),
@@ -22,6 +24,7 @@ class LevelDef {
   final int id;
   final String title;
   final String layout;
+  final LevelChallenge challenge;
   final int shuffles;
   final int hints;
   final int undos;
@@ -172,6 +175,20 @@ abstract final class Levels {
     return maxUnlocked.clamp(1, maxLevelId) > index * storyLength;
   }
 
+  /// Первый уровень участка в первом круге.
+  static int plotStartId(PlotKind kind) {
+    final index = PlotKind.order.indexOf(kind);
+    return (index < 0 ? 0 : index) * storyLength + 1;
+  }
+
+  /// Ближайший ещё не открытый участок кампании.
+  static PlotKind? nextLockedPlot(int maxUnlocked) {
+    for (final kind in PlotKind.order) {
+      if (!plotReached(kind, maxUnlocked)) return kind;
+    }
+    return null;
+  }
+
   /// Круг из четырёх участков (0 = первый дом–гости–питомцы).
   static int loopOf(int id) => cycleOf(id) ~/ PlotKind.order.length;
 
@@ -187,7 +204,7 @@ abstract final class Levels {
     return [for (var i = 0; i < storyLength; i++) byId(start + i)];
   }
 
-  static String plotLabel(int cycle) => PlotKind.ofCycle(cycle).titleEn;
+  static String plotLabel(int cycle) => PlotKind.ofCycle(cycle).name;
 
   /// Ежедневный стол: сюжетная раскладка по календарному дню, без прогресса кампании.
   static LevelDef dailyFor(DateTime date, {WeekEvent? event}) {
@@ -217,21 +234,35 @@ abstract final class Levels {
     final loop = cycle ~/ PlotKind.order.length;
     final variant = (loop + cycle) % 4;
     final kind = plotKindOf(id);
+    final challenge = switch (local) {
+      6 => LevelChallenge.compactTower,
+      12 => LevelChallenge.specialPair,
+      18 => LevelChallenge.noShuffle,
+      _ => LevelChallenge.none,
+    };
     return LevelDef(
       id: id,
-      title: kind.titleEn,
-      layout: Layouts.variantName(spec.layout, variant),
+      title: kind.name,
+      layout: Layouts.variantName(
+        challenge == LevelChallenge.compactTower
+            ? 'compact-tower'
+            : spec.layout,
+        variant,
+      ),
+      challenge: challenge,
       shuffles: _scaleDown(spec.shuffles, loop),
       hints: _scaleDown(spec.hints, loop),
       undos: _scaleDown(spec.undos, loop ~/ 2 + (loop > 0 ? 1 : 0)),
       style: _styleFor(local),
       pairSize: loop >= 2 ? 2 : spec.pairSize,
       uniqueCap: spec.uniqueCap == null ? null : spec.uniqueCap! + loop * 6,
-      starsThresholds: (
-        spec.stars.$1 + loop * 50,
-        spec.stars.$2 + loop * 80,
-        spec.stars.$3 + loop * 100,
-      ),
+      starsThresholds: challenge == LevelChallenge.specialPair
+          ? (200, 700, 1300)
+          : (
+              spec.stars.$1 + loop * 50,
+              spec.stars.$2 + loop * 80,
+              spec.stars.$3 + loop * 100,
+            ),
     );
   }
 

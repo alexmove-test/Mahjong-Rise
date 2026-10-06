@@ -5,7 +5,6 @@
       <stop offset="1" stop-color="#b71c1c"/>
     </radialGradient>
   </defs>
-  <ellipse cx="40" cy="93" rx="22" ry="4" fill="#000" opacity=".2"/>
   <path d="M28 24l6-10h12l6 10z" fill="#c62828" stroke="#7f0000" stroke-width="1.8" stroke-linejoin="round"/>
   <path d="M32 18l8-8 8 8" fill="none" stroke="#7f0000" stroke-width="1.8" stroke-linejoin="round"/>
   <path d="M16 42c0-14 10-22 24-22s24 8 24 22c4 16 2 32-8 40-8 8-16 10-16 10s-8-2-16-10c-10-8-12-24-8-40z" fill="url(#pomBody)" stroke="#7f0000" stroke-width="2.4" stroke-linejoin="round"/>

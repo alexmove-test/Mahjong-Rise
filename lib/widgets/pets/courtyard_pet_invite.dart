@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import '../../l10n/l10n.dart';
 import '../../models/pet.dart';
 import '../../services/pet_store.dart';
+import '../../services/fox_adventure_store.dart';
+import '../../services/pet_story_store.dart';
 import 'pet_portrait.dart';
 
 const _gold = Color(0xFFD4AF37);
@@ -19,10 +21,14 @@ class CourtyardPetInvite extends StatefulWidget {
     super.key,
     required this.pets,
     required this.onTap,
+    this.adventure,
+    this.stories,
   });
 
   final PetStore? pets;
   final VoidCallback onTap;
+  final FoxAdventureStore? adventure;
+  final PetStoryStore? stories;
 
   @override
   State<CourtyardPetInvite> createState() => _CourtyardPetInviteState();
@@ -98,34 +104,53 @@ class _CourtyardPetInviteState extends State<CourtyardPetInvite>
 
   @override
   Widget build(BuildContext context) {
-    final l10n = L10n.of(context);
+    final l10n = AppLocalizations.of(context);
     final pets = widget.pets;
     final cares = pets?.allCare() ?? const <PetCare>[];
     final urgent = pets?.mostUrgentCare();
     final asking = urgent?.asking ?? false;
+    final stories = widget.stories;
+    final activeStory = stories?.active;
+    final legacyAdventure = (pets?.owns(PetKind.fox) ?? false)
+        ? widget.adventure
+        : null;
+    final storyLabel = stories != null && cares.isNotEmpty
+        ? activeStory == null
+              ? l10n.petAdventures
+              : stories.hasPendingMoment
+              ? l10n.newChapterProgress(stories.progress(activeStory))
+              : l10n.storyProgressLine(
+                  l10n.petStoryTitle(activeStory.id),
+                  stories.progress(activeStory),
+                )
+        : legacyAdventure == null
+        ? null
+        : legacyAdventure.pending
+        ? l10n.storyReadyProgress(legacyAdventure.stage)
+        : legacyAdventure.complete
+        ? l10n.foxIsHome
+        : legacyAdventure.started
+        ? l10n.foxStoryProgress(legacyAdventure.stage)
+        : l10n.foxStory;
 
     if (_hidden) {
       return _YardPetsTab(
-        asking: asking,
+        asking:
+            asking ||
+            (stories?.hasPendingMoment ?? false) ||
+            (legacyAdventure?.pending ?? false),
         tooltip: l10n.petInviteShow,
         onTap: () => unawaited(_setHidden(false)),
       );
     }
 
-    final statusLines = cares.isEmpty
-        ? [(text: l10n.petInviteAdopt, urgent: false)]
-        : [
-            for (final care in cares)
-              (
-                text: l10n.petMoodLine(care.kind, care.mood),
-                urgent: care.asking,
-              ),
-          ];
-    final status = statusLines.map((line) => line.text).join(' ');
+    final status = cares.isEmpty
+        ? l10n.petInviteAdopt
+        : cares.map((care) => l10n.petMoodLine(care.kind, care.mood)).join(' ');
 
     return Semantics(
       button: true,
-      label: '${l10n.pets}. $status',
+      label: '${l10n.pets}. $status${storyLabel == null ? '' : ' $storyLabel'}',
       child: GestureDetector(
         key: const ValueKey('courtyard-pets'),
         onTap: widget.onTap,
@@ -145,14 +170,33 @@ class _CourtyardPetInviteState extends State<CourtyardPetInvite>
           },
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _InviteBubble(lines: statusLines),
-              const SizedBox(height: 6),
-              if (cares.isEmpty)
-                const _YardPetFigure(kind: null, asking: false)
-              else
-                _YardPetPack(cares: cares),
+              cares.isEmpty
+                  ? const _YardPetFigure(kind: null, asking: false, adopt: true)
+                  : _YardPetPack(cares: cares),
+              if (storyLabel != null)
+                Container(
+                  key: const ValueKey('courtyard-pet-story-status'),
+                  constraints: const BoxConstraints(maxWidth: 180),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _woodDeep,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: _gold),
+                  ),
+                  child: Text(
+                    storyLabel,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: _goldSoft,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -226,58 +270,11 @@ class _YardPetsTab extends StatelessWidget {
   }
 }
 
-class _InviteBubble extends StatelessWidget {
-  const _InviteBubble({required this.lines});
-
-  final List<({String text, bool urgent})> lines;
-
-  @override
-  Widget build(BuildContext context) {
-    final urgent = lines.any((line) => line.urgent);
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 168),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: _woodDeep.withValues(alpha: 0.92),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: _gold.withValues(alpha: urgent ? 0.95 : 0.7),
-            width: urgent ? 1.6 : 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.35),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 7, 10, 7),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (var i = 0; i < lines.length; i++) ...[
-                if (i > 0) const SizedBox(height: 4),
-                Text(
-                  lines[i].text,
-                  textAlign: TextAlign.right,
-                  style: TextStyle(
-                    color: lines[i].urgent ? _goldSoft : _ivory,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 12,
-                    height: 1.2,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+IconData _needIcon(PetNeed need) => switch (need) {
+  PetNeed.hunger => Icons.restaurant_rounded,
+  PetNeed.play => Icons.sports_baseball_rounded,
+  PetNeed.rest => Icons.bedtime_rounded,
+};
 
 class _YardPetPack extends StatelessWidget {
   const _YardPetPack({required this.cares});
@@ -312,6 +309,7 @@ class _YardPetPack extends StatelessWidget {
               child: _YardPetFigure(
                 kind: cares[i].kind,
                 asking: cares[i].asking,
+                need: cares[i].asking ? cares[i].mostUrgent : null,
                 size: size,
               ),
             ),
@@ -325,16 +323,25 @@ class _YardPetFigure extends StatelessWidget {
   const _YardPetFigure({
     required this.kind,
     required this.asking,
+    this.need,
+    this.adopt = false,
     this.size = 96,
   });
 
   final PetKind? kind;
   final bool asking;
+  final PetNeed? need;
+  final bool adopt;
   final double size;
 
   @override
   Widget build(BuildContext context) {
     final height = size * (108 / 96);
+    final badgeIcon = adopt
+        ? Icons.add_rounded
+        : need != null
+        ? _needIcon(need!)
+        : null;
     return SizedBox(
       width: size,
       height: height,
@@ -365,7 +372,13 @@ class _YardPetFigure extends StatelessWidget {
                 shadows: const [Shadow(color: Colors.black54, blurRadius: 8)],
               ),
             ),
-          if (asking)
+          if (badgeIcon != null)
+            Positioned(
+              right: size * 0.04,
+              top: size * 0.04,
+              child: _NeedBadge(icon: badgeIcon, urgent: asking),
+            )
+          else if (asking)
             Positioned(
               right: size * 0.08,
               top: size * 0.08,
@@ -378,6 +391,44 @@ class _YardPetFigure extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _NeedBadge extends StatelessWidget {
+  const _NeedBadge({required this.icon, required this.urgent});
+
+  final IconData icon;
+  final bool urgent;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: _woodDeep.withValues(alpha: 0.94),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: urgent
+              ? const Color(0xFFC45C4A)
+              : _gold.withValues(alpha: 0.8),
+          width: 1.4,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x66000000),
+            blurRadius: 4,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Icon(
+          icon,
+          size: 14,
+          color: urgent ? const Color(0xFFFFC4B8) : _goldSoft,
+        ),
       ),
     );
   }

@@ -15,15 +15,19 @@ import '../models/levels.dart';
 import '../models/tile.dart';
 import '../models/tutorial_step.dart';
 import '../services/ad_bootstrap.dart';
+import '../services/courtyard_reward_store.dart';
 import '../services/game_sfx.dart';
+import '../services/play_telemetry.dart';
 import '../services/progress_store.dart';
 import '../services/q_mode_controller.dart';
 import '../services/rewarded_ad_service.dart';
+import '../services/table_look_controller.dart';
 import '../services/tutorial_store.dart';
 import '../widgets/game_action_bar.dart';
 import '../widgets/game_board.dart';
 import '../widgets/game_hud.dart';
 import '../widgets/game_table_menu.dart';
+import '../widgets/score_popup.dart';
 import '../widgets/mahjong_backdrop.dart';
 import '../widgets/match_smash.dart';
 import '../widgets/table_coach_banner.dart';
@@ -72,8 +76,15 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   final GameTableSession _session = GameTableSession();
   int _boardGeneration = 0;
   Timer? _hintTimer;
+  Timer? _flightWatchdog;
+  Timer? _lookHintTimer;
   String? _toast;
+  var _lookHint = false;
+  var _lookHintScheduled = false;
+  int? _earlyApplyGen;
+  int? _earlyApplyQueuedGen;
   bool _winHandled = false;
+  bool _winCredited = false;
   bool _loseHandled = false;
 
   Set<int> _hintedIds = {};
@@ -85,7 +96,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   );
   final List<TileFlight> _flights = [];
   final List<SmashFlight> _smashes = [];
+  final List<_ScoreFloat> _scoreFloats = [];
   int _flightSeq = 0;
+  int _scoreFloatSeq = 0;
   final math.Random _smashRng = math.Random();
   int _shuffleToken = 0;
   bool _shuffleBusy = false;
@@ -93,7 +106,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   final GameSfx _sfx = GameSfx();
   bool _tableStarted = false;
   final FastMatchStreak _fastPraise = FastMatchStreak();
-  final RewardedAdService _rewardedAds = RewardedAdService();
+  final RewardedAdService _rewardedAds = RewardedAdService.instance;
+  final PlayTelemetry _play = PlayTelemetry();
   late final FirstTableCoach _coach;
   bool _adBusy = false;
 
@@ -105,7 +119,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   Board get _board => _session.board;
   LevelDef get _level => widget.level;
-  bool get _adsAvailable => AdBootstrap.available && !_adBusy;
+
+  /// «+» остаётся живым, пока ролик не открыт: иначе кнопка молчит до конца init.
+  bool get _adsAvailable => !_adBusy;
   int get _slotId => widget.isDaily ? GameSnapshot.dailyLevelId : _level.id;
 
   @override
@@ -121,7 +137,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     );
     // #endregion
     _sfx.init();
-    unawaited(_rewardedAds.preload());
+    unawaited(_prepareAds());
     _coach = FirstTableCoach(
       active:
           !widget.isDaily && _level.id == 1 && !widget.progress.tableCoachDone,
@@ -132,21 +148,81 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     } else {
       _resetBoard(applyBanked: true);
     }
-    _syncHintBalance();
+    _syncBoostBalances();
     if (!widget.isDaily) {
       widget.progress.markPlayed(_level.id);
     }
     unawaited(_initTutorial());
   }
 
+  Future<void> _prepareAds() async {
+    await AdBootstrap.prepareForAdRequest();
+    if (!mounted) return;
+    await _rewardedAds.preload();
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _scheduleEarlyLook();
+    _scheduleLookHint();
+  }
+
+  void _scheduleEarlyLook() {
+    final look = TableLookScope.maybeOf(context);
+    if (look == null) return;
+    final epoch = look.storeEpoch;
+    if (_earlyApplyGen == epoch || _earlyApplyQueuedGen == epoch) return;
+    _earlyApplyQueuedGen = epoch;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final controller = TableLookScope.maybeOf(context);
+      if (controller == null) return;
+      await controller.applyEarlyShowcase(
+        _level.id,
+        maxUnlocked: widget.progress.maxUnlocked,
+      );
+      if (!mounted) return;
+      _earlyApplyGen = epoch;
+      _scheduleLookHint();
+    });
+  }
+
+  void _scheduleLookHint() {
+    if (_lookHintScheduled) return;
+    final look = TableLookScope.maybeOf(context);
+    if (look == null || !look.settingsHintPending) return;
+    _lookHintScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (TableLookScope.maybeOf(context)?.consumeSettingsHint() != true) {
+        return;
+      }
+      _lookHintTimer?.cancel();
+      setState(() => _lookHint = true);
+      _lookHintTimer = Timer(const Duration(seconds: 5), () {
+        if (!mounted) return;
+        setState(() => _lookHint = false);
+      });
+    });
+  }
+
   @override
   void dispose() {
-    _syncHintBalance();
-    _persistSnapshot();
+    _lookHintTimer?.cancel();
+    _flightWatchdog?.cancel();
+    _flushFlightsForPersist();
+    _leaveAttempt('exit');
+    _syncBoostBalances();
+    if (_session.isWon) {
+      unawaited(_creditWinIfNeeded());
+    } else {
+      _persistSnapshot();
+    }
     WidgetsBinding.instance.removeObserver(this);
     _hintTimer?.cancel();
     _shuffleBusyTimer?.cancel();
-    _rewardedAds.dispose();
     _sfx.dispose();
     super.dispose();
   }
@@ -155,8 +231,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused) {
-      _syncHintBalance();
-      _persistSnapshot();
+      _flushFlightsForPersist();
+      _syncBoostBalances();
+      if (_session.isWon) {
+        unawaited(_creditWinIfNeeded());
+      } else {
+        _persistSnapshot();
+      }
     }
   }
 
@@ -168,23 +249,73 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     _winHandled = false;
     _loseHandled = false;
     _hintedIds = {};
+    _flightWatchdog?.cancel();
     _flights.clear();
     _smashes.clear();
+    _scoreFloats.clear();
     _shuffleToken = 0;
     _shuffleBusy = false;
     _shuffleBusyTimer?.cancel();
     _fastPraise.reset();
     _tableStarted = true;
+    _logLevelStart(PlayStartSource.resume);
   }
 
-  void _syncHintBalance() {
+  void _syncBoostBalances() {
     if (widget.isDaily) return;
-    unawaited(widget.progress.setHintBalance(_session.hintsLeft));
+    unawaited(
+      widget.progress.setBoostBalances(
+        hints: _session.hintsLeft,
+        shuffles: _session.shufflesLeft,
+        magnets: _session.magnetsLeft,
+        undos: _session.undosLeft,
+      ),
+    );
+  }
+
+  int? _carryBoost({
+    required bool hasBalance,
+    required int balance,
+    required int fallback,
+    int banked = 0,
+  }) {
+    if (widget.isDaily) return null;
+    return (hasBalance ? balance : fallback) + banked;
   }
 
   void _persistSnapshot() {
-    if (!_session.hasProgressToSave) return;
+    if (!_session.hasProgressToSave) {
+      if (_session.isWon) unawaited(_clearSnapshot());
+      return;
+    }
     unawaited(widget.progress.saveSnapshot(_session.snapshotFor(_slotId)));
+  }
+
+  /// Перед снимком доигрываем зависший полёт, иначе после двора
+  /// последняя кость снова лежит на столе, а пара — в лотке.
+  void _flushFlightsForPersist() {
+    final pending = List<TileFlight>.from(_flights);
+    _flights.clear();
+    _flightWatchdog?.cancel();
+    for (final flight in pending) {
+      flight.tile.flying = false;
+      if (flight.returning) continue;
+      if (flight.tile.inTray || flight.tile.removing || flight.tile.removed) {
+        continue;
+      }
+      if (_session.isWon || _session.isLost) continue;
+      _session.pickTile(flight.tile, force: flight.forcePick);
+    }
+    for (final tile in _board.tiles) {
+      if (!tile.flying) continue;
+      tile.flying = false;
+      if (tile.inTray || tile.removing || tile.removed) continue;
+      if (_session.isWon || _session.isLost) continue;
+      _session.pickTile(tile);
+    }
+    if (!_session.isWon && !_session.isLost) {
+      _session.board.resolveTray();
+    }
   }
 
   Future<void> _clearSnapshot() => widget.progress.clearSnapshot(_slotId);
@@ -198,36 +329,109 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     final bankShuffles = applyBanked && !widget.isDaily
         ? widget.progress.bankedShuffles
         : 0;
-    final retryHints = _tableStarted && !widget.isDaily
-        ? _session.startHints
-        : null;
-    int? campaignHints;
-    if (!widget.isDaily && retryHints == null) {
-      campaignHints = widget.progress.hasHintBalance
-          ? widget.progress.hintBalance + bankHints
-          : _level.hints + bankHints;
-    }
+    final retrying = _tableStarted && !widget.isDaily;
+    final source = _tableStarted
+        ? PlayStartSource.retry
+        : PlayStartSource.newGame;
     _session.resetFromLevel(
       _level,
-      bankedShuffles: bankShuffles,
-      hintsLeft: retryHints ?? campaignHints,
+      hintsLeft: retrying
+          ? _session.startHints
+          : _carryBoost(
+              hasBalance: widget.progress.hasHintBalance,
+              balance: widget.progress.hintBalance,
+              fallback: _level.hints,
+              banked: bankHints,
+            ),
+      shufflesLeft: retrying
+          ? _session.startShuffles
+          : _carryBoost(
+              hasBalance: widget.progress.hasShuffleBalance,
+              balance: widget.progress.shuffleBalance,
+              fallback: _level.shuffles,
+              banked: bankShuffles,
+            ),
+      magnetsLeft: retrying
+          ? _session.startMagnets
+          : _carryBoost(
+              hasBalance: widget.progress.hasMagnetBalance,
+              balance: widget.progress.magnetBalance,
+              fallback: _level.hints,
+            ),
+      undosLeft: retrying
+          ? _session.startUndos
+          : _carryBoost(
+              hasBalance: widget.progress.hasUndoBalance,
+              balance: widget.progress.undoBalance,
+              fallback: _level.undos,
+            ),
     );
     if (applyBanked && !widget.isDaily) {
       unawaited(widget.progress.consumeBankedBoosts());
     }
     _tableStarted = true;
-    _syncHintBalance();
+    _syncBoostBalances();
     _toast = null;
     _winHandled = false;
     _loseHandled = false;
     _hintedIds = {};
+    _flightWatchdog?.cancel();
     _flights.clear();
     _smashes.clear();
+    _scoreFloats.clear();
     _shuffleToken = 0;
     _shuffleBusy = false;
     _shuffleBusyTimer?.cancel();
     _fastPraise.reset();
     _coach.resetIfActive();
+    _logLevelStart(source);
+  }
+
+  void _logLevelStart(PlayStartSource source) {
+    _play.start(
+      levelId: _slotId,
+      isDaily: widget.isDaily,
+      layout: _level.layout,
+      source: source,
+      firstTry: !widget.isDaily && widget.progress.stars(_level.id) == 0,
+      hints: _session.hintsLeft,
+      shuffles: _session.shufflesLeft,
+      magnets: _session.magnetsLeft,
+      undos: _session.undosLeft,
+      tilesLeft: _board.remaining,
+    );
+  }
+
+  void _leaveAttempt(String reason) {
+    _play.leave(
+      reason: reason,
+      tilesLeft: _board.remaining,
+      score: _session.score,
+    );
+  }
+
+  void _logBooster(String boost, {bool? useful}) {
+    final chargesLeft = switch (boost) {
+      'shuffle' => _session.shufflesLeft,
+      'hint' => _session.hintsLeft,
+      'magnet' => _session.magnetsLeft,
+      'undo' => _session.undosLeft,
+      _ => 0,
+    };
+    _play.booster(
+      boost: boost,
+      tilesLeft: _board.remaining,
+      chargesLeft: chargesLeft,
+      useful: useful,
+    );
+  }
+
+  void _logAd(String placement, PlayAdResult result) {
+    _play.ad(
+      placement: placement,
+      result: result,
+      simulated: AdBootstrap.simulation,
+    );
   }
 
   Future<void> _startNewGame() async {
@@ -348,16 +552,16 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   void _onTileTap(Tile tile, Rect fromRect) {
     if (_session.isWon || _session.isLost || _shuffleBusy) return;
-    if (tile.flying) return;
+    if (tile.flying && tile.inTray) return;
+    if (tile.flying) tile.flying = false;
 
     if (!tile.isOnBoard || !_board.isFree(tile)) {
-      setState(() => _toast = L10n.of(context).tileLocked);
+      setState(() => _toast = AppLocalizations.of(context).tileLocked);
       _sfx.error();
       return;
     }
-    if (_board.trayLiveCount + _flights.where((f) => !f.returning).length >=
-        Board.trayCapacity) {
-      setState(() => _toast = L10n.of(context).trayFull);
+    if (_board.trayLiveCount >= Board.trayCapacity) {
+      setState(() => _toast = AppLocalizations.of(context).trayFull);
       _sfx.error();
       return;
     }
@@ -365,14 +569,28 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     final scoreBefore = _session.score;
     final comboBefore = _session.combo;
     _sfx.collect();
-    if (!_launchCollectFlight(
+    _commitPick(tile, scoreBefore: scoreBefore, comboBefore: comboBefore);
+    if (!mounted ||
+        _winHandled ||
+        _session.isWon ||
+        tile.removing ||
+        tile.removed ||
+        !tile.inTray) {
+      _settleHiddenTiles();
+      return;
+    }
+    // Последняя кость: не прячем её в полёте — иначе стол пустой, а победы нет.
+    if (!_board.tiles.any((other) => other.isOnBoard)) {
+      _settleHiddenTiles();
+      return;
+    }
+    _launchCollectFlight(
       tile,
       fromRect,
       scoreBefore: scoreBefore,
       comboBefore: comboBefore,
-    )) {
-      _commitPick(tile, scoreBefore: scoreBefore, comboBefore: comboBefore);
-    }
+    );
+    _settleHiddenTiles();
   }
 
   bool _launchCollectFlight(
@@ -382,8 +600,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     required int comboBefore,
     bool force = false,
   }) {
-    final slotIndex =
-        _board.trayLiveCount + _flights.where((f) => !f.returning).length;
+    final slotIndex = _board.tray.indexWhere((t) => t.id == tile.id);
+    if (slotIndex < 0 || slotIndex >= _traySlotKeys.length) return false;
     final fromLocal = _rectOnFlightLayer(fromRect);
     final toGlobal = _globalRectOf(_traySlotKeys[slotIndex]);
     final toLocal = toGlobal == null ? null : _rectOnFlightLayer(toGlobal);
@@ -407,6 +625,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         ),
       );
     });
+    _armFlightWatchdog();
     return true;
   }
 
@@ -433,6 +652,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         ),
       );
     });
+    _armFlightWatchdog();
     return true;
   }
 
@@ -452,17 +672,68 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   void _onFlightArrived(TileFlight flight) {
     if (!mounted) return;
     if (!_flights.remove(flight)) return;
+    if (_flights.isEmpty) _flightWatchdog?.cancel();
+    flight.tile.flying = false;
     if (flight.returning) {
-      flight.tile.flying = false;
       setState(() {});
+      _settleHiddenTiles();
       return;
     }
-    _commitPick(
-      flight.tile,
-      scoreBefore: flight.scoreBefore,
-      comboBefore: flight.comboBefore,
-      force: flight.forcePick,
+    if (!flight.tile.inTray &&
+        !flight.tile.removing &&
+        !flight.tile.removed &&
+        !flight.tile.flying) {
+      _commitPick(
+        flight.tile,
+        scoreBefore: flight.scoreBefore,
+        comboBefore: flight.comboBefore,
+        force: flight.forcePick,
+      );
+    } else {
+      setState(() {});
+    }
+    _settleHiddenTiles();
+  }
+
+  void _armFlightWatchdog() {
+    _flightWatchdog?.cancel();
+    if (_flights.isEmpty) return;
+    _flightWatchdog = Timer(
+      TileFlightOverlay.duration + const Duration(milliseconds: 180),
+      () {
+        if (!mounted) return;
+        if (_flights.isNotEmpty) _commitPendingFlights();
+        _settleHiddenTiles();
+      },
     );
+  }
+
+  /// Полёт только рисует: сбор уже в лотке. Если тикер завис, кость
+  /// всё равно должна быть в нише, а последняя пара — закрыть стол.
+  void _settleHiddenTiles() {
+    if (!mounted || _loseHandled) return;
+    final boardEmpty = !_board.tiles.any((tile) => tile.isOnBoard);
+    if (_flights.isNotEmpty && boardEmpty) {
+      _commitPendingFlights();
+    }
+    final tracked = {for (final flight in _flights) flight.tile.id};
+    for (final tile in List<Tile>.from(_board.tiles)) {
+      if (!tile.flying) continue;
+      if (!boardEmpty && tracked.contains(tile.id)) continue;
+      tile.flying = false;
+      if (tile.inTray || tile.removing || tile.removed) continue;
+      if (_session.isWon || _session.isLost) continue;
+      _commitPick(
+        tile,
+        scoreBefore: _session.score,
+        comboBefore: _session.combo,
+      );
+    }
+    if (_winHandled || !_session.isWon) return;
+    _winHandled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_onLevelWon());
+    });
   }
 
   void _commitPick(
@@ -472,16 +743,17 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     bool force = false,
   }) {
     tile.flying = false;
+    if (tile.inTray || tile.removed || tile.removing) return;
     final result = _session.pickTile(tile, force: force);
     if (result == MatchResult.blocked) {
       _blockedTap = true;
-      setState(() => _toast = L10n.of(context).tileLocked);
+      setState(() => _toast = AppLocalizations.of(context).tileLocked);
       _sfx.error();
       _syncTutorial();
       return;
     }
     if (result == MatchResult.trayFull) {
-      setState(() => _toast = L10n.of(context).trayFull);
+      setState(() => _toast = AppLocalizations.of(context).trayFull);
       _sfx.error();
       return;
     }
@@ -500,17 +772,16 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   void _commitPendingFlights() {
     if (_flights.isEmpty) return;
+    _flightWatchdog?.cancel();
     final pending = List<TileFlight>.from(_flights);
     _flights.clear();
     for (final flight in pending) {
-      if (!mounted || _session.isWon || _session.isLost) {
-        flight.tile.flying = false;
+      flight.tile.flying = false;
+      if (flight.returning) continue;
+      if (flight.tile.inTray || flight.tile.removing || flight.tile.removed) {
         continue;
       }
-      if (flight.returning) {
-        flight.tile.flying = false;
-        continue;
-      }
+      if (!mounted || _session.isWon || _session.isLost) continue;
       _commitPick(
         flight.tile,
         scoreBefore: flight.scoreBefore,
@@ -543,26 +814,38 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         case MatchResult.collected:
           _coach.onCollected();
           if (outcome.noUsefulMove) {
-            _toast = L10n.of(context).noMovesShuffle;
+            _toast = (_session.shuffleAllowed
+                ? AppLocalizations.of(context).noMovesShuffle
+                : AppLocalizations.of(context).noShuffleMoves);
           }
         case MatchResult.matched:
           _toast = outcome.noUsefulMove
-              ? L10n.of(context).noMovesShuffle
+              ? (_session.shuffleAllowed
+                    ? AppLocalizations.of(context).noMovesShuffle
+                    : AppLocalizations.of(context).noShuffleMoves)
               : null;
           if (smashes.length * 2 < outcome.matched.length) {
             _sfx.match();
           }
           _smashes.addAll(smashes);
+          _spawnScoreFloat(scoreBefore: scoreBefore, won: false);
+          _dropFlightsFor(outcome.matched);
           final praise = _fastPraise.registerMatch(
             now: DateTime.now(),
-            languageCode: L10n.of(context).code,
+            languageCode: AppLocalizations.of(context).localeName,
           );
           if (praise != null) _sfx.praise(praise);
           _coach.onMatched();
         case MatchResult.win:
           if (outcome.matched.isNotEmpty) {
             _smashes.addAll(smashes);
+            _spawnScoreFloat(scoreBefore: scoreBefore, won: true);
+            _dropFlightsFor(outcome.matched);
           }
+          _flights
+            ..forEach((flight) => flight.tile.flying = false)
+            ..clear();
+          _flightWatchdog?.cancel();
           _toast = null;
           _fastPraise.reset();
           _coach.onWin();
@@ -597,6 +880,34 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     unawaited(_onTutorialAfterMove(resolve));
   }
 
+  void _spawnScoreFloat({required int scoreBefore, required bool won}) {
+    var pairGain = _session.score - scoreBefore;
+    if (won) pairGain -= GameTableSession.winBonus;
+    if (pairGain <= 0) return;
+    _scoreFloats.add(
+      _ScoreFloat(
+        token: _scoreFloatSeq++,
+        points: pairGain,
+        combo: _session.combo,
+      ),
+    );
+  }
+
+  void _removeScoreFloat(_ScoreFloat float) {
+    if (!_scoreFloats.remove(float) || !mounted) return;
+    setState(() {});
+  }
+
+  void _dropFlightsFor(Iterable<Tile> tiles) {
+    final ids = {for (final tile in tiles) tile.id};
+    _flights.removeWhere((flight) {
+      if (!ids.contains(flight.tile.id)) return false;
+      flight.tile.flying = false;
+      return true;
+    });
+    if (_flights.isEmpty) _flightWatchdog?.cancel();
+  }
+
   void _persistCoachIfDone() {
     if (!_coach.finished || widget.progress.tableCoachDone) return;
     unawaited(widget.progress.markTableCoachDone());
@@ -605,6 +916,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   void _onTileRemoveComplete(Tile tile) {
     if (!mounted || !tile.removing) return;
     setState(() => _board.finishRemoval(tile));
+    _settleHiddenTiles();
   }
 
   List<SmashFlight> _planSmashes(List<Tile> matched) {
@@ -655,7 +967,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     final outcome = _session.shuffle();
     if (!outcome.applied) {
       if (outcome.fail == ShuffleFail.noFreeTiles) {
-        setState(() => _toast = L10n.of(context).noFreeTiles);
+        setState(() => _toast = AppLocalizations.of(context).noFreeTiles);
         _sfx.error();
       }
       return;
@@ -665,8 +977,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       _shuffleToken += 1;
       _shuffleBusy = true;
       _toast = outcome.useful
-          ? L10n.of(context).shuffled
-          : L10n.of(context).stillNoMoves;
+          ? AppLocalizations.of(context).shuffled
+          : AppLocalizations.of(context).stillNoMoves;
       if (_lesson?.step != TutorialStep.collect) {
         _hintedIds = {};
       }
@@ -676,19 +988,22 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       setState(() => _shuffleBusy = false);
     });
     _persistSnapshot();
+    _syncBoostBalances();
     _fastPraise.reset();
     _sfx.tap();
+    _logBooster('shuffle', useful: outcome.useful);
     if (_lesson?.step == TutorialStep.collect) {
       _syncTutorial();
     }
   }
 
   void _onShuffleTap() {
+    if (!_session.shuffleAllowed) return;
     if (_session.isWon || _session.isLost || _adBusy || _shuffleBusy) return;
     if (_session.shufflesLeft > 0) {
       _shuffle();
       unawaited(_completeBoostsIfNeeded());
-    } else if (_adsAvailable) {
+    } else {
       unawaited(_watchAdForBoost(RewardedBoost.shuffle));
     }
   }
@@ -698,7 +1013,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     if (_session.hintsLeft > 0) {
       _hint();
       unawaited(_completeBoostsIfNeeded());
-    } else if (_adsAvailable) {
+    } else {
       unawaited(_watchAdForBoost(RewardedBoost.hint));
     }
   }
@@ -708,7 +1023,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     if (_session.magnetsLeft > 0) {
       _magnet();
       unawaited(_completeBoostsIfNeeded());
-    } else if (_adsAvailable) {
+    } else {
       unawaited(_watchAdForBoost(RewardedBoost.magnet));
     }
   }
@@ -719,58 +1034,103 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       setState(() {
         final flight = _flights.removeLast();
         flight.tile.flying = false;
+        if (!flight.returning && (flight.tile.inTray || flight.tile.removing)) {
+          final snap = _session.takeUndo(fromLose: true);
+          if (snap != null) {
+            _session.applyInstantUndo(snap, fromLose: true);
+          }
+        }
       });
+      if (_flights.isEmpty) _flightWatchdog?.cancel();
       _sfx.undo();
       return;
     }
     if (_session.canUndoCharge) {
       _undo();
       unawaited(_completeBoostsIfNeeded());
-    } else if (_adsAvailable && _session.canUndoViaAd) {
+    } else if (_session.canUndoViaAd) {
       unawaited(_watchAdForBoost(RewardedBoost.undo));
     }
   }
 
   Future<void> _watchAdForBoost(RewardedBoost boost) async {
-    if (_adBusy || !AdBootstrap.available) return;
+    if (boost == RewardedBoost.shuffle && !_session.shuffleAllowed) return;
+    if (_adBusy) return;
 
     setState(() {
       _adBusy = true;
-      _toast = AdBootstrap.simulation ? null : L10n.of(context).loadingAd;
+      _toast = AdBootstrap.simulation ? null : AppLocalizations.of(context).loadingAd;
     });
 
-    await _rewardedAds.preload();
-    if (!mounted) return;
-    final earned = await _rewardedAds.show(context: context);
-    if (!mounted) return;
+    try {
+      if (!AdBootstrap.initFinished || !AdBootstrap.enabled) {
+        await AdBootstrap.prepareForAdRequest();
+      }
+      if (!mounted) return;
+      if (!AdBootstrap.available) {
+        _logAd(PlayTelemetry.boostPlacement(boost.name), PlayAdResult.skip);
+        setState(() => _toast = AppLocalizations.of(context).adUnavailable);
+        return;
+      }
 
-    if (!earned) {
+      _logAd(PlayTelemetry.boostPlacement(boost.name), PlayAdResult.offer);
+      await _rewardedAds.preload();
+      if (!mounted) return;
+      final result = await _rewardedAds.show(context: context);
+      _logAd(
+        PlayTelemetry.boostPlacement(boost.name),
+        result == RewardedAdShowResult.earned
+            ? PlayAdResult.complete
+            : PlayAdResult.skip,
+      );
+      if (!mounted) return;
+
+      if (result != RewardedAdShowResult.earned) {
+        setState(() {
+          _toast = result == RewardedAdShowResult.skipped
+              ? AppLocalizations.of(context).rewardNotEarned
+              : AppLocalizations.of(context).adUnavailable;
+        });
+        return;
+      }
+
+      final l10n = AppLocalizations.of(context);
+      final count = boost == RewardedBoost.magnet
+          ? (QModeScope.maybeOf(context)?.magnetChargesForAd ?? 1)
+          : 1;
       setState(() {
-        _adBusy = false;
-        _toast = AdBootstrap.simulation
-            ? L10n.of(context).rewardNotEarned
-            : L10n.of(context).adUnavailable;
+        _session.grantBoost(boost, count: count);
+        _toast = l10n.boostEarned(switch (boost) {
+          RewardedBoost.shuffle => l10n.shuffle,
+          RewardedBoost.magnet => l10n.magnet,
+          RewardedBoost.hint => l10n.hint,
+          RewardedBoost.undo => l10n.undo,
+        }, count: count);
       });
-      return;
-    }
-
-    final l10n = L10n.of(context);
-    final count = boost == RewardedBoost.magnet
-        ? (QModeScope.maybeOf(context)?.magnetChargesForAd ?? 1)
-        : 1;
-    setState(() {
+      _persistSnapshot();
+      _syncBoostBalances();
+      _sfx.select();
+      switch (boost) {
+        case RewardedBoost.hint:
+          _hint();
+          unawaited(_completeBoostsIfNeeded());
+        case RewardedBoost.shuffle:
+          _shuffle();
+          unawaited(_completeBoostsIfNeeded());
+        case RewardedBoost.undo:
+          _undo();
+          unawaited(_completeBoostsIfNeeded());
+        case RewardedBoost.magnet:
+          break;
+      }
+    } catch (_) {
+      if (!mounted) return;
+      _logAd(PlayTelemetry.boostPlacement(boost.name), PlayAdResult.skip);
+      setState(() => _toast = AppLocalizations.of(context).adUnavailable);
+    } finally {
       _adBusy = false;
-      _session.grantBoost(boost, count: count);
-      _toast = l10n.boostEarned(switch (boost) {
-        RewardedBoost.shuffle => l10n.shuffle,
-        RewardedBoost.magnet => l10n.magnet,
-        RewardedBoost.hint => l10n.hint,
-        RewardedBoost.undo => l10n.undo,
-      }, count: count);
-    });
-    _persistSnapshot();
-    _syncHintBalance();
-    _sfx.select();
+      if (mounted) setState(() {});
+    }
   }
 
   void _hint() {
@@ -780,7 +1140,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       if (_session.isWon || _session.isLost || _session.hintsLeft <= 0) {
         return;
       }
-      setState(() => _toast = L10n.of(context).noUsefulMoves);
+      setState(() => _toast = AppLocalizations.of(context).noUsefulMoves);
       _sfx.error();
       return;
     }
@@ -791,7 +1151,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     });
     _sfx.select();
     _persistSnapshot();
-    _syncHintBalance();
+    _syncBoostBalances();
+    _logBooster('hint');
     _hintTimer = Timer(const Duration(seconds: 8), () {
       if (!mounted) return;
       if (_lesson?.step == TutorialStep.collect) {
@@ -812,24 +1173,28 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     if (!fromLose && _tryAnimateUndo(snap)) {
       setState(() {
         _session.applyScoreUndo(snap, fromLose: false);
-        _toast = L10n.of(context).moveUndone;
+        _toast = AppLocalizations.of(context).moveUndone;
       });
       _persistSnapshot();
+      _syncBoostBalances();
       _sfx.undo();
+      _logBooster('undo');
       return;
     }
 
     setState(() {
       _session.applyInstantUndo(snap, fromLose: fromLose);
       _toast = fromLose
-          ? L10n.of(context).continuing
-          : L10n.of(context).moveUndone;
+          ? AppLocalizations.of(context).continuing
+          : AppLocalizations.of(context).moveUndone;
     });
     _persistSnapshot();
+    _syncBoostBalances();
     if (fromLose) {
       _sfx.tap();
     } else {
       _sfx.undo();
+      _logBooster('undo');
     }
   }
 
@@ -867,57 +1232,23 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     }
     final pair = _board.findMagnetPair();
     if (pair == null) {
-      setState(() => _toast = L10n.of(context).noMatchingTiles);
+      setState(() => _toast = AppLocalizations.of(context).noMatchingTiles);
       _sfx.error();
       return;
     }
 
     final extra = pair.match.isOnBoard ? pair.match : null;
-    final firstRect = _boardViewKey.currentState?.globalBoardRectOf(
-      pair.boardTile,
-    );
-    final extraRect = extra == null
-        ? null
-        : _boardViewKey.currentState?.globalBoardRectOf(extra);
-    final canFly =
-        firstRect != null &&
-        firstRect != Rect.zero &&
-        (extra == null || (extraRect != null && extraRect != Rect.zero));
-
     _clearHint();
     final scoreBefore = _session.score;
     final comboBefore = _session.combo;
     setState(() => _session.consumeMagnetCharge());
+    _syncBoostBalances();
     _sfx.magnet();
-
-    if (canFly) {
-      final flyFrom = firstRect!;
-      final flewFirst = _launchCollectFlight(
-        pair.boardTile,
-        flyFrom,
-        scoreBefore: scoreBefore,
-        comboBefore: comboBefore,
-        force: true,
-      );
-      final flewExtra = extra == null || extraRect == null
-          ? extra == null
-          : _launchCollectFlight(
-              extra,
-              extraRect,
-              scoreBefore: scoreBefore,
-              comboBefore: comboBefore,
-              force: true,
-            );
-      if (flewFirst && flewExtra) {
-        _persistSnapshot();
-        return;
-      }
-      _commitPendingFlights();
-    }
+    _logBooster('magnet');
 
     final first = _session.pickTile(pair.boardTile, force: true);
     if (first == MatchResult.blocked || first == MatchResult.trayFull) {
-      setState(() => _toast = L10n.of(context).noMatchingTiles);
+      setState(() => _toast = AppLocalizations.of(context).noMatchingTiles);
       _sfx.error();
       return;
     }
@@ -925,7 +1256,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       final second = _session.pickTile(extra, force: true);
       if (second == MatchResult.blocked || second == MatchResult.trayFull) {
         _board.returnFromTray(pair.boardTile);
-        setState(() => _toast = L10n.of(context).noMatchingTiles);
+        setState(() => _toast = AppLocalizations.of(context).noMatchingTiles);
         _sfx.error();
         return;
       }
@@ -943,7 +1274,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       showGameTableMenu(
         context,
         onRetry: () => unawaited(_startNewGame()),
-        onCourtyard: () => Navigator.of(context).maybePop(),
+        onCourtyard: () {
+          _leaveAttempt('back');
+          Navigator.of(context).maybePop();
+        },
         onHowToPlay: () => unawaited(_replayTutorial()),
         onLinkFailed: (message) {
           if (mounted) setState(() => _toast = message);
@@ -952,13 +1286,46 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     );
   }
 
+  Future<void> _creditWinIfNeeded() async {
+    if (_winCredited || !_session.isWon) return;
+    _winCredited = true;
+    _winHandled = true;
+    unawaited(_clearSnapshot());
+    if (widget.isDaily) {
+      await widget.progress.recordDailyWin();
+    } else {
+      final result = await widget.progress.recordWin(
+        level: _level,
+        score: _session.score,
+      );
+      if (result.firstClear) {
+        final rewards = await CourtyardRewardStore.open();
+        await rewards.recordFirstClear(_level.id);
+      }
+    }
+    widget.onProgressChanged?.call();
+  }
+
   Future<void> _onLevelWon() async {
-    _syncHintBalance();
+    if (_winCredited) {
+      if (mounted) Navigator.of(context).maybePop();
+      return;
+    }
+    _winCredited = true;
+    _play.end(
+      success: true,
+      tilesLeft: _board.remaining,
+      score: _session.score,
+      stars: _level.starsForScore(_session.score),
+    );
+    _syncBoostBalances();
     unawaited(_clearSnapshot());
     final reveal = widget.isDaily
         ? await GameOutcome.showDailyWin(
             context: context,
             progress: widget.progress,
+            score: _session.score,
+            stars: _level.starsForScore(_session.score),
             onProgressChanged: widget.onProgressChanged,
           )
         : await GameOutcome.showCampaignWin(
@@ -975,14 +1342,21 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   Future<void> _onLevelLost() async {
     if (!mounted || !_session.isLost) return;
 
+    final canContinue = _adsAvailable && _session.undoStack.isNotEmpty;
+    _play.end(
+      success: false,
+      tilesLeft: _board.remaining,
+      score: _session.score,
+      canContinue: canContinue,
+    );
     await GameOutcome.showLose(
       context: context,
-      levelTitle: L10n.of(context).levelTitle(
+      levelTitle: AppLocalizations.of(context).levelTitle(
         _level,
         plotKind: widget.progress.plotKindForLevel(_level.id),
       ),
       score: _session.score,
-      canContinue: _adsAvailable && _session.undoStack.isNotEmpty,
+      canContinue: canContinue,
       onContinue: (dialogContext) =>
           unawaited(_continueFromLose(dialogContext)),
       onRetry: () {
@@ -997,24 +1371,48 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _continueFromLose(BuildContext dialogContext) async {
-    if (_adBusy || !AdBootstrap.available || _session.undoStack.isEmpty) {
-      return;
-    }
+    if (_adBusy || _session.undoStack.isEmpty) return;
 
     setState(() => _adBusy = true);
-    await _rewardedAds.preload();
-    if (!dialogContext.mounted) return;
-    final earned = await _rewardedAds.show(context: dialogContext);
-    if (!mounted) return;
-    setState(() => _adBusy = false);
+    try {
+      await AdBootstrap.prepareForAdRequest();
+      if (!mounted || !dialogContext.mounted) return;
+      if (!AdBootstrap.available || _session.undoStack.isEmpty) {
+        setState(() => _toast = AppLocalizations.of(context).adUnavailable);
+        return;
+      }
 
-    if (!earned) {
-      setState(() => _toast = L10n.of(context).rewardNotEarned);
-      return;
+      _logAd(PlayTelemetry.placementLoseContinue, PlayAdResult.offer);
+      await _rewardedAds.preload();
+      if (!dialogContext.mounted) return;
+      final result = await _rewardedAds.show(context: dialogContext);
+      _logAd(
+        PlayTelemetry.placementLoseContinue,
+        result == RewardedAdShowResult.earned
+            ? PlayAdResult.complete
+            : PlayAdResult.skip,
+      );
+      if (!mounted) return;
+
+      if (result != RewardedAdShowResult.earned) {
+        setState(
+          () => _toast = result == RewardedAdShowResult.skipped
+              ? AppLocalizations.of(context).rewardNotEarned
+              : AppLocalizations.of(context).adUnavailable,
+        );
+        return;
+      }
+
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+      _reviveFromLose();
+    } catch (_) {
+      if (!mounted) return;
+      _logAd(PlayTelemetry.placementLoseContinue, PlayAdResult.skip);
+      setState(() => _toast = AppLocalizations.of(context).adUnavailable);
+    } finally {
+      _adBusy = false;
+      if (mounted) setState(() {});
     }
-
-    if (dialogContext.mounted) Navigator.of(dialogContext).pop();
-    _reviveFromLose();
   }
 
   void _reviveFromLose() {
@@ -1023,6 +1421,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       return;
     }
     _loseHandled = false;
+    _play.continueAttempt();
     _undo(fromLose: true);
   }
 
@@ -1039,29 +1438,71 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
             child: Column(
               children: [
                 GameHud(
-                  onBack: () => Navigator.of(context).maybePop(),
+                  onBack: () {
+                    _leaveAttempt('back');
+                    Navigator.of(context).maybePop();
+                  },
                   onMenu: _showMenu,
-                  backTooltip: L10n.of(context).courtyard,
-                  menuTooltip: L10n.of(context).menu,
+                  backTooltip: AppLocalizations.of(context).courtyard,
+                  menuTooltip: AppLocalizations.of(context).menu,
                 ),
                 CompositedTransformTarget(
                   link: _trayLink,
                   child: TutorialSpotlight(
                     active: _lesson?.anchor == TutorialAnchor.tray,
-                    child: TileTray(
-                      tiles: _board.tray,
-                      slotKeys: _traySlotKeys,
-                      hintedIds: {..._hintedIds, ..._coach.focusIds(_board)},
-                      smashingIds: {
-                        for (final smash in _smashes) ...[
-                          smash.left.id,
-                          smash.right.id,
-                        ],
-                      },
-                      onRemoveComplete: _onTileRemoveComplete,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.center,
+                      children: [
+                        TileTray(
+                          targetTileIds: _board.targetTileIds,
+                          tiles: _board.tray,
+                          slotKeys: _traySlotKeys,
+                          hintedIds: {
+                            ..._hintedIds,
+                            ..._coach.focusIds(_board),
+                          },
+                          smashingIds: {
+                            for (final smash in _smashes) ...[
+                              smash.left.id,
+                              smash.right.id,
+                            ],
+                          },
+                          onRemoveComplete: _onTileRemoveComplete,
+                        ),
+                        for (final pop in _scoreFloats)
+                          Positioned(
+                            top: 4,
+                            child: ScorePopup(
+                              key: ValueKey(pop.token),
+                              points: pop.points,
+                              combo: pop.combo,
+                              onFinished: () => _removeScoreFloat(pop),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
+                if (AppLocalizations.of(context).challengeGoal(_board.challenge).isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
+                    child: Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        AppLocalizations.of(context).challengeGoal(
+                          _board.challenge,
+                          cleared: _board.targetsCleared,
+                        ),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFFFFD54F),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
                 Expanded(
                   child: Stack(
                     fit: StackFit.expand,
@@ -1084,6 +1525,22 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                           ),
                         ),
                       ),
+                      if (_lookHint)
+                        Align(
+                          alignment: _coach.active && !_coach.nearTray
+                              ? Alignment.topCenter
+                              : Alignment.bottomCenter,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 8,
+                            ),
+                            child: TableCoachBanner(
+                              key: tableLookSettingsHintKey,
+                              text: AppLocalizations.of(context).tableLookSettingsHint,
+                            ),
+                          ),
+                        ),
                       if (_coach.active && _lesson == null)
                         Align(
                           alignment: _coach.nearTray
@@ -1095,7 +1552,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                               vertical: 8,
                             ),
                             child: TableCoachBanner(
-                              text: L10n.of(
+                              text: AppLocalizations.of(
                                 context,
                               ).coachMessage(_coach.step.name),
                             ),
@@ -1140,6 +1597,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                   child: TutorialSpotlight(
                     active: _lesson?.anchor == TutorialAnchor.actions,
                     child: GameActionBar(
+                      shuffleAllowed: _session.shuffleAllowed,
                       shufflesLeft: _session.shufflesLeft,
                       magnetsLeft: _session.magnetsLeft,
                       hintsLeft: _session.hintsLeft,
@@ -1205,4 +1663,16 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       ),
     );
   }
+}
+
+class _ScoreFloat {
+  const _ScoreFloat({
+    required this.token,
+    required this.points,
+    required this.combo,
+  });
+
+  final int token;
+  final int points;
+  final int combo;
 }

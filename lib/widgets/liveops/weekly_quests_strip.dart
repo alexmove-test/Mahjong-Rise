@@ -43,7 +43,7 @@ class _QuestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = L10n.of(context);
+    final l10n = AppLocalizations.of(context);
     final isStreak = quest.def.kind == QuestKind.streakHold;
     final glow = isStreak && (quest.canClaim || quest.claimed);
     return SizedBox(

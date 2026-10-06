@@ -102,7 +102,7 @@ abstract final class LocalReminderService {
     }
   }
 
-  static Future<void> resync({required L10n l10n}) async {
+  static Future<void> resync({required AppLocalizations l10n}) async {
     await init();
     final reminder = await ReminderStore.open();
     if (!reminder.enabled) {
@@ -122,7 +122,7 @@ abstract final class LocalReminderService {
   }
 
   static Future<void> schedule({
-    required L10n l10n,
+    required AppLocalizations l10n,
     required int streak,
     required bool dailyDoneToday,
   }) async {
@@ -190,7 +190,7 @@ abstract final class LocalReminderService {
   }
 
   static Future<void> schedulePets({
-    required L10n l10n,
+    required AppLocalizations l10n,
     required PetStore pets,
     DateTime? now,
   }) async {

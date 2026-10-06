@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mahjong/widgets/simulated_rewarded_ad.dart';
+import 'package:mahjong/l10n/app_localizations.dart';
 
 void main() {
   testWidgets('closing early does not grant a reward', (tester) async {
     var earned = true;
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(
           builder: (context) {
             return TextButton(
@@ -35,6 +38,8 @@ void main() {
     var earned = false;
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(
           builder: (context) {
             return TextButton(
@@ -66,6 +71,8 @@ void main() {
     var earned = false;
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(
           builder: (context) {
             return TextButton(

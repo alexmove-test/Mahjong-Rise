@@ -20,7 +20,7 @@ class SimulatedRewardedAd extends StatefulWidget {
     final earned = await showGeneralDialog<bool>(
       context: context,
       barrierDismissible: false,
-      barrierLabel: L10n.of(context).ad,
+      barrierLabel: AppLocalizations.of(context).ad,
       barrierColor: const Color(0xE60A120F),
       transitionDuration: const Duration(milliseconds: 220),
       pageBuilder: (context, _, _) {
@@ -109,7 +109,7 @@ class _SimulatedRewardedAdState extends State<SimulatedRewardedAd> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = L10n.of(context);
+    final l10n = AppLocalizations.of(context);
     final secondsLeft = (_remaining.inMilliseconds / 1000).ceil();
     return SafeArea(
       child: Padding(

@@ -131,7 +131,7 @@ void main() {
     expect(store.owned.length, 5);
   });
 
-  test('a win fills the emptiest need of the neediest pet', () async {
+  test('a win fills play or rest and never hunger', () async {
     SharedPreferences.setMockInitialValues({});
     final store = await PetStore.open();
     await store.adopt(PetKind.cat, now: t0);
@@ -144,13 +144,10 @@ void main() {
     final filled = await store.satisfyMostUrgent(now: later);
     expect(filled, isNotNull);
     expect(filled!.kind, PetKind.cat);
-    expect(filled.need, PetNeed.hunger);
+    expect(filled.need, PetNeed.play);
     expect(store.owned, [PetKind.cat, PetKind.dog]);
-    expect(store.care(kind: PetKind.cat, now: later)!.of(PetNeed.hunger), 1);
-    expect(
-      store.care(kind: PetKind.cat, now: later)!.of(PetNeed.play),
-      lessThan(1),
-    );
+    expect(store.care(kind: PetKind.cat, now: later)!.of(PetNeed.hunger), 0);
+    expect(store.care(kind: PetKind.cat, now: later)!.of(PetNeed.play), 1);
     expect(
       store.care(kind: PetKind.dog, now: later)!.of(PetNeed.hunger),
       lessThan(1),
@@ -183,6 +180,28 @@ void main() {
 
     await store.setYardHidden(false);
     expect((await PetStore.open()).yardHidden, isFalse);
+  });
+
+  test('yard companions accumulate until hidden', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = await PetStore.open();
+    await store.adopt(PetKind.cat, now: t0);
+    await store.adopt(PetKind.fox, now: t0);
+    expect(store.yardPetKinds, [PetKind.cat]);
+    expect(store.allOwnedInYard, isFalse);
+
+    await store.setInYard(PetKind.fox, visible: true);
+    expect(store.yardPetKinds, [PetKind.cat, PetKind.fox]);
+    expect(store.yardCare(now: t0).map((care) => care.kind), [
+      PetKind.cat,
+      PetKind.fox,
+    ]);
+    await store.showAllInYard();
+    expect(store.allOwnedInYard, isTrue);
+
+    await store.setInYard(PetKind.cat, visible: false);
+    expect(store.yardPetKinds, [PetKind.fox]);
+    expect((await PetStore.open()).yardPetKinds, [PetKind.fox]);
   });
 
   test('memory store ignores writes', () async {

@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 
 import '../models/leaderboard_entry.dart';
 import '../models/levels.dart';
+import '../models/rank_climb.dart';
+import 'display_name_filter.dart';
 import 'guest_name.dart';
 import 'player_profile_store.dart';
 import 'progress_store.dart';
@@ -80,6 +82,18 @@ class LeaderboardService {
   static int plotsOpened(int levelsUnlocked) =>
       Levels.cycleOf(levelsUnlocked) + 1;
 
+  /// Hides blocked players and replaces banned nicknames for display.
+  static List<LeaderboardEntry> moderate(
+    List<LeaderboardEntry> entries, {
+    required Set<String> blockedIds,
+  }) {
+    return [
+      for (final entry in entries)
+        if (entry.isCurrentPlayer || !blockedIds.contains(entry.id))
+          entry.copyWith(name: DisplayNameFilter.publicName(entry.name)),
+    ];
+  }
+
   /// Соседи вокруг текущего игрока в уже отсортированной таблице.
   static List<LeaderboardEntry> nearbyOthers(
     List<LeaderboardEntry> entries, {
@@ -110,5 +124,77 @@ class LeaderboardService {
     final index = entries.indexWhere((e) => e.isCurrentPlayer);
     if (index < 0) return null;
     return index + 1;
+  }
+
+  /// Сколько шагов обгона показывать: финальный подход к новому месту.
+  static const maxClimbSteps = 6;
+
+  /// Подъём игрока среди уже загруженных строк. Без сети и без «меня» — null.
+  static RankClimb? climb({
+    required List<LeaderboardEntry> entries,
+    required int ratingFrom,
+    required int ratingTo,
+  }) {
+    if (ratingTo <= ratingFrom) return null;
+
+    LeaderboardEntry? player;
+    final others = <LeaderboardEntry>[];
+    for (final entry in entries) {
+      if (entry.isCurrentPlayer) {
+        player = entry;
+      } else {
+        others.add(entry);
+      }
+    }
+    if (player == null) return null;
+
+    others.sort((a, b) {
+      final byRating = b.rating.compareTo(a.rating);
+      if (byRating != 0) return byRating;
+      return a.name.compareTo(b.name);
+    });
+
+    int rankFor(int rating) {
+      var rank = 1;
+      for (final entry in others) {
+        if (entry.rating > rating) rank++;
+      }
+      return rank;
+    }
+
+    final rankFrom = rankFor(ratingFrom);
+    final rankTo = rankFor(ratingTo);
+    if (rankTo >= rankFrom) return null;
+
+    final above = [
+      for (final entry in others)
+        if (entry.rating > ratingTo) entry,
+    ];
+    final overtaken = [
+      for (final entry in others)
+        if (entry.rating <= ratingTo && entry.rating > ratingFrom) entry,
+    ];
+    final rest = [
+      for (final entry in others)
+        if (entry.rating <= ratingFrom) entry,
+    ];
+
+    final passed = overtaken.length > maxClimbSteps
+        ? overtaken.sublist(0, maxClimbSteps)
+        : overtaken;
+    final stillAbove = above.length <= 2
+        ? above
+        : above.sublist(above.length - 2);
+
+    return RankClimb(
+      rankFrom: rankFrom,
+      rankTo: rankTo,
+      ratingFrom: ratingFrom,
+      ratingTo: ratingTo,
+      player: player,
+      passed: passed,
+      stillAbove: stillAbove,
+      below: rest.take(2).toList(),
+    );
   }
 }

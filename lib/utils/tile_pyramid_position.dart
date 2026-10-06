@@ -151,10 +151,12 @@ class TilePyramidShadowLayer extends StatelessWidget {
     super.key,
     required this.visuals,
     required this.tileSize,
+    this.cornerRadius,
   });
 
   final TilePyramidVisuals visuals;
   final Size tileSize;
+  final double? cornerRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -163,6 +165,7 @@ class TilePyramidShadowLayer extends StatelessWidget {
       painter: TileDropShadowPainter(
         opacity: visuals.shadowOpacity,
         blur: visuals.shadowBlur,
+        cornerRadius: cornerRadius,
       ),
     );
 
@@ -185,13 +188,8 @@ extension TilePyramidLayerModifier on Widget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        TilePyramidShadowLayer(
-          visuals: visuals,
-          tileSize: tileSize,
-        ),
-        Positioned.fill(
-          child: TileBodySprite(size: tileSize, lifted: true),
-        ),
+        TilePyramidShadowLayer(visuals: visuals, tileSize: tileSize),
+        Positioned.fill(child: TileBodySprite(size: tileSize, lifted: true)),
         this,
       ],
     );

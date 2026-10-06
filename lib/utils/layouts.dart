@@ -218,6 +218,13 @@ class Layouts {
 
   static List<LayoutPos> _baseStacks(String name) {
     return switch (name) {
+      'compact-tower' => _grid('compact-tower', const [
+        '. . . . . .',
+        '. . 2 2 . .',
+        '. 2 6 6 2 .',
+        '. . 2 2 . .',
+        '. . . . . .',
+      ]),
       'petal' || 'seed' => _grid('petal', const [
         '. . . . . .',
         '. 2 2 2 2 .',

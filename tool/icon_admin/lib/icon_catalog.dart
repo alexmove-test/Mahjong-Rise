@@ -113,6 +113,9 @@ String assetPathFor(String symbol) {
   }
   final folder = symbol.substring(0, dash);
   final rest = symbol.substring(dash + 1);
+  if (folder == 'soft' || folder == 'fruit') {
+    return 'assets/titles/$folder/$rest.png';
+  }
   if (folder == 'tile') {
     final parts = rest.split('-');
     if (parts.length == 2) {

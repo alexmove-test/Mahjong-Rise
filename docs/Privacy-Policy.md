@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated:** August 15, 2026
+**Last updated:** September 17, 2026
 
 This Privacy Policy describes how **Mahjong Rise** (“the App”, “we”, “us”, or “our”) collects, uses, and shares information when you use our mobile game on Android (and other platforms where the App may be made available).
 
@@ -15,7 +15,7 @@ By installing or using the App, you agree to the collection and use of informati
 **Developer / Data controller:** Oleksii Hnylytskyi  
 **Contact email:** myevidentsuccess@gmail.com
 
-For privacy-related questions, requests, or complaints, please contact us at the email address above.
+For privacy-related questions, requests, or complaints, please contact us at the email address above. Inappropriate leaderboard names can be reported **in the App** (see Section 8) or by email.
 
 ---
 
@@ -25,10 +25,14 @@ Mahjong Rise is an offline-capable tile-matching puzzle game with optional onlin
 
 - **Online leaderboard** (powered by Google Firebase)
 - **Rewarded advertisements** (powered by Google AdMob)
+- **Product analytics** (powered by Google Firebase Analytics)
+- **Optional local reminders** (scheduled on your device; not sent through our servers)
 
 We do **not** require you to create an account with an email address or password. Online features use **anonymous authentication** provided by Firebase.
 
 We do **not** sell your personal information.
+
+The App is for a **general audience** and is **not** directed at children. It is **not** enrolled in Google Play’s Families program.
 
 ---
 
@@ -38,21 +42,24 @@ We do **not** sell your personal information.
 
 | Data | Description | Required? |
 |------|-------------|-----------|
-| **Display name** | A nickname you choose for the leaderboard (up to 20 characters) | Optional (default: generic label) |
+| **Display name** | A nickname you choose for the leaderboard (up to 20 characters) | Optional (default: a generated guest label) |
 
-You are encouraged not to use your real name or other personally identifying information as your display name.
+You are encouraged not to use your real name or other personally identifying information as your display name. Nicknames are **public user-generated content**: other players can see them on the leaderboard. On the leaderboard screen you can **report** a name or **hide** that player. A report is sent to us through the App when you are online; if that fails, the App can open an email draft to myevidentsuccess@gmail.com. Hiding a player is stored **only on your device** and does not notify them.
 
-### 3.2 Information collected automatically — game progress (local)
+### 3.2 Information stored on your device (local)
 
-The App stores game progress on your device using local storage (SharedPreferences), including:
+The App stores progress and settings on your device using local storage (SharedPreferences), including:
 
-- Levels unlocked
-- Stars earned per level
-- Best scores per level
-- Player display name (if set)
-- Local sync metadata for the leaderboard
+- Campaign progress (levels unlocked, stars, best scores, in-progress table)
+- Courtyard progress (house stage, decorations such as pond / swing / flower bed, table look)
+- Pet companionship, stories, and related local state
+- Player display name (if set) and local leaderboard sync metadata
+- IDs of leaderboard players you have hidden
+- Settings (language, sound, music, haptics, covered-tile dimming, reminder opt-in)
 
-This data is stored **on your device** and is used to save your progress and calculate your rating.
+This data stays **on your device** unless a feature below sends a subset of it online. Clearing App storage or uninstalling the App deletes it.
+
+The App also reads your device **timezone** locally so reminder times match the clock on your phone. We do not send your timezone to our servers.
 
 ### 3.3 Information collected automatically — online leaderboard (Firebase)
 
@@ -68,28 +75,52 @@ If you use the online leaderboard and have an internet connection, the App may s
 | **Sum of best scores** | Rating calculation |
 | **Last updated timestamp** | Leaderboard ordering and sync |
 
-The leaderboard is **publicly readable** by anyone using the App. Other players can see your display name and scores. Only you (via your anonymous account on your device) can update your own leaderboard entry.
+The leaderboard is **publicly readable** by anyone using the App. Other players can see your display name and scores. Only you (via your anonymous account on this device) can update your own leaderboard entry. Players cannot delete their own Firestore document from inside the App; deletion is handled by us after a request (see Section 8).
+
+If you **report** a nickname from the leaderboard, the App may also write a moderation record to Firestore (`ugc_reports`), including your anonymous user ID, the reported player’s anonymous ID and nickname, a reason code, and a timestamp. You cannot read other players’ reports. We use these records to review names and may remove or change an entry.
 
 **Firebase services used:**
 
 - Firebase Authentication (Anonymous sign-in)
 - Cloud Firestore (database)
+- Firebase Analytics (product funnel events)
 
 **Firebase project:** `mahjong-rise`
 
-### 3.4 Information collected automatically — advertising (Google AdMob)
+### 3.4 Information collected automatically — product analytics (Firebase Analytics)
 
-The App displays **rewarded advertisements** through **Google AdMob**. When you choose to watch an ad (for example, to receive an in-game boost), Google may collect information such as:
+If you have an internet connection, the App may send anonymous gameplay events to **Firebase Analytics** so we can see where players get stuck and which levels or boosters need tuning. These events are not tied to your name or email. They may include:
+
+- Level started, won, lost, or left (including level id, layout, and an anonymous session id)
+- Daily-table or campaign mode
+- Booster used (hint, shuffle, magnet, undo)
+- Rewarded ad offered, completed, or skipped
+- Score, remaining tiles, and booster charges at those moments
+- Leaderboard opened, pet visit or adopt, reminder notification opened, streak broken
+- A leaderboard name was reported or a player was hidden (no nickname is sent with those events)
+
+Analytics is initialized with Firebase and is **not** gated by the advertising consent form. You can limit analytics by playing offline or by restricting app network access in your device settings.
+
+This data is processed by **Google** in accordance with Google’s policies.
+
+### 3.5 Information collected automatically — advertising (Google AdMob)
+
+The App displays **optional rewarded video advertisements** through **Google AdMob** when you choose to watch a short video for an in-game boost (shuffle, magnet, hint, or undo).
+
+In the European Economic Area (EEA), United Kingdom, and other regions where Google requires it, the App shows Google’s **User Messaging Platform (UMP)** consent form **on first launch**, before AdMob is initialized — not only when you tap to watch a video. Where Google requires an ongoing privacy-options entry point, a **Privacy settings** item appears in the App’s settings (and in the table menu) so you can change or withdraw that consent.
+
+When ads are served, Google may collect information such as:
 
 - Advertising ID (AAID on Android)
 - Device information (device model, OS version)
 - IP address (approximate location may be inferred)
 - Ad interaction data (impressions, clicks, rewards)
 - Diagnostic and performance data related to ad delivery
+- Consent choices collected through UMP
 
 This data is collected and processed by **Google** in accordance with Google’s policies, not directly by us.
 
-**AdMob App ID:** `ca-app-pub-1524654355170130~6121469025`
+**AdMob App ID:** `ca-app-pub-1561854396404271~8263443836`
 
 For more information:
 
@@ -97,16 +128,25 @@ For more information:
 - [Google AdMob & Advertising](https://support.google.com/admob/answer/6128543)
 - [How Google uses data from sites and apps that use its services](https://policies.google.com/technologies/partner-sites)
 
-You can reset or limit your advertising ID in your **Android device settings** (Settings → Google → Ads → Reset advertising ID / Opt out of Ads Personalization).
+You can also reset or limit your advertising ID in **Android device settings** (Settings → Google → Ads → Reset advertising ID / Opt out of Ads Personalization).
 
-### 3.5 Information we do NOT collect
+### 3.6 Optional local reminders
+
+If you turn reminders **on** in Settings, the App asks Android for notification permission and schedules **local** notifications on your device (for example, courtyard play reminders and pet-care reminders). Scheduling uses the clock and timezone on your phone.
+
+- Reminders are **not** sent through our servers or Firebase Cloud Messaging.
+- No precise GPS location is used.
+- You can turn reminders off in Settings at any time; the App then cancels scheduled notifications.
+- If you open the App from a reminder, we may log an anonymous `notification_open` analytics event (see Section 3.4).
+
+### 3.7 Information we do NOT collect
 
 We do **not** intentionally collect:
 
 - Email address or phone number
 - Precise GPS location
 - Contacts, photos, microphone, or camera data
-- Payment or financial information (the App is free; any purchases would be handled by Google Play if added in the future)
+- Payment or financial information (the App has no in-app purchases; any future purchases would be handled by Google Play)
 
 ---
 
@@ -116,10 +156,13 @@ We use collected information to:
 
 | Purpose | Legal basis (where applicable) |
 |---------|-------------------------------|
-| Save and restore your game progress | Performance of the App’s core functionality |
+| Save and restore your game progress and settings | Performance of the App’s core functionality |
 | Display and sync the online leaderboard | Your use of optional online features |
 | Calculate and rank player ratings | App functionality |
-| Deliver rewarded advertisements | Your consent (when you tap to watch an ad) |
+| Show the advertising consent form and deliver rewarded ads | Consent (UMP where required; you also choose whether to watch a video) |
+| Schedule optional local reminders | Consent (in-app toggle and the OS notification permission) |
+| Review reported leaderboard names | Legitimate interest / legal obligation to moderate public UGC |
+| Understand level difficulty and booster use | Legitimate interest |
 | Improve stability and fix bugs | Legitimate interest |
 | Comply with legal obligations | Legal requirement |
 
@@ -133,9 +176,11 @@ We share data only with the following categories of recipients:
 
 | Recipient | Data shared | Purpose |
 |-----------|-------------|---------|
-| **Google LLC (Firebase)** | Anonymous ID, display name, game stats | Online leaderboard, anonymous auth |
-| **Google LLC (AdMob)** | Ad ID, device/ad interaction data | Display rewarded ads |
+| **Google LLC (Firebase)** | Anonymous ID, display name, game stats, name-report records, anonymous gameplay events | Online leaderboard, anonymous auth, UGC reports, product analytics |
+| **Google LLC (AdMob / UMP)** | Ad ID, device/ad interaction data, consent choices | Display rewarded ads and collect advertising consent |
 | **Google LLC (Google Play)** | Standard Play distribution data | App distribution (when published on Play Store) |
+
+Local reminders are not shared with these recipients.
 
 We do **not** sell, rent, or trade your personal information to third parties for their marketing purposes.
 
@@ -147,10 +192,14 @@ Firebase and AdMob may process data on servers located outside your country, inc
 
 | Data type | Retention |
 |-----------|-----------|
-| **Local game progress** | Until you uninstall the App or clear App data |
-| **Leaderboard entry (Firestore)** | Until you request deletion or we remove inactive entries as part of maintenance |
-| **Anonymous Firebase account** | Managed by Firebase; tied to your device session |
-| **AdMob data** | Retained by Google per [Google’s retention policies](https://policies.google.com/privacy) |
+| **Local game progress and settings** | Until you uninstall the App or clear App data |
+| **Hidden leaderboard players (local)** | Until you uninstall the App or clear App data |
+| **Local reminder schedules** | Until you turn reminders off, deny notification permission, uninstall, or clear App data |
+| **Leaderboard entry (Firestore)** | Until you request deletion by email and we remove the entry, or we remove inactive entries as part of maintenance |
+| **Name-report records (Firestore)** | Until we finish reviewing the report and any related enforcement, then delete or anonymize as part of maintenance |
+| **Anonymous Firebase account** | Managed by Firebase; tied to your device session. Uninstalling the App typically creates a new anonymous ID on next install. |
+| **Firebase Analytics events** | Retained by Google per [Google’s retention policies](https://policies.google.com/privacy) |
+| **AdMob / UMP data** | Retained by Google per [Google’s retention policies](https://policies.google.com/privacy) |
 
 We may retain anonymized or aggregated data that cannot identify you for analytics and service improvement.
 
@@ -163,6 +212,7 @@ We take reasonable measures to protect your information:
 - Data in transit to Firebase is encrypted via HTTPS/TLS
 - Firestore security rules restrict writes so users can only update their own leaderboard document
 - Leaderboard writes require authenticated (anonymous) access
+- Firestore rules do not allow players to delete their own leaderboard document; we delete entries manually after a verified request
 
 No method of transmission or storage is 100% secure. We cannot guarantee absolute security.
 
@@ -176,15 +226,19 @@ Depending on your location, you may have the right to:
 - **Correct** inaccurate data (e.g., change your display name in the App)
 - **Delete** your data
 - **Object** to or **restrict** certain processing
-- **Withdraw consent** for optional features (e.g., do not watch ads; disable online features by playing offline)
+- **Withdraw consent** for optional features
 - **Lodge a complaint** with your local data protection authority
 
 ### How to exercise your rights
 
 1. **Display name:** Change it in the App on the leaderboard screen.
-2. **Local data:** Uninstall the App or clear App storage in Android Settings → Apps → Mahjong Rise → Storage → Clear data.
-3. **Online leaderboard data:** Email us at myevidentsuccess@gmail.com with your display name and approximate rating/scores so we can locate and delete your Firestore entry. Because accounts are anonymous, we may not be able to verify identity beyond information you provide.
-4. **Advertising preferences:** Manage via Android device settings (see Section 3.4).
+2. **Report or hide a public nickname:** On the leaderboard, open that player and choose **Report this name** or **Hide this player**. Report sends a record to us in the App (email is only a fallback if the App cannot send it). Hide removes them from **your** list only. You can also email myevidentsuccess@gmail.com with the name and, if possible, the rank or score.
+3. **Local data:** Uninstall the App or clear App storage in Android Settings → Apps → Mahjong Rise → Storage → Clear data.
+4. **Online leaderboard / anonymous account:** There is **no in-app delete button**. Email us at myevidentsuccess@gmail.com with your display name and approximate rating/scores so we can locate and delete your Firestore entry. Because accounts are anonymous, we may not be able to verify identity beyond information you provide.
+5. **Advertising consent (EEA/UK and similar regions):** Use **Privacy settings** in the App when that item is shown. You can also skip rewarded videos entirely.
+6. **Advertising ID:** Manage via Android device settings (see Section 3.5).
+7. **Reminders:** Turn the reminder switch off in App settings, or revoke notification permission in Android Settings.
+8. **Analytics / online features:** Play without a network connection, or restrict the App’s network access in Android Settings.
 
 We will respond to requests within a reasonable timeframe and as required by applicable law (typically within 30 days).
 
@@ -192,17 +246,17 @@ We will respond to requests within a reasonable timeframe and as required by app
 
 ## 9. Children’s privacy
 
-Mahjong Rise is intended for a **general audience** and is not directed at children under 13 (or the applicable age in your jurisdiction).
+Mahjong Rise is intended for a **general audience age 13 and over**. It is **not** directed at children under 13 (or the applicable digital-consent age in your jurisdiction). It is **not** designed for Google Play’s Families program, and we do **not** knowingly collect personal information from children.
 
-We do not knowingly collect personal information from children. If you are a parent or guardian and believe your child has provided us with personal information, please contact us at myevidentsuccess@gmail.com and we will take steps to delete such information.
+Advertising is configured with **not under the age of consent**. We do not serve ads as a children’s app.
 
-If the App is made available to children on Google Play, we will comply with Google Play’s Families Policy and applicable laws (including COPPA where relevant), including use of age-appropriate ad formats and disclosures.
+If you are a parent or guardian and believe your child has provided us with personal information, please contact us at myevidentsuccess@gmail.com and we will take steps to delete such information.
 
 ---
 
 ## 10. International users
 
-If you access the App from the European Economic Area (EEA), United Kingdom, or other regions with data protection laws, you have additional rights under GDPR/UK GDPR as described in Section 8.
+If you access the App from the European Economic Area (EEA), United Kingdom, or other regions with data protection laws, you have additional rights under GDPR/UK GDPR as described in Section 8. Advertising consent in those regions is collected through Google UMP as described in Section 3.5.
 
 Google acts as a processor/sub-processor for Firebase and AdMob services. Google’s compliance documentation is available at [Google Cloud & GDPR](https://cloud.google.com/privacy/gdpr).
 
@@ -229,12 +283,14 @@ Email: myevidentsuccess@gmail.com
 
 | Question | Answer |
 |----------|--------|
-| Do I need an account? | No email account. Optional anonymous online ID for leaderboard. |
-| Is my name public? | Your chosen nickname appears on the public leaderboard. |
-| Are there ads? | Yes — optional rewarded video ads via Google AdMob. |
+| Do I need an account? | No email account. Optional anonymous online ID for the leaderboard. |
+| Is my name public? | Your chosen nickname appears on the public leaderboard. Other players can report or hide it in the App. |
+| Are there ads? | Yes — optional rewarded videos via Google AdMob. In the EEA/UK a consent form appears at launch; Privacy settings reopen it when required. |
+| Are there notifications? | Optional local reminders only, if you turn them on. Nothing is pushed from our servers. |
+| Is analytics collected? | Yes — anonymous gameplay events via Firebase Analytics when you are online. |
 | Is data sold? | No. |
-| Can I delete my data? | Yes — clear app data locally; email us for online leaderboard deletion. |
-| Who processes my data? | Primarily Google (Firebase, AdMob) under their policies. |
+| Can I delete my data? | Yes — clear app data locally; email us to delete the online leaderboard entry (no in-app delete). |
+| Who processes my data? | Primarily Google (Firebase, AdMob, UMP) under their policies. |
 
 ---
 

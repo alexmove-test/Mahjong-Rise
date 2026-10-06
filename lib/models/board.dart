@@ -2,6 +2,7 @@ import 'dart:math';
 
 import '../utils/layouts.dart';
 import 'level_tile.dart';
+import 'level_challenge.dart';
 import 'tile.dart';
 
 enum MatchResult {
@@ -29,6 +30,30 @@ class Board {
 
   final List<Tile> tiles;
   final String layoutName;
+  LevelChallenge challenge = LevelChallenge.none;
+  final Set<int> targetTileIds = {};
+
+  void configureChallenge(LevelChallenge value) {
+    challenge = value;
+    targetTileIds.clear();
+    if (value != LevelChallenge.specialPair) return;
+    // Keep the solvable deal intact; prefer a pair buried under other tiles.
+    var bestDepth = -1;
+    for (var i = 0; i < tiles.length; i++) {
+      for (var j = i + 1; j < tiles.length; j++) {
+        if (!TileSymbols.matches(tiles[i].symbol, tiles[j].symbol)) continue;
+        final depth = blockersOf(tiles[i]).length + blockersOf(tiles[j]).length;
+        if (depth <= bestDepth) continue;
+        bestDepth = depth;
+        targetTileIds
+          ..clear()
+          ..addAll([tiles[i].id, tiles[j].id]);
+      }
+    }
+  }
+
+  int get targetsCleared =>
+      tiles.where((t) => targetTileIds.contains(t.id) && t.isCleared).length;
 
   /// Плитки в верхней нише (порядок = порядок сбора).
   final List<Tile> tray = [];
@@ -37,7 +62,11 @@ class Board {
 
   int get remaining => tiles.where((t) => !t.removed && !t.removing).length;
   int get total => tiles.length;
-  bool get isWon => remaining == 0;
+  bool get isWon =>
+      remaining == 0 ||
+      (challenge == LevelChallenge.specialPair &&
+          targetTileIds.length == 2 &&
+          targetsCleared == 2);
   bool isLost = false;
 
   ({int minX, int maxX, int minY, int maxY}) get bounds {
@@ -142,6 +171,27 @@ class Board {
     return _isFreeAmong(tile, tiles);
   }
 
+  /// Actual blockers only: one open side is enough to release a tile.
+  List<Tile> blockersOf(Tile tile) {
+    if (!tile.isOnBoard) return [];
+    final above = <Tile>[];
+    final left = <Tile>[];
+    final right = <Tile>[];
+    for (final other in tiles) {
+      if (other.id == tile.id || !other.isOnBoard) continue;
+      if (other.layer > tile.layer && _overlaps(tile, other)) {
+        above.add(other);
+      }
+      if (other.layer != tile.layer || !_yOverlaps(tile, other)) continue;
+      if (other.x < tile.x && other.x + 2 >= tile.x) left.add(other);
+      if (other.x > tile.x && other.x <= tile.x + 2) right.add(other);
+    }
+    return [
+      ...above,
+      if (left.isNotEmpty && right.isNotEmpty) ...[...left, ...right],
+    ];
+  }
+
   static bool _isFreeAmong(Tile tile, List<Tile> live) {
     if (_isCoveredAmong(tile, live)) return false;
     final left = _sideBlockedAmong(tile, live, left: true);
@@ -232,8 +282,8 @@ class Board {
     return false;
   }
 
-  /// Подсказка для кнопки: одинаковые плитки, лучше из закрытого слоя.
-  /// Свободная пара наверху — только если закрытой нет.
+  /// Подсказка для кнопки: одинаковые плитки, лучше из открытого слоя.
+  /// Закрытая пара — только если открытой нет.
   /// [match] — в лотке или вторая кость на поле.
   ({Tile boardTile, Tile match})? findHint() {
     if (trayLiveCount >= trayCapacity && !trayHasPair()) return null;
@@ -295,11 +345,20 @@ class Board {
     return null;
   }
 
-  /// Закрытая кость (под верхней) важнее свободной наверху;
-  /// из закрытых — та, что ближе к поверхности.
+  /// Открытая пара важнее закрытой; из закрытых — ближе к поверхности.
   int _hintPairScore(Tile boardTile, Tile match) {
+    final openBonus = _hintPairIsOpen(boardTile, match) ? 10000000 : 0;
     final trayBonus = match.inTray ? 1000000 : 0;
-    return trayBonus + _hintTileScore(boardTile) + _hintTileScore(match);
+    return openBonus +
+        trayBonus +
+        _hintTileScore(boardTile) +
+        _hintTileScore(match);
+  }
+
+  bool _hintPairIsOpen(Tile boardTile, Tile match) {
+    if (!isFree(boardTile)) return false;
+    if (match.inTray) return true;
+    return match.isOnBoard && isFree(match);
   }
 
   int _hintTileScore(Tile tile) {
@@ -460,6 +519,7 @@ class Board {
 
   /// Тасует лица, пока наверху есть полезная пара. `false` — свободных костей нет.
   bool shuffleRemaining({Random? random, int attempts = 40}) {
+    if (challenge == LevelChallenge.noShuffle) return false;
     if (freeTiles().isEmpty) return false;
     final rng = random ?? Random();
     for (var i = 0; i < attempts; i++) {
@@ -471,7 +531,9 @@ class Board {
   }
 
   void _shuffleOnce(Random rng) {
-    final alive = tiles.where((t) => t.isOnBoard).toList();
+    final alive = tiles
+        .where((t) => t.isOnBoard && !targetTileIds.contains(t.id))
+        .toList();
     final symbols = alive.map((t) => t.symbol).toList()..shuffle(rng);
     for (var i = 0; i < alive.length; i++) {
       alive[i].symbol = symbols[i];

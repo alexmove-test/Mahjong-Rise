@@ -15,6 +15,8 @@ class PetStore {
   static const _kRestAt = 'pet.restAt';
   static const _kRemindersPrompted = 'pet.remindersPrompted';
   static const _kYardHidden = 'pet.yardHidden';
+  static const _kYardPet = 'pet.yardPet';
+  static const _kYardPets = 'pet.yardPets';
 
   static PetStore memory() => PetStore._(null);
 
@@ -23,17 +25,25 @@ class PetStore {
     return PetStore._(prefs);
   }
 
-  List<PetKind> get owned {
-    final raw = _prefs?.getString(_kOwned);
+  /// Тот же файл настроек, без второго списка питомцев.
+  static PetStore bound(SharedPreferences prefs) => PetStore._(prefs);
+
+  static String satisfiedKey(PetKind kind, PetNeed need) =>
+      'pet.${kind.name}.${need.name}At';
+
+  static List<PetKind> readOwned(SharedPreferences? prefs) {
+    final raw = prefs?.getString(_kOwned);
     if (raw != null && raw.isNotEmpty) {
       return [
         for (final part in raw.split(','))
           if (_parseKind(part.trim()) case final kind?) kind,
       ];
     }
-    final legacy = _parseKind(_prefs?.getString(_kKind));
+    final legacy = _parseKind(prefs?.getString(_kKind));
     return legacy == null ? const [] : [legacy];
   }
+
+  List<PetKind> get owned => readOwned(_prefs);
 
   bool owns(PetKind kind) => owned.contains(kind);
 
@@ -45,6 +55,51 @@ class PetStore {
   PetKind? get kind {
     final list = owned;
     return list.isEmpty ? null : list.first;
+  }
+
+  /// Питомцы, которых сейчас видно на лужайке.
+  ///
+  /// Пока список не сохраняли — на дворе стоит первый заведённый.
+  List<PetKind> get yardPetKinds {
+    final stored = _storedYardPets();
+    if (stored == null) {
+      final first = kind;
+      return first == null ? const [] : [first];
+    }
+    return [for (final kind in owned) if (stored.contains(kind)) kind];
+  }
+
+  /// Первый из видимых; для экранов, которым нужен один «главный» на дворе.
+  PetKind? get yardPetKind {
+    final visible = yardPetKinds;
+    return visible.isEmpty ? null : visible.first;
+  }
+
+  bool isInYard(PetKind kind) => yardPetKinds.contains(kind);
+
+  bool get allOwnedInYard => hasPet && owned.every(isInYard);
+
+  List<PetCare> yardCare({DateTime? now}) {
+    final at = now ?? DateTime.now();
+    return [
+      for (final kind in yardPetKinds)
+        if (care(kind: kind, now: at) case final snapshot?) snapshot,
+    ];
+  }
+
+  Future<void> setInYard(PetKind selected, {required bool visible}) async {
+    if (!owns(selected)) return;
+    final next = [...yardPetKinds];
+    if (visible) {
+      if (!next.contains(selected)) next.add(selected);
+    } else {
+      next.remove(selected);
+    }
+    await _saveYardPets(next);
+  }
+
+  Future<void> showAllInYard() async {
+    await _saveYardPets(owned);
   }
 
   bool get remindersPrompted => _prefs?.getBool(_kRemindersPrompted) ?? false;
@@ -143,16 +198,51 @@ class PetStore {
     await prefs.setBool(_kRemindersPrompted, true);
   }
 
-  /// Заполняет самую пустую потребность самого нуждающегося питомца.
+  /// Победа закрывает игру или отдых. Голод кормят только растением со склада.
   Future<PetFill?> satisfyMostUrgent({DateTime? now}) async {
     final prefs = _prefs;
     if (prefs == null || !hasPet) return null;
     final at = now ?? DateTime.now();
-    final snapshot = mostUrgentCare(now: at);
-    if (snapshot == null) return null;
-    final need = snapshot.mostUrgent;
-    await prefs.setInt(_keyFor(snapshot.kind, need), at.millisecondsSinceEpoch);
-    return PetFill(kind: snapshot.kind, need: need);
+    PetCare? chosen;
+    PetNeed? need;
+    var lowest = 2.0;
+    for (final snapshot in allCare(now: at)) {
+      for (final candidate in const [PetNeed.play, PetNeed.rest]) {
+        final value = snapshot.of(candidate);
+        if (value < lowest) {
+          lowest = value;
+          chosen = snapshot;
+          need = candidate;
+        }
+      }
+    }
+    if (chosen == null || need == null) return null;
+    await prefs.setInt(satisfiedKey(chosen.kind, need), at.millisecondsSinceEpoch);
+    return PetFill(kind: chosen.kind, need: need);
+  }
+
+  Set<PetKind>? _storedYardPets() {
+    final raw = _prefs?.getString(_kYardPets);
+    if (raw != null) {
+      return {
+        for (final part in raw.split(','))
+          if (_parseKind(part.trim()) case final kind?) kind,
+      };
+    }
+    final legacy = _parseKind(_prefs?.getString(_kYardPet));
+    if (legacy != null) return {legacy};
+    return null;
+  }
+
+  Future<void> _saveYardPets(List<PetKind> kinds) async {
+    final prefs = _prefs;
+    if (prefs == null) return;
+    await prefs.setString(_kYardPets, kinds.map((kind) => kind.name).join(','));
+    if (kinds.isEmpty) {
+      await prefs.remove(_kYardPet);
+    } else {
+      await prefs.setString(_kYardPet, kinds.first.name);
+    }
   }
 
   static PetKind? _parseKind(String? raw) {
@@ -163,8 +253,7 @@ class PetStore {
     return null;
   }
 
-  static String _keyFor(PetKind kind, PetNeed need) =>
-      'pet.${kind.name}.${need.name}At';
+  static String _keyFor(PetKind kind, PetNeed need) => satisfiedKey(kind, need);
 
   static String _legacyKeyFor(PetNeed need) => switch (need) {
     PetNeed.hunger => _kHungerAt,

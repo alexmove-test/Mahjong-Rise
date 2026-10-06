@@ -103,6 +103,98 @@ void main() {
     expect(LeaderboardService.plotsOpened(240), 10);
   });
 
+  test('climb lists people the player just overtook', () {
+    LeaderboardEntry row({
+      required String id,
+      required int rating,
+      bool me = false,
+    }) {
+      return LeaderboardEntry(
+        id: id,
+        name: id,
+        rating: rating,
+        totalStars: rating,
+        levelsUnlocked: rating,
+        isCurrentPlayer: me,
+      );
+    }
+
+    final entries = [
+      row(id: 'a', rating: 500),
+      row(id: 'b', rating: 400),
+      row(id: 'c', rating: 300),
+      row(id: 'd', rating: 200),
+      row(id: 'me', rating: 450, me: true),
+      row(id: 'e', rating: 100),
+    ];
+
+    final climb = LeaderboardService.climb(
+      entries: entries,
+      ratingFrom: 150,
+      ratingTo: 450,
+    );
+
+    expect(climb, isNotNull);
+    expect(climb!.rose, isTrue);
+    expect(climb.rankFrom, 5);
+    expect(climb.rankTo, 2);
+    expect(climb.passed.map((e) => e.id).toList(), ['b', 'c', 'd']);
+    expect(climb.stillAbove.map((e) => e.id).toList(), ['a']);
+    expect(climb.below.map((e) => e.id).toList(), ['e']);
+    expect(climb.displayRankFrom, 5);
+  });
+
+  test('climb keeps only the last steps of a long jump', () {
+    LeaderboardEntry row({
+      required String id,
+      required int rating,
+      bool me = false,
+    }) {
+      return LeaderboardEntry(
+        id: id,
+        name: id,
+        rating: rating,
+        totalStars: rating,
+        levelsUnlocked: rating,
+        isCurrentPlayer: me,
+      );
+    }
+
+    final others = [
+      for (var i = 0; i < 12; i++) row(id: 'p$i', rating: 1200 - i * 50),
+    ];
+    final climb = LeaderboardService.climb(
+      entries: [
+        ...others,
+        row(id: 'me', rating: 1100, me: true),
+      ],
+      ratingFrom: 80,
+      ratingTo: 1100,
+    );
+
+    expect(climb, isNotNull);
+    expect(climb!.rankTo, 3);
+    expect(climb.passed, hasLength(LeaderboardService.maxClimbSteps));
+    expect(climb.passed.first.id, 'p2');
+    expect(climb.stillAbove.map((e) => e.id).toList(), ['p0', 'p1']);
+    expect(
+      LeaderboardService.climb(
+        entries: [others.first],
+        ratingFrom: 1,
+        ratingTo: 2,
+      ),
+      isNull,
+    );
+    expect(
+      LeaderboardService.climb(
+        entries: [row(id: 'me', rating: 10, me: true)],
+        ratingFrom: 5,
+        ratingTo: 10,
+      ),
+      isNull,
+    );
+  });
+
   test('nearbyOthers takes ranks around the current player', () {
     LeaderboardEntry row({
       required String id,

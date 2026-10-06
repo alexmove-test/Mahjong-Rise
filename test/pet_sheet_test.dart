@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mahjong/services/pet_store.dart';
 import 'package:mahjong/widgets/pets/pet_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mahjong/l10n/app_localizations.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -13,6 +14,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: PetSheet(height: 640, pets: pets),
         ),
@@ -41,6 +44,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: PetSheet(height: 640, pets: pets),
         ),
@@ -62,7 +67,9 @@ void main() {
     expect(find.text('Play'), findsOneWidget);
     expect(find.text('Rest'), findsOneWidget);
     expect(
-      find.text('Clear a table to help whoever needs you most.'),
+      find.text(
+        'Wins help them play and rest. Feed harvested plants from the warehouse.',
+      ),
       findsOneWidget,
     );
     expect(find.text('Add a companion'), findsOneWidget);
@@ -85,6 +92,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: PetSheet(height: 640, pets: pets),
         ),

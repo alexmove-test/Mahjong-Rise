@@ -13,9 +13,9 @@ class PlotStageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final current = PlotStages.currentFrame(stage);
-    final next = PlotStages.nextFrame(stage);
-    final fade = PlotStages.nextOpacity(stage);
+    final current = PlotStages.currentFrame(stage, kind: kind);
+    final next = PlotStages.nextFrame(stage, kind: kind);
+    final fade = PlotStages.nextOpacity(stage, kind: kind);
     if (current <= 0 && next <= 0) return const SizedBox.shrink();
 
     return Stack(
@@ -42,10 +42,18 @@ class PlotStageView extends StatelessWidget {
 
 /// Шкала до следующего состояния участка: деления заполняются к новой картинке.
 class PlotProgressMeter extends StatelessWidget {
-  const PlotProgressMeter({super.key, required this.kind, required this.stage});
+  const PlotProgressMeter({
+    super.key,
+    required this.kind,
+    required this.stage,
+    this.bare = false,
+  });
 
   final PlotKind kind;
   final double stage;
+
+  /// Без своей рамки — когда шкала уже лежит внутри плашки HUD.
+  final bool bare;
 
   static const _gold = Color(0xFFE8C96A);
   static const _wood = Color(0xCC3A2012);
@@ -53,11 +61,35 @@ class PlotProgressMeter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = PlotStages.frameProgress(stage);
-    final remaining = PlotStages.remainingToNextFrame(stage);
-    final maxed = PlotStages.isMaxFrame(stage);
+    final progress = PlotStages.frameProgress(stage, kind: kind);
+    final remaining = PlotStages.remainingToNextFrame(stage, kind: kind);
+    final maxed = PlotStages.isMaxFrame(stage, kind: kind);
+    final pips = Row(
+      children: [
+        for (var i = 0; i < PlotStages.stagesPerFrame; i++)
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 1.5),
+              child: _pip(
+                fill: maxed
+                    ? 1
+                    : ((progress * PlotStages.stagesPerFrame) - i).clamp(
+                        0.0,
+                        1.0,
+                      ),
+              ),
+            ),
+          ),
+      ],
+    );
+    if (bare) {
+      return Semantics(
+        label: AppLocalizations.of(context).plotLookProgress(kind, remaining),
+        child: pips,
+      );
+    }
     return Semantics(
-      label: L10n.of(context).plotLookProgress(kind, remaining),
+      label: AppLocalizations.of(context).plotLookProgress(kind, remaining),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: _wood,
@@ -73,22 +105,7 @@ class PlotProgressMeter extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
-          child: Row(
-            children: [
-              for (var i = 0; i < PlotStages.stagesPerFrame; i++)
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 1.5),
-                    child: _pip(
-                      fill: maxed
-                          ? 1
-                          : ((progress * PlotStages.stagesPerFrame) - i)
-                              .clamp(0.0, 1.0),
-                    ),
-                  ),
-                ),
-            ],
-          ),
+          child: pips,
         ),
       ),
     );

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -10,8 +11,12 @@ void main() {
     for (var i = 0; i < 200; i++) {
       final en = GuestName.generate(isRu: false, random: Random(i));
       final ru = GuestName.generate(isRu: true, random: Random(i));
+      final th = GuestName.generate(language: 'th', random: Random(i));
       expect(en.length, inInclusiveRange(1, GuestName.maxLength));
       expect(ru.length, inInclusiveRange(1, GuestName.maxLength));
+      expect(th.length, inInclusiveRange(1, GuestName.maxLength));
+      expect(utf8.encode(th).length, lessThanOrEqualTo(GuestName.maxLength));
+      expect(th, matches(RegExp(r'[\u0E00-\u0E7F]')));
       expect(en, isNot(anyOf('You', 'Player', '')));
       expect(ru, isNot(anyOf('Вы', 'Игрок', '')));
     }
@@ -43,15 +48,16 @@ void main() {
     expect(again.hasCustomName, isTrue);
     expect(again.displayName, 'Mila');
 
+    expect(await again.setDisplayName('fuck you'), isFalse);
+    expect(again.displayName, 'Mila');
+
     await again.setDisplayName('  ');
     expect(again.hasCustomName, isFalse);
     expect(again.displayName, first.displayName);
   });
 
   test('saved custom name is not replaced by a guest name', () async {
-    SharedPreferences.setMockInitialValues({
-      'player.displayName': 'Ren',
-    });
+    SharedPreferences.setMockInitialValues({'player.displayName': 'Ren'});
     final profile = await PlayerProfileStore.open();
     expect(profile.hasCustomName, isTrue);
     expect(profile.displayName, 'Ren');

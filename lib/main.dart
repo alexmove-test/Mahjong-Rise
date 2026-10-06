@@ -3,14 +3,20 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'debug_agent_log.dart';
 import 'debug_boot_timer.dart';
+import 'package:mahjong/l10n/app_localizations.dart';
+
 import 'l10n/locale_controller.dart';
 import 'screens/level_select_screen.dart';
+import 'widgets/ads/banner_ad_slot.dart';
+import 'widgets/banner_hide_button.dart';
 import 'services/ad_bootstrap.dart';
+import 'services/banner_hide_controller.dart';
+import 'services/banner_hide_store.dart';
 import 'services/firebase_bootstrap.dart';
+import 'services/rewarded_ad_service.dart';
 import 'services/haptic_controller.dart';
 import 'services/haptic_store.dart';
 import 'services/locale_store.dart';
@@ -19,10 +25,15 @@ import 'services/locked_tile_dim_controller.dart';
 import 'services/locked_tile_dim_store.dart';
 import 'services/music_controller.dart';
 import 'services/music_store.dart';
+import 'services/points_controller.dart';
+import 'services/points_store.dart';
 import 'services/q_mode_controller.dart';
 import 'services/q_mode_store.dart';
 import 'services/sfx_controller.dart';
 import 'services/sfx_store.dart';
+import 'services/courtyard_reward_store.dart';
+import 'services/table_look_controller.dart';
+import 'services/table_look_store.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,6 +42,9 @@ void main() async {
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarContrastEnforced: false,
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
   // #region agent log
@@ -56,7 +70,8 @@ void main() async {
 }
 
 Future<void> _initServices() async {
-  await FirebaseBootstrap.init();
+  await Future.wait([FirebaseBootstrap.init(), AdBootstrap.init()]);
+  unawaited(RewardedAdService.instance.preload());
   // #region agent log
   agentDbg(
     location: 'main.dart:firebase',
@@ -70,7 +85,6 @@ Future<void> _initServices() async {
     },
   );
   // #endregion
-  await AdBootstrap.init();
   await LocalReminderService.init();
   // #region agent log
   agentDbg(
@@ -95,12 +109,16 @@ class MahjongApp extends StatefulWidget {
 }
 
 class _MahjongAppState extends State<MahjongApp> with WidgetsBindingObserver {
+  final _navigatorKey = GlobalKey<NavigatorState>();
   late final LocaleController _controller;
   late final HapticController _haptic;
   late final SfxController _sfx;
   late final MusicController _music;
   late final QModeController _qMode;
   late final LockedTileDimController _lockedDim;
+  late final TableLookController _tableLook;
+  late final BannerHideController _bannerHide;
+  late final PointsController _points;
 
   @override
   void initState() {
@@ -115,6 +133,9 @@ class _MahjongAppState extends State<MahjongApp> with WidgetsBindingObserver {
     _music = MusicController(MusicStore.memory());
     _qMode = QModeController(QModeStore.memory());
     _lockedDim = LockedTileDimController(LockedTileDimStore.memory());
+    _tableLook = TableLookController(TableLookStore.memory());
+    _bannerHide = BannerHideController(BannerHideStore.memory());
+    _points = PointsController(PointsStore.memory());
     _controller.addListener(_onLocale);
     unawaited(_music.init());
     unawaited(_hydratePrefs());
@@ -127,6 +148,10 @@ class _MahjongAppState extends State<MahjongApp> with WidgetsBindingObserver {
     final musicStore = await MusicStore.open();
     final qModeStore = await QModeStore.open();
     final lockedDimStore = await LockedTileDimStore.open();
+    final tableLookStore = await TableLookStore.open();
+    final courtyardRewards = await CourtyardRewardStore.open();
+    final bannerHideStore = await BannerHideStore.open();
+    final pointsStore = await PointsStore.open();
     if (!mounted) return;
     _controller.attachStore(localeStore);
     _haptic.attachStore(hapticStore);
@@ -134,6 +159,10 @@ class _MahjongAppState extends State<MahjongApp> with WidgetsBindingObserver {
     _music.attachStore(musicStore);
     _qMode.attachStore(qModeStore);
     _lockedDim.attachStore(lockedDimStore);
+    _tableLook.attachStore(tableLookStore);
+    unawaited(_tableLook.attachRewards(courtyardRewards));
+    _bannerHide.attachStore(bannerHideStore);
+    _points.attachStore(pointsStore);
   }
 
   void _onLocale() {
@@ -157,6 +186,9 @@ class _MahjongAppState extends State<MahjongApp> with WidgetsBindingObserver {
     _music.dispose();
     _qMode.dispose();
     _lockedDim.dispose();
+    _tableLook.dispose();
+    _bannerHide.dispose();
+    _points.dispose();
     super.dispose();
   }
 
@@ -165,6 +197,8 @@ class _MahjongAppState extends State<MahjongApp> with WidgetsBindingObserver {
     switch (state) {
       case AppLifecycleState.resumed:
         _music.resumeFromBackground();
+        _bannerHide.recheck();
+        _points.noteClock();
       case AppLifecycleState.inactive:
       case AppLifecycleState.hidden:
       case AppLifecycleState.paused:
@@ -187,26 +221,81 @@ class _MahjongAppState extends State<MahjongApp> with WidgetsBindingObserver {
               controller: _qMode,
               child: LockedTileDimScope(
                 controller: _lockedDim,
-                child: MaterialApp(
-                  title: 'Mahjong Rise',
-                  locale: _controller.locale,
-                  supportedLocales: const [Locale('en'), Locale('ru')],
-                  localizationsDelegates: const [
-                    GlobalMaterialLocalizations.delegate,
-                    GlobalWidgetsLocalizations.delegate,
-                    GlobalCupertinoLocalizations.delegate,
-                  ],
-                  localeResolutionCallback: (_, _) => _controller.locale,
-                  debugShowCheckedModeBanner: false,
-                  theme: ThemeData(
-                    colorScheme: ColorScheme.fromSeed(
-                      seedColor: const Color(0xFF2F6B4F),
-                      brightness: Brightness.dark,
+                child: TableLookScope(
+                  controller: _tableLook,
+                  child: BannerHideScope(
+                    controller: _bannerHide,
+                    child: PointsScope(
+                      controller: _points,
+                      child: MaterialApp(
+                        navigatorKey: _navigatorKey,
+                        title: 'Mahjong Rise',
+                        locale: _controller.locale,
+                        supportedLocales: AppLocalizations.supportedLocales,
+                        localizationsDelegates:
+                            AppLocalizations.localizationsDelegates,
+                        localeResolutionCallback: (_, _) => _controller.locale,
+                        debugShowCheckedModeBanner: false,
+                        builder: (context, child) {
+                          final media = MediaQuery.of(context);
+                          final hide = BannerHideScope.maybeOf(context);
+                          return ListenableBuilder(
+                            listenable: hide ?? const _IdleListenable(),
+                            builder: (context, _) {
+                              final offer =
+                                  hide != null &&
+                                  !AdBootstrap.simulation &&
+                                  !hide.isHidden;
+                              final lifted = media.removePadding(
+                                removeBottom: true,
+                              );
+                              return Column(
+                                children: [
+                                  Expanded(
+                                    child: MediaQuery(
+                                      data: lifted,
+                                      child: Stack(
+                                        children: [
+                                          child ?? const SizedBox.shrink(),
+                                          if (offer)
+                                            Positioned(
+                                              left: 0,
+                                              right: 0,
+                                              bottom: 14,
+                                              child: Center(
+                                                child: BannerHideButton(
+                                                  navigatorKey: _navigatorKey,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.only(
+                                      bottom: media.padding.bottom,
+                                    ),
+                                    child: const BannerAdSlot(),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                        theme: ThemeData(
+                          colorScheme: ColorScheme.fromSeed(
+                            seedColor: const Color(0xFF2F6B4F),
+                            brightness: Brightness.dark,
+                          ),
+                          useMaterial3: true,
+                          fontFamily: 'Segoe UI',
+                          fontFamilyFallback: const ['Noto Sans Thai'],
+                        ),
+                        home: const LevelSelectScreen(),
+                      ),
                     ),
-                    useMaterial3: true,
-                    fontFamily: 'Segoe UI',
                   ),
-                  home: const LevelSelectScreen(),
                 ),
               ),
             ),
@@ -215,4 +304,14 @@ class _MahjongAppState extends State<MahjongApp> with WidgetsBindingObserver {
       ),
     );
   }
+}
+
+class _IdleListenable implements Listenable {
+  const _IdleListenable();
+
+  @override
+  void addListener(VoidCallback listener) {}
+
+  @override
+  void removeListener(VoidCallback listener) {}
 }

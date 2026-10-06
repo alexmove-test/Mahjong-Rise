@@ -5,7 +5,6 @@
       <stop offset="1" stop-color="#fff3e0"/>
     </radialGradient>
   </defs>
-  <ellipse cx="40" cy="93" rx="24" ry="4.2" fill="#000" opacity=".2"/>
   <circle cx="40" cy="54" r="30" fill="#6d4c41" stroke="#4e342e" stroke-width="2.4"/>
   <circle cx="40" cy="54" r="24" fill="url(#cocoMeat)"/>
   <circle cx="40" cy="54" r="11" fill="#efebe9"/>

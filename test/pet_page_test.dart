@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mahjong/models/pet.dart';
 import 'package:mahjong/services/pet_store.dart';
 import 'package:mahjong/widgets/pets/courtyard_pet_invite.dart';
 import 'package:mahjong/widgets/pets/pet_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mahjong/l10n/app_localizations.dart';
 
 Finder _petAsset(String name) {
   return find.byWidgetPredicate((widget) {
@@ -22,6 +24,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: CourtyardPetInvite(pets: pets, onTap: () {}),
         ),
@@ -29,7 +33,10 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('A friend is waiting'), findsOneWidget);
+    expect(find.byKey(const ValueKey('courtyard-pets')), findsOneWidget);
+    expect(find.byIcon(Icons.pets_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.add_rounded), findsOneWidget);
+    expect(find.text('A friend is waiting'), findsNothing);
   });
 
   testWidgets('invite with a content pet shows its mood', (tester) async {
@@ -44,6 +51,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: CourtyardPetInvite(pets: pets, onTap: () {}),
         ),
@@ -51,7 +60,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Cat is content.'), findsOneWidget);
+    expect(find.text('Cat is content.'), findsNothing);
     expect(_petAsset('cat'), findsOneWidget);
   });
 
@@ -71,6 +80,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: CourtyardPetInvite(pets: pets, onTap: () {}),
         ),
@@ -80,8 +91,8 @@ void main() {
 
     expect(_petAsset('cat'), findsOneWidget);
     expect(_petAsset('fox'), findsOneWidget);
-    expect(find.text('Cat is content.'), findsOneWidget);
-    expect(find.text('Fox is content.'), findsOneWidget);
+    expect(find.text('Cat is content.'), findsNothing);
+    expect(find.text('Fox is content.'), findsNothing);
   });
 
   testWidgets('swiping the yard pets right hides them behind a tab', (
@@ -102,6 +113,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: Align(
             alignment: Alignment.centerRight,
@@ -126,8 +139,10 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('courtyard-pets-tab')));
     await tester.pump();
 
-    expect(find.text('Cat is content.'), findsOneWidget);
-    expect(find.text('Fox is content.'), findsOneWidget);
+    expect(find.text('Cat is content.'), findsNothing);
+    expect(find.text('Fox is content.'), findsNothing);
+    expect(_petAsset('cat'), findsOneWidget);
+    expect(_petAsset('fox'), findsOneWidget);
     expect(pets.yardHidden, isFalse);
   });
 
@@ -145,6 +160,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: CourtyardPetInvite(pets: pets, onTap: () {}),
         ),
@@ -152,15 +169,18 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Dog is starving.'), findsOneWidget);
+    expect(find.text('Dog is starving.'), findsNothing);
     expect(_petAsset('dog'), findsOneWidget);
+    expect(find.byIcon(Icons.restaurant_rounded), findsOneWidget);
   });
 
   testWidgets('empty pet page offers five companions', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final pets = await PetStore.open();
 
-    await tester.pumpWidget(MaterialApp(home: PetPage(pets: pets)));
+    await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,home: PetPage(pets: pets)));
     await tester.pump();
 
     expect(find.text('Choose a companion'), findsOneWidget);
@@ -188,13 +208,21 @@ void main() {
     });
     final pets = await PetStore.open();
 
-    await tester.pumpWidget(MaterialApp(home: PetPage(pets: pets)));
+    await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,home: PetPage(pets: pets)));
     await tester.pump();
 
     expect(find.text('Pet'), findsOneWidget);
     expect(find.text('Cat'), findsOneWidget);
     expect(find.text('Cat is content.'), findsOneWidget);
     expect(_petAsset('cat'), findsOneWidget);
+    expect(find.text('Adventures'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('pet-story-scene-cat_window')),
+      findsOneWidget,
+    );
+    await tester.scrollUntilVisible(find.text('Rest'), 80);
     expect(find.text('Hunger'), findsOneWidget);
     expect(find.text('Play'), findsOneWidget);
     expect(find.text('Rest'), findsOneWidget);
@@ -217,17 +245,70 @@ void main() {
     });
     final pets = await PetStore.open();
 
-    await tester.pumpWidget(MaterialApp(home: PetPage(pets: pets)));
+    await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,home: PetPage(pets: pets)));
     await tester.pump();
 
     expect(find.text('Pets'), findsOneWidget);
+    expect(find.text('Show everyone in the yard'), findsOneWidget);
     expect(find.text('Cat'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Dog'), 120);
     expect(find.text('Dog'), findsOneWidget);
     expect(find.text('Cat is content.'), findsOneWidget);
     expect(find.text('Dog is content.'), findsOneWidget);
     expect(_petAsset('cat'), findsOneWidget);
     expect(_petAsset('dog'), findsOneWidget);
     expect(find.byType(LinearProgressIndicator), findsNWidgets(6));
+    expect(
+      find.byKey(const ValueKey('pet-story-scene-cat_window')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('pet-story-scene-dog_trail')),
+      findsOneWidget,
+    );
+    expect(find.text('Show everyone in the yard'), findsOneWidget);
+    expect(find.text('In the yard'), findsOneWidget);
+    expect(find.text('Show in yard'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('pet-yard-toggle-dog')));
+    await tester.pump();
+    expect(pets.yardPetKinds, [PetKind.cat, PetKind.dog]);
+    expect(find.text('Show everyone in the yard'), findsNothing);
+    expect(find.text('In the yard'), findsNWidgets(2));
+    expect(find.text('Show in yard'), findsNothing);
+  });
+
+  testWidgets('pet page can send every companion to the yard', (tester) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    SharedPreferences.setMockInitialValues({
+      'pet.owned': 'cat,dog,fox',
+      'pet.kind': 'cat',
+      'pet.cat.hungerAt': now,
+      'pet.cat.playAt': now,
+      'pet.cat.restAt': now,
+      'pet.dog.hungerAt': now,
+      'pet.dog.playAt': now,
+      'pet.dog.restAt': now,
+      'pet.fox.hungerAt': now,
+      'pet.fox.playAt': now,
+      'pet.fox.restAt': now,
+    });
+    final pets = await PetStore.open();
+
+    await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,home: PetPage(pets: pets)));
+    await tester.pump();
+
+    expect(pets.yardPetKinds, [PetKind.cat]);
+    await tester.tap(find.byKey(const ValueKey('pet-yard-show-all')));
+    await tester.pump();
+    expect(pets.yardPetKinds, [PetKind.cat, PetKind.dog, PetKind.fox]);
+    expect(pets.allOwnedInYard, isTrue);
+    expect(find.text('Show everyone in the yard'), findsNothing);
+    expect(find.text('In the yard'), findsAtLeastNWidgets(1));
   });
 
   testWidgets('openPetPage slides in the pet section', (tester) async {
@@ -236,6 +317,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(
           builder: (context) {
             return Scaffold(

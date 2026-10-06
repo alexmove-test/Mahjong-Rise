@@ -1,5 +1,9 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../config/app_links.dart';
 import '../l10n/l10n.dart';
 import '../models/leaderboard_entry.dart';
 import '../services/analytics_service.dart';
@@ -9,6 +13,8 @@ import '../services/guest_name.dart';
 import '../services/leaderboard_service.dart';
 import '../services/player_profile_store.dart';
 import '../services/progress_store.dart';
+import '../services/ugc_block_store.dart';
+import '../services/ugc_report_repository.dart';
 import '../widgets/mahjong_backdrop.dart';
 
 /// Общий рейтинг игроков.
@@ -41,7 +47,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     _load();
   }
 
-  String? _error(L10n l10n) {
+  String? _error(AppLocalizations l10n) {
     if (_online || !FirebaseBootstrap.enabled) return null;
     return l10n.loadRankingFailed;
   }
@@ -85,7 +91,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             side: BorderSide(color: _gold.withValues(alpha: 0.7), width: 1.4),
           ),
           title: Text(
-            L10n.of(context).yourName,
+            AppLocalizations.of(context).yourName,
             style: TextStyle(color: _goldSoft, fontWeight: FontWeight.w800),
           ),
           content: TextField(
@@ -110,7 +116,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
-                L10n.of(context).cancel,
+                AppLocalizations.of(context).cancel,
                 style: const TextStyle(color: _ivory),
               ),
             ),
@@ -120,7 +126,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                 foregroundColor: _goldSoft,
               ),
               onPressed: () => Navigator.of(context).pop(controller.text),
-              child: Text(L10n.of(context).save),
+              child: Text(AppLocalizations.of(context).save),
             ),
           ],
         );
@@ -129,8 +135,94 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     controller.dispose();
     if (!mounted || saved == null) return;
 
-    await profile.setDisplayName(saved);
+    final allowed = await profile.setDisplayName(saved);
+    if (!mounted) return;
+    if (!allowed) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context).nameNotAllowed)));
+      return;
+    }
     await _load();
+  }
+
+  Future<void> _moderate(LeaderboardEntry entry) async {
+    if (entry.isCurrentPlayer) return;
+    final l10n = AppLocalizations.of(context);
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: _woodDeep,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.flag_rounded, color: _goldSoft),
+                title: Text(
+                  l10n.reportName,
+                  style: const TextStyle(color: _ivory),
+                ),
+                onTap: () => Navigator.pop(ctx, 'report'),
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.visibility_off_rounded,
+                  color: _goldSoft,
+                ),
+                title: Text(
+                  l10n.hidePlayer,
+                  style: const TextStyle(color: _ivory),
+                ),
+                onTap: () => Navigator.pop(ctx, 'hide'),
+              ),
+              ListTile(
+                title: Text(
+                  l10n.cancel,
+                  style: TextStyle(color: _ivory.withValues(alpha: 0.8)),
+                ),
+                onTap: () => Navigator.pop(ctx),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (!mounted || action == null) return;
+    if (action == 'hide') {
+      await (await UgcBlockStore.open()).block(entry.id);
+      AnalyticsService.log('ugc_hide');
+      await _load();
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.playerHidden)));
+      return;
+    }
+    var sent = await UgcReportRepository.submit(
+      targetUid: entry.id,
+      targetName: entry.name,
+      reason: UgcReportRepository.reasonName,
+    );
+    if (!sent) {
+      final uri = Uri(
+        scheme: 'mailto',
+        path: AppLinks.supportEmail,
+        queryParameters: {
+          'subject': 'Mahjong Rise name report',
+          'body': 'Player id: ${entry.id}\nName: ${entry.name}',
+        },
+      );
+      sent = await launchUrl(uri);
+    }
+    if (!mounted) return;
+    AnalyticsService.log('ugc_report', {'sent': sent ? 1 : 0});
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.reportThanks)));
   }
 
   String _formatRating(int rating) {
@@ -148,7 +240,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   Widget build(BuildContext context) {
     final profile = _profile;
     final current = _entries.where((e) => e.isCurrentPlayer).firstOrNull;
-    final l10n = L10n.of(context);
+    final l10n = AppLocalizations.of(context);
     final tabError = _error(l10n);
 
     return Scaffold(
@@ -272,6 +364,20 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                           ),
                         ),
                         Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                          child: Text(
+                            l10n.rankingNamesNote,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: const Color(
+                                0xFF3D6B52,
+                              ).withValues(alpha: 0.85),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        Padding(
                           padding: const EdgeInsets.fromLTRB(16, 0, 28, 6),
                           child: Align(
                             alignment: Alignment.centerRight,
@@ -306,6 +412,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                                   plotsOpened: LeaderboardService.plotsOpened(
                                     entry.levelsUnlocked,
                                   ),
+                                  onModerate: entry.isCurrentPlayer
+                                      ? null
+                                      : () => unawaited(_moderate(entry)),
                                 );
                               },
                             ),
@@ -367,7 +476,7 @@ class _CurrentPlayerCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    L10n.of(context).displayName(entry.name),
+                    AppLocalizations.of(context).displayName(entry.name),
                     style: const TextStyle(
                       color: Color(0xFFE8C96A),
                       fontWeight: FontWeight.w800,
@@ -376,7 +485,7 @@ class _CurrentPlayerCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    L10n.of(
+                    AppLocalizations.of(
                       context,
                     ).starsLevel(entry.totalStars, entry.levelsUnlocked),
                     style: TextStyle(
@@ -406,7 +515,7 @@ class _CurrentPlayerCard extends StatelessWidget {
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: Text(L10n.of(context).name),
+                  child: Text(AppLocalizations.of(context).name),
                 ),
               ],
             ),
@@ -423,12 +532,14 @@ class _LeaderboardRow extends StatelessWidget {
     required this.entry,
     required this.ratingLabel,
     required this.plotsOpened,
+    this.onModerate,
   });
 
   final int rank;
   final LeaderboardEntry entry;
   final String ratingLabel;
   final int plotsOpened;
+  final VoidCallback? onModerate;
 
   @override
   Widget build(BuildContext context) {
@@ -458,7 +569,7 @@ class _LeaderboardRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    L10n.of(context).displayName(entry.name),
+                    AppLocalizations.of(context).displayName(entry.name),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -470,7 +581,7 @@ class _LeaderboardRow extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    L10n.of(
+                    AppLocalizations.of(
                       context,
                     ).starsLevel(entry.totalStars, entry.levelsUnlocked),
                     style: TextStyle(
@@ -494,6 +605,18 @@ class _LeaderboardRow extends StatelessWidget {
                   ? const Color(0xFFE8C96A)
                   : const Color(0xFF3D6B52),
             ),
+            if (onModerate != null)
+              IconButton(
+                tooltip: AppLocalizations.of(context).reportPlayer,
+                visualDensity: VisualDensity.compact,
+                onPressed: onModerate,
+                icon: Icon(
+                  Icons.flag_outlined,
+                  color: highlight
+                      ? const Color(0xFFE8C96A)
+                      : const Color(0xFF1E5A3A).withValues(alpha: 0.7),
+                ),
+              ),
           ],
         ),
       ),

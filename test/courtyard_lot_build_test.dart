@@ -1,4 +1,6 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mahjong/l10n/l10n.dart';
 import 'package:mahjong/models/levels.dart';
 import 'package:mahjong/models/plot_kind.dart';
 import 'package:mahjong/widgets/courtyard/courtyard_estate.dart';
@@ -8,11 +10,13 @@ void main() {
   test('96 stages are 12 eras of 8 steps', () {
     expect(CourtyardLotBuild.maxStage, 96);
     expect(CourtyardLotBuild.eraCount * CourtyardLotBuild.eraLength, 96);
-    expect(houseEraPhrasesEn, hasLength(12));
-    expect(pondEraPhrasesEn, hasLength(12));
-    expect(petsEraPhrasesEn, hasLength(12));
-    expect(guestEraPhrasesEn, hasLength(12));
-    expect(houseEraPhrasesRu, hasLength(12));
+    final en = lookupAppLocalizations(const Locale('en'));
+    final ru = lookupAppLocalizations(const Locale('ru'));
+    expect(en.pathStagePhrasesFor(PlotKind.house), hasLength(12));
+    expect(en.pathStagePhrasesFor(PlotKind.pond), hasLength(12));
+    expect(en.pathStagePhrasesFor(PlotKind.pets), hasLength(12));
+    expect(en.pathStagePhrasesFor(PlotKind.guest), hasLength(12));
+    expect(ru.pathStagePhrasesFor(PlotKind.house), hasLength(12));
   });
 
   test('era index follows the shack-to-castle table', () {
@@ -24,9 +28,11 @@ void main() {
     expect(CourtyardLotBuild.eraIndex(25), 3);
     expect(CourtyardLotBuild.eraIndex(37), 4);
     expect(CourtyardLotBuild.eraIndex(96), 11);
-    expect(CourtyardLotBuild.eraNameEn(PlotKind.house, 1), 'Shack');
-    expect(CourtyardLotBuild.eraNameEn(PlotKind.house, 9), 'Castle');
-    expect(CourtyardLotBuild.eraNameRu(PlotKind.house, 11), 'Резиденция');
+    final en = lookupAppLocalizations(const Locale('en'));
+    final ru = lookupAppLocalizations(const Locale('ru'));
+    expect(en.plotEra(PlotKind.house, 1), 'Shack');
+    expect(en.plotEra(PlotKind.house, 9), 'Castle');
+    expect(ru.plotEra(PlotKind.house, 11), 'Резиденция');
   });
 
   test('layer opacity fades in the next part during lerp', () {
@@ -38,9 +44,9 @@ void main() {
     expect(CourtyardLotBuild.layerOpacity(24, 25), 0);
   });
 
-  test('plot stages map 24 frames across 96 levels, two steps per era', () {
+  test('plot stages map 24 frames, one new look per cleared level', () {
     expect(PlotStages.frameCount, 24);
-    expect(PlotStages.stagesPerFrame, 4);
+    expect(PlotStages.stagesPerFrame, 1);
     expect(PlotStages.currentFrame(0), 0);
     expect(PlotStages.nextFrame(0), 0);
     expect(PlotStages.currentFrame(0.4), 0);
@@ -49,10 +55,11 @@ void main() {
     expect(PlotStages.currentFrame(1), 1);
     expect(PlotStages.nextFrame(1), 1);
     expect(PlotStages.nextOpacity(1), 0);
-    expect(PlotStages.currentFrame(4), 1);
-    expect(PlotStages.currentFrame(5), 2);
-    expect(PlotStages.nextFrame(4.5), 2);
-    expect(PlotStages.nextOpacity(4.5), closeTo(0.5, 0.001));
+    expect(PlotStages.currentFrame(1.5), 1);
+    expect(PlotStages.nextFrame(1.5), 2);
+    expect(PlotStages.nextOpacity(1.5), closeTo(0.5, 0.001));
+    expect(PlotStages.currentFrame(2), 2);
+    expect(PlotStages.currentFrame(24), 24);
     expect(PlotStages.currentFrame(96), 24);
     expect(PlotStages.allAssets, hasLength(96));
     expect(
@@ -69,17 +76,17 @@ void main() {
     expect(PlotStages.remainingToNextFrame(0), 1);
     expect(PlotStages.remainingExact(0), 1);
     expect(PlotStages.frameProgress(1), 0);
-    expect(PlotStages.remainingToNextFrame(1), 4);
-    expect(PlotStages.remainingExact(1), 4);
-    expect(PlotStages.frameProgress(3), closeTo(0.5, 0.001));
-    expect(PlotStages.remainingToNextFrame(3), 2);
-    expect(PlotStages.remainingExact(3), 2);
-    expect(PlotStages.frameProgress(4), closeTo(0.75, 0.001));
-    expect(PlotStages.remainingToNextFrame(4), 1);
-    expect(PlotStages.remainingToNextFrame(4.2), 1);
-    expect(PlotStages.remainingExact(4.2), closeTo(0.8, 0.001));
-    expect(PlotStages.frameProgress(5), 0);
-    expect(PlotStages.remainingToNextFrame(5), 4);
+    expect(PlotStages.remainingToNextFrame(1), 1);
+    expect(PlotStages.remainingExact(1), 1);
+    expect(PlotStages.frameProgress(1.5), closeTo(0.5, 0.001));
+    expect(PlotStages.remainingToNextFrame(1.5), 1);
+    expect(PlotStages.remainingExact(1.5), closeTo(0.5, 0.001));
+    expect(PlotStages.frameProgress(2), 0);
+    expect(PlotStages.remainingToNextFrame(2), 1);
+    expect(PlotStages.isMaxFrame(23), isFalse);
+    expect(PlotStages.isMaxFrame(24), isTrue);
+    expect(PlotStages.remainingToNextFrame(24), 0);
+    expect(PlotStages.frameProgress(24), 1);
     expect(PlotStages.isMaxFrame(96), isTrue);
     expect(PlotStages.remainingToNextFrame(96), 0);
     expect(PlotStages.frameProgress(96), 1);
@@ -107,6 +114,10 @@ void main() {
     expect(Levels.plotKindOf(25), PlotKind.pond);
     expect(Levels.plotKindOf(49), PlotKind.guest);
     expect(Levels.plotKindOf(73), PlotKind.pets);
+    expect(Levels.plotStartId(PlotKind.pond), 25);
+    expect(Levels.plotStartId(PlotKind.pets), 73);
+    expect(Levels.nextLockedPlot(23), PlotKind.pond);
+    expect(Levels.nextLockedPlot(73), isNull);
 
     final start = CourtyardEstate.fromUnlocked(1);
     expect(start.lot(PlotKind.house).unlocked, isTrue);
@@ -125,9 +136,10 @@ void main() {
   });
 
   test('each plot kind has its own era names', () {
-    expect(CourtyardLotBuild.eraNameEn(PlotKind.pond, 4), 'Koi pond');
-    expect(CourtyardLotBuild.eraNameEn(PlotKind.pets, 4), 'Pet house');
-    expect(CourtyardLotBuild.eraNameEn(PlotKind.guest, 4), 'Screens');
-    expect(CourtyardLotBuild.eraNameEn(PlotKind.guest, 8), 'Observatory');
+    final en = lookupAppLocalizations(const Locale('en'));
+    expect(en.plotEra(PlotKind.pond, 4), 'Koi pond');
+    expect(en.plotEra(PlotKind.pets, 4), 'Pet house');
+    expect(en.plotEra(PlotKind.guest, 4), 'Screens');
+    expect(en.plotEra(PlotKind.guest, 8), 'Observatory');
   });
 }

@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Четыре участка двора; каждые 24 уровня сменяется следующий по кругу.
 enum PlotKind {
   house,
@@ -25,17 +27,10 @@ enum PlotKind {
     _ => name,
   };
 
-  String get titleEn => switch (this) {
-    house => 'House',
-    pond => 'Pond',
-    pets => 'Pets',
-    guest => 'Guest house',
-  };
-
-  String get titleRu => switch (this) {
-    house => 'Дом',
-    pond => 'Ставок',
-    pets => 'Питомцы',
-    guest => 'Дом для гостей',
+  IconData get emblem => switch (this) {
+    house => Icons.home_rounded,
+    pond => Icons.water_drop_rounded,
+    pets => Icons.pets_rounded,
+    guest => Icons.cottage_rounded,
   };
 }

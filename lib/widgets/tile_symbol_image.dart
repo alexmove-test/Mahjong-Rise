@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../debug_agent_log.dart';
+import '../services/table_look_controller.dart';
 import '../utils/tile_icons.dart';
 
 /// Иконка символа: SVG или PNG из [assets/titles].
@@ -21,8 +22,15 @@ class TileSymbolImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final asset = TileIcons.assetFor(symbol);
+    final look = TableLookScope.lookOf(context);
+    // «Новая» использует масштабируемые SVG там, где они доступны.
+    final preferRaster = look.isCasual;
+    final asset = TileIcons.assetFor(symbol, casual: preferRaster);
     final raster = TileIcons.isRasterAsset(asset);
+    final vectorFallback = TileIcons.vectorFallbackFor(
+      symbol,
+      casual: preferRaster,
+    );
     // #region agent log
     if (_logged < 4) {
       _logged++;
@@ -30,7 +38,12 @@ class TileSymbolImage extends StatelessWidget {
         location: 'tile_symbol_image.dart:build',
         message: 'symbol asset resolved',
         hypothesisId: 'D',
-        data: {'symbol': symbol, 'asset': asset, 'raster': raster},
+        data: {
+          'symbol': symbol,
+          'asset': asset,
+          'raster': raster,
+          'fallback': vectorFallback,
+        },
       );
     }
     // #endregion
@@ -48,6 +61,14 @@ class TileSymbolImage extends StatelessWidget {
             data: {'symbol': symbol, 'asset': asset, 'error': error.toString()},
           );
           // #endregion
+          if (vectorFallback != null) {
+            return SvgPicture.asset(
+              vectorFallback,
+              fit: fit,
+              clipBehavior: Clip.hardEdge,
+              placeholderBuilder: (_) => placeholder,
+            );
+          }
           return placeholder;
         },
       );
@@ -56,6 +77,7 @@ class TileSymbolImage extends StatelessWidget {
     return SvgPicture.asset(
       asset,
       fit: fit,
+      clipBehavior: Clip.hardEdge,
       placeholderBuilder: (_) => placeholder,
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mahjong/models/courtyard_reward.dart';
 import 'package:mahjong/models/leaderboard_entry.dart';
 import 'package:mahjong/models/levels.dart';
 import 'package:mahjong/models/plot_kind.dart';
@@ -10,6 +11,7 @@ import 'package:mahjong/widgets/courtyard/courtyard_world.dart';
 import 'package:mahjong/widgets/courtyard/courtyard_world_layout.dart';
 import 'package:mahjong/widgets/courtyard/plot_stage_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mahjong/l10n/app_localizations.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -94,7 +96,9 @@ void main() {
     }
   });
 
-  testWidgets('tapping an unlocked lot selects it', (tester) async {
+  testWidgets('the courtyard exposes one tappable home on the map', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({
       'progress.maxUnlocked': 25,
       'progress.stars.24': 1,
@@ -103,6 +107,8 @@ void main() {
     PlotKind? selected;
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: CourtyardWorld(
             to: CourtyardEstate.fromStore(store),
@@ -114,51 +120,19 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    await tester.tap(find.byKey(const ValueKey('courtyard-lot-pond')));
+    await tester.tap(find.byKey(const ValueKey('courtyard-lot-house')));
     await tester.pump();
-    expect(selected, PlotKind.pond);
-    expect(find.byKey(const ValueKey('plot-inspect-pond')), findsOneWidget);
-    expect(find.text('Pond'), findsOneWidget);
+    expect(selected, PlotKind.house);
+    expect(find.byKey(courtyardHomeKey), findsOneWidget);
+    expect(find.byKey(courtyardPetAreaKey), findsOneWidget);
+    expect(find.byKey(const ValueKey('courtyard-lot-pond')), findsNothing);
   });
 
-  testWidgets('tapping a locked lot selects it for the next wins', (
-    tester,
-  ) async {
-    SharedPreferences.setMockInitialValues({'progress.maxUnlocked': 1});
-    final store = await ProgressStore.open();
-    final lockedKind = PlotKind.order.firstWhere(
-      (kind) => !Levels.plotReached(kind, 1),
-    );
-    PlotKind? selected;
-    PlotKind? locked;
+  testWidgets('all saved plot progress feeds the single house', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(
-          body: CourtyardWorld(
-            to: CourtyardEstate.fromStore(store),
-            onSelectLot: (kind) => selected = kind,
-            onLockedLot: (kind) => locked = kind,
-          ),
-        ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
-
-    await tester.tap(find.byKey(ValueKey('courtyard-lot-${lockedKind.name}')));
-    await tester.pump();
-    expect(selected, lockedKind);
-    expect(locked, lockedKind);
-    expect(
-      find.byKey(ValueKey('plot-inspect-${lockedKind.name}')),
-      findsOneWidget,
-    );
-    expect(find.text('Next wins will grow this plot'), findsOneWidget);
-  });
-
-  testWidgets('reached plots use the 24-frame build sheet', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: CourtyardWorld(to: CourtyardEstate.fromUnlocked(8)),
         ),
@@ -168,69 +142,91 @@ void main() {
     final views = tester.widgetList<PlotStageView>(find.byType(PlotStageView));
     expect(views, isNotEmpty);
     expect(views.single.kind, PlotKind.house);
-    expect(views.single.stage, Levels.completedStages(PlotKind.house, 8));
-    expect(find.byType(PlotProgressMeter), findsOneWidget);
-    final houseMeter = tester.widget<PlotProgressMeter>(
-      find.byKey(const ValueKey('plot-progress-house')),
+    final accumulated = PlotKind.order.fold<double>(
+      0,
+      (value, kind) => value + CourtyardEstate.fromUnlocked(8).lot(kind).stage,
     );
-    expect(houseMeter.stage, Levels.completedStages(PlotKind.house, 8));
+    final expectedStage = accumulated.clamp(
+      0,
+      CourtyardLotBuild.maxStage.toDouble(),
+    );
+    expect(views.single.stage, closeTo(expectedStage, 0.001));
+    expect(
+      CourtyardEstate.fromUnlocked(8).homeStage,
+      closeTo(expectedStage, 0.001),
+    );
+    // Шкала до следующего облика переехала в HUD, поверх двора её нет.
+    expect(find.byType(PlotProgressMeter), findsNothing);
   });
 
-  testWidgets('unlocked lots all use plot stage sprites', (tester) async {
+  testWidgets('the house stays and the pond grows after it', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: CourtyardWorld(to: CourtyardEstate.fromUnlocked(80)),
         ),
       ),
     );
     await tester.pump();
-    expect(find.byType(PlotStageView), findsNWidgets(4));
     final views = tester.widgetList<PlotStageView>(find.byType(PlotStageView));
-    expect(views.map((v) => v.kind).toSet(), PlotKind.order.toSet());
+    expect(views.map((view) => view.kind), [
+      PlotKind.house,
+      PlotKind.pond,
+    ]);
+    expect(
+      views.firstWhere((view) => view.kind == PlotKind.pond).stage,
+      CourtyardEstate.fromUnlocked(80).pondStage,
+    );
   });
 
-  test('lots sit on the circular plateau and neighbors on the hills', () {
-    expect(CourtyardWorldLayout.mapAspect, closeTo(1.5, 0.001));
+  test('the home and pet stand on the cropped lawn', () {
+    expect(
+      CourtyardWorldLayout.mapAspect,
+      closeTo(
+        CourtyardWorldLayout.mapWidth / CourtyardWorldLayout.mapHeight,
+        0.001,
+      ),
+    );
 
-    final house = CourtyardWorldLayout.lotOf(PlotKind.house);
-    final pond = CourtyardWorldLayout.lotOf(PlotKind.pond);
-    final pets = CourtyardWorldLayout.lotOf(PlotKind.pets);
-    final guest = CourtyardWorldLayout.lotOf(PlotKind.guest);
+    final lawn = CourtyardWorldLayout.lawn;
+    final home = CourtyardWorldLayout.homeYard;
+    final pond = CourtyardWorldLayout.pondYard;
+    final pet = CourtyardWorldLayout.petYard;
+    final cover = CourtyardWorldLayout.yardCover;
 
-    expect(house.center.dx * CourtyardWorldLayout.mapWidth, closeTo(594, 0.5));
-    expect(house.center.dy * CourtyardWorldLayout.mapHeight, closeTo(470, 0.5));
-    expect(pond.center.dx * CourtyardWorldLayout.mapWidth, closeTo(971, 0.5));
-    expect(pond.center.dy * CourtyardWorldLayout.mapHeight, closeTo(474, 0.5));
-    expect(pets.center.dx * CourtyardWorldLayout.mapWidth, closeTo(979, 0.5));
-    expect(pets.center.dy * CourtyardWorldLayout.mapHeight, closeTo(766, 0.5));
-    expect(guest.center.dx * CourtyardWorldLayout.mapWidth, closeTo(574, 0.5));
-    expect(guest.center.dy * CourtyardWorldLayout.mapHeight, closeTo(715, 0.5));
+    // Дом сзади-слева, питомец впереди-справа, обе опоры внутри ограды.
+    expect(home.center.dx, lessThan(pond.center.dx));
+    expect(home.center.dx, lessThan(pet.center.dx));
+    expect(home.center.dy, lessThan(pet.center.dy));
+    expect(pond.bottom, lessThanOrEqualTo(pet.top));
+    expect(lawn.contains(home.bottomCenter), isTrue);
+    expect(lawn.contains(pond.bottomCenter), isTrue);
+    expect(lawn.contains(pet.bottomCenter), isTrue);
+    expect(home.left, greaterThan(lawn.left));
+    expect(pet.right, lessThan(lawn.right));
 
-    expect(house.top, lessThan(pets.top));
-    expect(pond.top, lessThan(guest.top));
-    expect(house.left, lessThan(pond.left));
-    expect(guest.left, lessThan(pets.left));
+    expect(cover.left, lessThan(lawn.left));
+    expect(cover.right, greaterThan(lawn.right));
+    expect(cover.top, lessThan(lawn.top));
+    expect(cover.bottom, greaterThan(lawn.bottom));
 
-    final plateau = CourtyardWorldLayout.plateau;
-    expect(house.top, greaterThan(0.30));
-    expect(pets.bottom, lessThan(0.90));
-    expect(plateau.width, closeTo(0.400, 0.02));
-    expect(plateau.height, closeTo(0.444, 0.02));
+    for (final reward in CourtyardReward.values) {
+      final rect = CourtyardWorldLayout.rewardOf(reward);
+      expect(lawn.contains(rect.bottomCenter), isTrue, reason: reward.name);
+      expect(rect.overlaps(home), isFalse, reason: reward.name);
+      expect(rect.overlaps(pet), isFalse, reason: reward.name);
+    }
 
-    final hills = CourtyardWorldLayout.neighbors;
-    expect(hills, hasLength(4));
-    expect(hills[0].center.dx, lessThan(plateau.left));
-    expect(hills[1].bottom, lessThan(plateau.top));
-    expect(hills[2].center.dx, greaterThan(plateau.center.dx));
-    expect(hills[3].center.dx, greaterThan(plateau.center.dx));
+    expect(CourtyardWorldLayout.neighbors, isEmpty);
   });
 
   test('camera covers the viewport so the map has no side gaps', () {
-    void expectCovers(Size viewport) {
+    void expectCovers(Size viewport, Rect focus) {
       final cam = CourtyardWorldLayout.camera(
         viewport: viewport,
-        focusNorm: CourtyardWorldLayout.plateau,
+        focusNorm: focus,
       );
       final right = cam.tx + CourtyardWorldLayout.mapWidth * cam.scale;
       final bottom = cam.ty + CourtyardWorldLayout.mapHeight * cam.scale;
@@ -248,11 +244,16 @@ void main() {
       );
     }
 
-    expectCovers(const Size(1280, 720));
-    expectCovers(const Size(1920, 1080));
-    expectCovers(const Size(390, 844));
-    expectCovers(const Size(900, 1600));
-    expectCovers(const Size(800, 1280));
+    for (final focus in [
+      CourtyardWorldLayout.lawn,
+      CourtyardWorldLayout.yardCover,
+    ]) {
+      expectCovers(const Size(1280, 720), focus);
+      expectCovers(const Size(1920, 1080), focus);
+      expectCovers(const Size(390, 844), focus);
+      expectCovers(const Size(900, 1600), focus);
+      expectCovers(const Size(800, 1280), focus);
+    }
   });
 
   test('campaign unlock rebuilds the same lots as the local store', () async {
@@ -297,35 +298,28 @@ void main() {
     );
 
     expect(NeighborYard.placed(others: const [above], online: false), isEmpty);
-
-    final yards = NeighborYard.placed(
-      others: const [above, below],
-      online: true,
+    expect(
+      NeighborYard.placed(others: const [above, below], online: true),
+      isEmpty,
     );
-    expect(yards, hasLength(2));
-    expect(yards[0].name, 'Ada');
-    expect(yards[0].estate.lot(PlotKind.house).unlocked, isTrue);
-    expect(yards[0].estate.lot(PlotKind.pond).unlocked, isTrue);
-    expect(yards[0].estate.lot(PlotKind.guest).unlocked, isTrue);
-    expect(yards[0].estate.lot(PlotKind.pets).unlocked, isFalse);
-    expect(yards[1].estate.lot(PlotKind.house).unlocked, isTrue);
-    expect(yards[1].estate.lot(PlotKind.pond).unlocked, isFalse);
   });
 
-  test('neighbor lots sit in a 2x2 inside each hill', () {
-    final hill = CourtyardWorldLayout.neighborOf(0);
-    final house = CourtyardWorldLayout.neighborLotOf(0, PlotKind.house);
-    final pond = CourtyardWorldLayout.neighborLotOf(0, PlotKind.pond);
-    final pets = CourtyardWorldLayout.neighborLotOf(0, PlotKind.pets);
-    final guest = CourtyardWorldLayout.neighborLotOf(0, PlotKind.guest);
+  test('the cropped map has no neighbor hills', () {
+    expect(CourtyardWorldLayout.neighborCount, 0);
+  });
 
-    expect(house.left, closeTo(hill.left, 0.0001));
-    expect(pond.right, closeTo(hill.right, 0.0001));
-    expect(guest.bottom, closeTo(hill.bottom, 0.0001));
-    expect(pets.right, closeTo(hill.right, 0.0001));
-    expect(house.top, lessThan(guest.top));
-    expect(house.left, lessThan(pond.left));
-    expect(house.width, closeTo(hill.width / 2, 0.0001));
+  test('each cleared level advances the single house', () {
+    expect(CourtyardEstate.fromUnlocked(1).homeStage, 0);
+    expect(CourtyardEstate.fromUnlocked(2).homeStage, 1);
+    expect(CourtyardEstate.fromUnlocked(5).homeStage, 4);
+    expect(CourtyardEstate.fromUnlocked(6).homeStage, 5);
+    expect(PlotStages.currentFrame(CourtyardEstate.fromUnlocked(2).homeStage), 1);
+    expect(PlotStages.currentFrame(CourtyardEstate.fromUnlocked(3).homeStage), 2);
+    expect(PlotStages.currentFrame(CourtyardEstate.fromUnlocked(5).homeStage), 4);
+    expect(PlotStages.currentFrame(CourtyardEstate.fromUnlocked(25).homeStage), 24);
+    expect(CourtyardEstate.fromUnlocked(25).homeStage, 24);
+    expect(CourtyardEstate.fromUnlocked(97).homeStage, 96);
+    expect(CourtyardEstate.fromUnlocked(200).homeStage, 96);
   });
 
   test('house stage accumulates across loops and caps at 96', () {

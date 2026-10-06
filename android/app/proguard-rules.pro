@@ -6,3 +6,6 @@
 
 -keep class * extends androidx.room.RoomDatabase
 -keep class androidx.work.impl.WorkDatabase_Impl { *; }
+
+-keep class com.google.android.gms.ads.** { *; }
+-keep class com.google.ads.mediation.** { *; }

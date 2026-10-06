@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mahjong/models/tile.dart';
 import 'package:mahjong/widgets/match_smash.dart';
 import 'package:mahjong/widgets/tile_widget.dart';
+import 'package:mahjong/l10n/app_localizations.dart';
 
 void _expectUnit(double value, {required String name}) {
   expect(value, inInclusiveRange(0.0, 1.0), reason: name);
@@ -84,6 +85,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: SizedBox(
           width: 400,
           height: 720,

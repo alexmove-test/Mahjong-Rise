@@ -2,11 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/leaderboard_entry.dart';
+import 'display_name_filter.dart';
 import 'firebase_bootstrap.dart';
 import 'guest_name.dart';
 import 'leaderboard_service.dart';
 import 'player_profile_store.dart';
 import 'progress_store.dart';
+import 'ugc_block_store.dart';
 
 /// Онлайн-таблица рейтинга в Firestore.
 class FirebaseLeaderboardRepository {
@@ -28,7 +30,9 @@ class FirebaseLeaderboardRepository {
       final user = await FirebaseBootstrap.ensureSignedIn();
       if (user == null) return;
 
-      final name = GuestName.clamp(profile.displayName);
+      final name = GuestName.clamp(
+        DisplayNameFilter.publicName(profile.displayName),
+      );
       final rating = LeaderboardService.ratingFor(progress);
       final lastSynced = profile.lastSyncedRating;
       final nameChanged = name != profile.lastSyncedName;
@@ -86,8 +90,11 @@ class FirebaseLeaderboardRepository {
     required ProgressStore progress,
     required PlayerProfileStore profile,
   }) async {
-    List<LeaderboardEntry> local() =>
-        LeaderboardService.buildLocal(progress: progress, profile: profile);
+    final blocked = (await UgcBlockStore.open()).blockedIds;
+    List<LeaderboardEntry> local() => LeaderboardService.moderate(
+      LeaderboardService.buildLocal(progress: progress, profile: profile),
+      blockedIds: blocked,
+    );
 
     if (!FirebaseBootstrap.enabled) {
       return LeaderboardFetch(entries: local(), online: false);
@@ -131,7 +138,7 @@ class FirebaseLeaderboardRepository {
           });
         }
 
-        return entries;
+        return LeaderboardService.moderate(entries, blockedIds: blocked);
       },
     );
   }
@@ -166,10 +173,12 @@ class FirebaseLeaderboardRepository {
     final data = doc.data();
     return LeaderboardEntry(
       id: doc.id,
-      name: GuestName.clamp(
-        (data['name'] as String?)?.trim().isNotEmpty == true
-            ? data['name'] as String
-            : 'Player',
+      name: DisplayNameFilter.publicName(
+        GuestName.clamp(
+          (data['name'] as String?)?.trim().isNotEmpty == true
+              ? data['name'] as String
+              : 'Player',
+        ),
       ),
       rating: _asInt(data['rating']),
       totalStars: _asInt(data['totalStars']),

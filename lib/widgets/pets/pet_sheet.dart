@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../l10n/l10n.dart';
@@ -5,7 +7,9 @@ import '../../models/pet.dart';
 import '../../services/analytics_service.dart';
 import '../../services/local_reminder_service.dart';
 import '../../services/pet_store.dart';
+import '../../services/points_controller.dart';
 import '../../services/reminder_store.dart';
+import 'pet_combat_section.dart';
 import 'pet_portrait.dart';
 
 const _gold = Color(0xFFD4AF37);
@@ -21,10 +25,7 @@ Future<void> showPetSheet(BuildContext context, {required PetStore pets}) {
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black.withValues(alpha: 0.38),
     builder: (ctx) {
-      return PetSheet(
-        height: MediaQuery.sizeOf(ctx).height * 0.62,
-        pets: pets,
-      );
+      return PetSheet(height: MediaQuery.sizeOf(ctx).height * 0.62, pets: pets);
     },
   );
 }
@@ -46,15 +47,20 @@ class _PetSheetState extends State<PetSheet> {
   void initState() {
     super.initState();
     _picking = !widget.pets.hasPet;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(PointsScope.maybeOf(context)?.syncOwnedPets());
+    });
   }
 
   Future<void> _adopt(PetKind kind) async {
     final first = !widget.pets.hasPet;
     await widget.pets.adopt(kind);
+    if (mounted) await PointsScope.maybeOf(context)?.syncOwnedPets();
     AnalyticsService.log('pet_adopt', {'kind': kind.name});
     if (!mounted) return;
     setState(() => _picking = false);
-    await LocalReminderService.resync(l10n: L10n.of(context));
+    await LocalReminderService.resync(l10n: AppLocalizations.of(context));
     if (!mounted) return;
     if (first) await _offerReminders();
   }
@@ -64,7 +70,7 @@ class _PetSheetState extends State<PetSheet> {
     if (widget.pets.remindersPrompted || reminder.enabled) return;
     await widget.pets.markRemindersPrompted();
     if (!mounted) return;
-    final l10n = L10n.of(context);
+    final l10n = AppLocalizations.of(context);
     final enable = await showDialog<bool>(
       context: context,
       builder: (ctx) {
@@ -113,12 +119,12 @@ class _PetSheetState extends State<PetSheet> {
     if (!allowed) return;
     await reminder.setEnabled(true);
     if (!mounted) return;
-    await LocalReminderService.resync(l10n: L10n.of(context));
+    await LocalReminderService.resync(l10n: AppLocalizations.of(context));
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = L10n.of(context);
+    final l10n = AppLocalizations.of(context);
     final title = _picking
         ? (widget.pets.hasPet ? l10n.addPet : l10n.chooseAPet)
         : l10n.petsTitle(widget.pets.owned.length);
@@ -166,9 +172,7 @@ class _PetSheetState extends State<PetSheet> {
                     ),
                   ),
                 ),
-                Expanded(
-                  child: _picking ? _picker(l10n) : _care(l10n),
-                ),
+                Expanded(child: _picking ? _picker(l10n) : _care(l10n)),
               ],
             ),
           ),
@@ -177,7 +181,7 @@ class _PetSheetState extends State<PetSheet> {
     );
   }
 
-  Widget _picker(L10n l10n) {
+  Widget _picker(AppLocalizations l10n) {
     final available = [
       for (final def in PetDef.all)
         if (!widget.pets.owns(def.kind)) def,
@@ -198,15 +202,12 @@ class _PetSheetState extends State<PetSheet> {
       childAspectRatio: 0.78,
       children: [
         for (final def in available)
-          _PetCard(
-            def: def,
-            onTap: () => _adopt(def.kind),
-          ),
+          _PetCard(def: def, onTap: () => _adopt(def.kind)),
       ],
     );
   }
 
-  Widget _care(L10n l10n) {
+  Widget _care(AppLocalizations l10n) {
     final snapshots = widget.pets.allCare();
     if (snapshots.isEmpty) {
       return _picker(l10n);
@@ -223,7 +224,16 @@ class _PetSheetState extends State<PetSheet> {
         if (!compact) ..._soloCare(l10n, snapshots.first),
         if (compact)
           for (final snapshot in snapshots) ...[
-            OwnedPetCard(snapshot: snapshot),
+            OwnedPetCard(
+              snapshot: snapshot,
+              footer: PetCombatSection(
+                kind: snapshot.kind,
+                hunger: snapshot.of(PetNeed.hunger),
+                onChanged: () {
+                  if (mounted) setState(() {});
+                },
+              ),
+            ),
             const SizedBox(height: 12),
           ],
         Text(
@@ -252,13 +262,10 @@ class _PetSheetState extends State<PetSheet> {
     );
   }
 
-  List<Widget> _soloCare(L10n l10n, PetCare snapshot) {
+  List<Widget> _soloCare(AppLocalizations l10n, PetCare snapshot) {
     final def = PetDef.of(snapshot.kind);
     return [
-      SizedBox(
-        height: 140,
-        child: PetPortrait(kind: def.kind),
-      ),
+      SizedBox(height: 140, child: PetPortrait(kind: def.kind)),
       const SizedBox(height: 10),
       Text(
         l10n.petMoodLine(snapshot.kind, snapshot.mood),
@@ -269,12 +276,17 @@ class _PetSheetState extends State<PetSheet> {
           fontSize: 16,
         ),
       ),
+      const SizedBox(height: 12),
+      PetCombatSection(
+        kind: snapshot.kind,
+        hunger: snapshot.of(PetNeed.hunger),
+        onChanged: () {
+          if (mounted) setState(() {});
+        },
+      ),
       const SizedBox(height: 16),
       for (final need in PetNeed.values) ...[
-        PetNeedBar(
-          label: l10n.petNeedLabel(need),
-          value: snapshot.of(need),
-        ),
+        PetNeedBar(label: l10n.petNeedLabel(need), value: snapshot.of(need)),
         const SizedBox(height: 10),
       ],
       const SizedBox(height: 6),
@@ -283,14 +295,70 @@ class _PetSheetState extends State<PetSheet> {
 }
 
 class OwnedPetCard extends StatelessWidget {
-  const OwnedPetCard({super.key, required this.snapshot});
+  const OwnedPetCard({
+    super.key,
+    required this.snapshot,
+    this.yardAction,
+    this.header,
+    this.footer,
+    this.showPortrait = true,
+  });
 
   final PetCare snapshot;
+  final Widget? yardAction;
+  final Widget? header;
+  final Widget? footer;
+  final bool showPortrait;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = L10n.of(context);
+    final l10n = AppLocalizations.of(context);
     final def = PetDef.of(snapshot.kind);
+    final details = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.petName(snapshot.kind),
+          style: const TextStyle(
+            color: _ivory,
+            fontWeight: FontWeight.w800,
+            fontSize: 15,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          l10n.petMoodLine(snapshot.kind, snapshot.mood),
+          style: const TextStyle(
+            color: _goldSoft,
+            fontWeight: FontWeight.w700,
+            fontSize: 12,
+          ),
+        ),
+        if (yardAction != null) ...[
+          const SizedBox(height: 4),
+          Align(alignment: Alignment.centerLeft, child: yardAction),
+        ],
+        const SizedBox(height: 8),
+        for (final need in PetNeed.values) ...[
+          PetNeedBar(label: l10n.petNeedLabel(need), value: snapshot.of(need)),
+          if (need != PetNeed.rest) const SizedBox(height: 6),
+        ],
+      ],
+    );
+    final body = showPortrait
+        ? Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 72,
+                height: 88,
+                child: PetPortrait(kind: def.kind),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: details),
+            ],
+          )
+        : details;
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -298,47 +366,20 @@ class OwnedPetCard extends StatelessWidget {
         border: Border.all(color: _gold.withValues(alpha: 0.55), width: 1.2),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-        child: Row(
+        padding: header == null
+            ? const EdgeInsets.fromLTRB(12, 10, 12, 12)
+            : const EdgeInsets.fromLTRB(10, 10, 10, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(
-              width: 72,
-              height: 88,
-              child: PetPortrait(kind: def.kind),
+            if (header != null) ...[header!, const SizedBox(height: 10)],
+            Padding(
+              padding: header == null
+                  ? EdgeInsets.zero
+                  : const EdgeInsets.symmetric(horizontal: 2),
+              child: body,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.petName(snapshot.kind),
-                    style: const TextStyle(
-                      color: _ivory,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    l10n.petMoodLine(snapshot.kind, snapshot.mood),
-                    style: const TextStyle(
-                      color: _goldSoft,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  for (final need in PetNeed.values) ...[
-                    PetNeedBar(
-                      label: l10n.petNeedLabel(need),
-                      value: snapshot.of(need),
-                    ),
-                    if (need != PetNeed.rest) const SizedBox(height: 6),
-                  ],
-                ],
-              ),
-            ),
+            if (footer != null) ...[const SizedBox(height: 10), footer!],
           ],
         ),
       ),
@@ -347,17 +388,14 @@ class OwnedPetCard extends StatelessWidget {
 }
 
 class _PetCard extends StatelessWidget {
-  const _PetCard({
-    required this.def,
-    required this.onTap,
-  });
+  const _PetCard({required this.def, required this.onTap});
 
   final PetDef def;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = L10n.of(context);
+    final l10n = AppLocalizations.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(

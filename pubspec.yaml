@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.2+148
+version: 1.0.2+216
 
 environment:
   sdk: ^3.12.2
@@ -60,6 +60,8 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
+  # Для tool/normalize_house_frames.dart: правка спрайтов построек.
+  image: ^4.9.1
 
 flutter_launcher_icons:
   android: true
@@ -83,6 +85,7 @@ flutter_launcher_icons:
 
 # The following section is specific to Flutter packages.
 flutter:
+  generate: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
@@ -93,6 +96,7 @@ flutter:
     - assets/tile_base.png
     - assets/tile_shadow.png
     - assets/felt.png
+    - assets/ui/
     - assets/sfx/
     - assets/sfx/praise/
     - assets/music/
@@ -117,11 +121,17 @@ flutter:
     - assets/titles/wind/
     - assets/pets/
     - assets/courtyard/world/
+    - assets/courtyard/props/
     - assets/courtyard/builds/house/
     - assets/courtyard/builds/pond/
     - assets/courtyard/builds/pets/
     - assets/courtyard/builds/internet/
     - assets/levels/
+
+  fonts:
+    - family: Noto Sans Thai
+      fonts:
+        - asset: fonts/NotoSansThai-VF.ttf
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

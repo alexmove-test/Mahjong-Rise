@@ -340,7 +340,7 @@ class WinSunburstPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty || intensity <= 0) return;
 
-    final center = Offset(size.width * 0.5, size.height * 0.42);
+    final center = Offset(size.width * 0.5, size.height * 0.5);
     final radius = size.longestSide * 0.72;
     final turn = rotation * math.pi * 2;
     final wedge = math.pi / _rayCount;
@@ -374,5 +374,304 @@ class WinSunburstPainter extends CustomPainter {
   bool shouldRepaint(covariant WinSunburstPainter oldDelegate) {
     return oldDelegate.rotation != rotation ||
         oldDelegate.intensity != intensity;
+  }
+}
+
+const _titleInk = Color(0xFF140E08);
+const _titleGoldLo = Color(0xFFB07A18);
+const _titleGold = Color(0xFFE8C96A);
+const _titleIvory = Color(0xFFFFF6D8);
+
+/// Тёмный ореол, лучи и искры вокруг победной надписи.
+class WinTitleHaloPainter extends CustomPainter {
+  const WinTitleHaloPainter({required this.spin, required this.glow});
+
+  final double spin;
+  final double glow;
+
+  static const _rayCount = 12;
+  static const _sparkCount = 9;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty || glow <= 0) return;
+
+    final center = Offset(size.width * 0.5, size.height * 0.48);
+    _paintVeil(canvas, size, center);
+    _paintBloom(canvas, size, center);
+    _paintRays(canvas, size, center);
+    _paintSparkles(canvas, size, center);
+    _paintFlourish(canvas, size, center);
+  }
+
+  void _paintVeil(Canvas canvas, Size size, Offset center) {
+    final veil = Rect.fromCenter(
+      center: center,
+      width: size.width * 1.08,
+      height: size.height * 0.96,
+    );
+    canvas.drawOval(
+      veil,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            const Color(0xF205120C).withValues(alpha: 0.82 * glow),
+            const Color(0xCC05140F).withValues(alpha: 0.46 * glow),
+            const Color(0x0003120C),
+          ],
+          stops: const [0.0, 0.48, 1.0],
+        ).createShader(veil),
+    );
+  }
+
+  void _paintBloom(Canvas canvas, Size size, Offset center) {
+    final radius = size.shortestSide * 0.42;
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..color = _titleGold.withValues(alpha: 0.28 * glow)
+        ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 22),
+    );
+    canvas.drawCircle(
+      center,
+      radius * 0.42,
+      Paint()
+        ..color = _titleIvory.withValues(alpha: 0.16 * glow)
+        ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 12),
+    );
+  }
+
+  void _paintRays(Canvas canvas, Size size, Offset center) {
+    final radius = size.longestSide * 0.62;
+    final turn = spin * math.pi * 2;
+    final wedge = math.pi / _rayCount;
+
+    for (var i = 0; i < _rayCount; i++) {
+      final angle = turn + i * math.pi * 2 / _rayCount;
+      final path = Path()
+        ..moveTo(center.dx, center.dy)
+        ..lineTo(
+          center.dx + math.cos(angle - wedge * 0.28) * radius,
+          center.dy + math.sin(angle - wedge * 0.28) * radius,
+        )
+        ..lineTo(
+          center.dx + math.cos(angle + wedge * 0.28) * radius,
+          center.dy + math.sin(angle + wedge * 0.28) * radius,
+        )
+        ..close();
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = _titleGold.withValues(
+            alpha: (i.isEven ? 0.18 : 0.08) * glow,
+          )
+          ..style = PaintingStyle.fill,
+      );
+    }
+  }
+
+  void _paintSparkles(Canvas canvas, Size size, Offset center) {
+    for (var i = 0; i < _sparkCount; i++) {
+      final angle = spin * math.pi * 2 * 0.7 + i * 2.399963;
+      final orbit = 0.74 + 0.08 * math.sin(spin * math.pi * 4 + i);
+      final pos = Offset(
+        center.dx + math.cos(angle) * size.width * 0.46 * orbit,
+        center.dy + math.sin(angle) * size.height * 0.40 * orbit,
+      );
+      final twinkle =
+          (0.35 + 0.65 * (0.5 + 0.5 * math.sin(spin * math.pi * 6 + i * 1.7))) *
+          glow;
+      if (twinkle <= 0.05) continue;
+
+      final r = 1.6 + (i % 3) * 0.9;
+      canvas.drawCircle(
+        pos,
+        r * 2.1,
+        Paint()
+          ..color = _titleGold.withValues(alpha: 0.42 * twinkle)
+          ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 3.2),
+      );
+      _drawDiamond(canvas, pos, r * (0.85 + 0.35 * twinkle), twinkle);
+    }
+  }
+
+  void _drawDiamond(Canvas canvas, Offset pos, double s, double alpha) {
+    final path = Path()
+      ..moveTo(pos.dx, pos.dy - s * 1.7)
+      ..lineTo(pos.dx + s * 0.7, pos.dy)
+      ..lineTo(pos.dx, pos.dy + s * 1.7)
+      ..lineTo(pos.dx - s * 0.7, pos.dy)
+      ..close();
+    canvas.drawPath(
+      path,
+      Paint()..color = _titleIvory.withValues(alpha: 0.92 * alpha),
+    );
+  }
+
+  void _paintFlourish(Canvas canvas, Size size, Offset center) {
+    final y = center.dy + size.height * 0.28;
+    final half = size.width * 0.22;
+    final paint = Paint()
+      ..color = _titleGold.withValues(alpha: 0.72 * glow)
+      ..strokeWidth = 1.6
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      Offset(center.dx - half, y),
+      Offset(center.dx + half, y),
+      paint,
+    );
+    _drawDiamond(canvas, Offset(center.dx, y), 3.4, glow);
+    _drawDiamond(canvas, Offset(center.dx - half, y), 2.2, glow * 0.85);
+    _drawDiamond(canvas, Offset(center.dx + half, y), 2.2, glow * 0.85);
+  }
+
+  @override
+  bool shouldRepaint(covariant WinTitleHaloPainter oldDelegate) {
+    return oldDelegate.spin != spin || oldDelegate.glow != glow;
+  }
+}
+
+/// Металлическая «Победа!» с контуром, свечением и бликом.
+class WinTitleGlyphPainter extends CustomPainter {
+  const WinTitleGlyphPainter({
+    required this.text,
+    required this.textDirection,
+    required this.shimmer,
+    required this.glow,
+  });
+
+  final String text;
+  final TextDirection textDirection;
+  final double shimmer;
+  final double glow;
+
+  static const style = TextStyle(
+    fontWeight: FontWeight.w900,
+    fontSize: 52,
+    height: 1.05,
+    letterSpacing: 2.2,
+  );
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty || text.isEmpty) return;
+
+    final painter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: style.copyWith(color: Colors.white),
+      ),
+      textAlign: TextAlign.center,
+      textDirection: textDirection,
+    )..layout();
+    final origin = Offset(
+      (size.width - painter.width) / 2,
+      (size.height - painter.height) / 2,
+    );
+    final rect = origin & Size(painter.width, painter.height);
+
+    _paintGlow(canvas, painter, origin, rect);
+    _paintStroke(canvas, origin, 8.8, _titleInk.withValues(alpha: 0.96));
+    _paintStroke(canvas, origin, 3.8, _titleGoldLo);
+    _paintFill(canvas, painter, origin, rect);
+  }
+
+  void _paintGlow(
+    Canvas canvas,
+    TextPainter painter,
+    Offset origin,
+    Rect rect,
+  ) {
+    final bounds = rect.inflate(36);
+    canvas.saveLayer(
+      bounds,
+      Paint()
+        ..color = _titleGold.withValues(alpha: 0.55 * glow)
+        ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 16),
+    );
+    painter.paint(canvas, origin);
+    canvas.restore();
+
+    canvas.saveLayer(
+      bounds,
+      Paint()
+        ..color = const Color(0xCC000000).withValues(alpha: 0.55)
+        ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 6),
+    );
+    painter.paint(canvas, origin + const Offset(0, 3.2));
+    canvas.restore();
+  }
+
+  void _paintStroke(Canvas canvas, Offset origin, double width, Color color) {
+    final stroke = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: style.copyWith(
+          foreground: Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = width
+            ..strokeJoin = StrokeJoin.round
+            ..color = color,
+        ),
+      ),
+      textAlign: TextAlign.center,
+      textDirection: textDirection,
+    )..layout();
+    stroke.paint(canvas, origin);
+  }
+
+  void _paintFill(
+    Canvas canvas,
+    TextPainter painter,
+    Offset origin,
+    Rect rect,
+  ) {
+    canvas.save();
+    canvas.translate(origin.dx, origin.dy);
+    final local = Offset.zero & Size(painter.width, painter.height);
+    canvas.saveLayer(local, Paint());
+    painter.paint(canvas, Offset.zero);
+    canvas.drawRect(
+      local,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFFFFF8E8),
+            Color(0xFFFFE58A),
+            Color(0xFFE4B84A),
+            Color(0xFFC4922A),
+          ],
+          stops: [0.0, 0.36, 0.72, 1.0],
+        ).createShader(local)
+        ..blendMode = BlendMode.srcIn,
+    );
+    final x = -1.2 + 2.4 * shimmer;
+    canvas.drawRect(
+      local,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment(x - 0.22, -0.7),
+          end: Alignment(x + 0.22, 0.7),
+          colors: [
+            const Color(0x00FFFFFF),
+            Colors.white.withValues(alpha: 0.9 * glow),
+            const Color(0x00FFFFFF),
+          ],
+        ).createShader(local)
+        ..blendMode = BlendMode.srcATop,
+    );
+    canvas.restore();
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant WinTitleGlyphPainter oldDelegate) {
+    return oldDelegate.text != text ||
+        oldDelegate.textDirection != textDirection ||
+        oldDelegate.shimmer != shimmer ||
+        oldDelegate.glow != glow;
   }
 }

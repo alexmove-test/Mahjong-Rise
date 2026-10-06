@@ -3,12 +3,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mahjong/models/tile.dart';
 import 'package:mahjong/widgets/game_hud.dart';
 import 'package:mahjong/widgets/tile_widget.dart';
+import 'package:mahjong/l10n/app_localizations.dart';
 
 void main() {
   testWidgets('free tile announces name and free state', (tester) async {
     final semantics = tester.ensureSemantics();
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: TileWidget(
             tile: Tile(id: 0, symbol: 'bamboo-3', layer: 0, x: 0, y: 0),
@@ -30,6 +33,8 @@ void main() {
     final semantics = tester.ensureSemantics();
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: TileWidget(
             tile: Tile(id: 1, symbol: 'fruit-01', layer: 0, x: 0, y: 0),
@@ -51,6 +56,8 @@ void main() {
     final semantics = tester.ensureSemantics();
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: GameHudCircleButton(
             icon: Icons.menu_rounded,

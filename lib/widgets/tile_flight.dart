@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' show lerpDouble;
 
@@ -34,6 +35,7 @@ class _TileFlightOverlayState extends State<TileFlightOverlay>
 
   late final AnimationController _ctrl;
   late final Animation<double> _t;
+  Timer? _fallback;
   bool _notified = false;
 
   @override
@@ -42,20 +44,36 @@ class _TileFlightOverlayState extends State<TileFlightOverlay>
     _ctrl =
         AnimationController(vsync: this, duration: TileFlightOverlay.duration)
           ..addStatusListener((status) {
-            if (status == AnimationStatus.completed && !_notified) {
-              _notified = true;
-              widget.onArrived();
-            }
+            if (status == AnimationStatus.completed) _notifyArrived();
           });
     _t = CurvedAnimation(
       parent: _ctrl,
       curve: const Cubic(0.2, 0.72, 0.16, 1.0),
     );
     _ctrl.forward();
+    // Тикер иногда не доходит до completed — тогда кость остаётся flying
+    // и стол выглядит пустым, хотя партия ещё не выиграна.
+    _fallback = Timer(
+      TileFlightOverlay.duration + const Duration(milliseconds: 80),
+      _notifyArrived,
+    );
+  }
+
+  void _notifyArrived() {
+    if (_notified) return;
+    _notified = true;
+    _fallback?.cancel();
+    widget.onArrived();
   }
 
   @override
   void dispose() {
+    _fallback?.cancel();
+    if (!_notified) {
+      _notified = true;
+      final onArrived = widget.onArrived;
+      WidgetsBinding.instance.addPostFrameCallback((_) => onArrived());
+    }
     _ctrl.dispose();
     super.dispose();
   }

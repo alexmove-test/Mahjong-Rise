@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../services/table_look_controller.dart';
 import 'tile_canvas.dart';
 
 /// Разметка кости: геометрия лица, символа и скругления из [TileCanvas].
@@ -17,8 +18,10 @@ class TileBaseLayout {
   static const spriteTop = 0.0;
   static const spriteWidth = 1.0;
   static const spriteHeight = 1.0;
-  /// Высота / ширина видимой кости. Физическая плитка ~1.33–1.38, не квадрат.
-  static const spriteAspect = 709 / 514;
+  /// Пиксели кадра `assets/tile_base.png`. Физическая плитка ~1.33–1.38.
+  static const spriteWidthPx = 514.0;
+  static const spriteHeightPx = 709.0;
+  static const spriteAspect = spriteHeightPx / spriteWidthPx;
 
   static const faceInsetRight = TileCanvas.faceInsetRight;
   static const faceInsetBottom = TileCanvas.faceInsetBottom;
@@ -118,6 +121,27 @@ class TileBodySprite extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final look = TableLookScope.lookOf(context);
+    if (look.isCasual) {
+      return CustomPaint(
+        size: size,
+        painter: TileCasualFacePainter(
+          locked: locked,
+          lifted: lifted,
+          isSelected: isSelected,
+        ),
+      );
+    }
+    if (look.isPremium) {
+      return CustomPaint(
+        size: size,
+        painter: PremiumTileBodyPainter(
+          locked: locked,
+          lifted: lifted,
+          isSelected: isSelected,
+        ),
+      );
+    }
     final tint = chromeTint(locked: locked, isSelected: isSelected);
     return TileMappedSprite(
       asset: TileBaseLayout.baseAsset,
@@ -136,12 +160,76 @@ class TileBodySprite extends StatelessWidget {
   }
 }
 
+/// Тело кости темы «Новая»: Canvas без PNG/tint, см. [PremiumTileCanvas].
+class PremiumTileBodyPainter extends CustomPainter {
+  const PremiumTileBodyPainter({
+    this.locked = false,
+    this.lifted = false,
+    this.isSelected = false,
+  });
+
+  final bool locked;
+  final bool lifted;
+  final bool isSelected;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    PremiumTileCanvas.drawBody(
+      canvas,
+      size,
+      isSelected: isSelected,
+      locked: locked,
+      lifted: lifted,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant PremiumTileBodyPainter oldDelegate) {
+    return oldDelegate.locked != locked ||
+        oldDelegate.lifted != lifted ||
+        oldDelegate.isSelected != isSelected;
+  }
+}
+
+/// Плоское casual-лицо без PNG-тела.
+class TileCasualFacePainter extends CustomPainter {
+  const TileCasualFacePainter({
+    required this.locked,
+    required this.lifted,
+    required this.isSelected,
+  });
+
+  final bool locked;
+  final bool lifted;
+  final bool isSelected;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    TileCanvas.drawCasualTile(
+      canvas,
+      size,
+      locked: locked,
+      lifted: lifted,
+      isSelected: isSelected,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant TileCasualFacePainter oldDelegate) {
+    return oldDelegate.locked != locked ||
+        oldDelegate.lifted != lifted ||
+        oldDelegate.isSelected != isSelected;
+  }
+}
+
 /// Классический глиф или сезонный мотив поверх PNG-тела.
 class TileOverlayArtPainter extends CustomPainter {
   const TileOverlayArtPainter({
     this.locked = false,
     this.isSelected = false,
     this.isSpecial = false,
+    this.casual = false,
+    this.premium = false,
     this.specialSeed = 0,
     this.symbol,
   });
@@ -149,6 +237,8 @@ class TileOverlayArtPainter extends CustomPainter {
   final bool locked;
   final bool isSelected;
   final bool isSpecial;
+  final bool casual;
+  final bool premium;
   final int specialSeed;
   final String? symbol;
 
@@ -160,6 +250,8 @@ class TileOverlayArtPainter extends CustomPainter {
       isSpecial: isSpecial,
       isSelected: isSelected,
       locked: locked,
+      casual: casual,
+      premium: premium,
       specialSeed: specialSeed,
       symbol: symbol,
     );
@@ -170,6 +262,8 @@ class TileOverlayArtPainter extends CustomPainter {
     return oldDelegate.locked != locked ||
         oldDelegate.isSelected != isSelected ||
         oldDelegate.isSpecial != isSpecial ||
+        oldDelegate.casual != casual ||
+        oldDelegate.premium != premium ||
         oldDelegate.specialSeed != specialSeed ||
         oldDelegate.symbol != symbol;
   }
@@ -320,9 +414,15 @@ class TileFaceLightPainter extends CustomPainter {
 
 /// Золотое гало выбора / подсказки по контуру кости.
 class TileHighlightPainter extends CustomPainter {
-  const TileHighlightPainter({required this.intensity});
+  const TileHighlightPainter({
+    required this.intensity,
+    this.casual = false,
+    this.premium = false,
+  });
 
   final double intensity;
+  final bool casual;
+  final bool premium;
 
   static const _gold = Color(0xFFE8C96A);
   static const _goldDeep = Color(0xFFD4AF37);
@@ -331,12 +431,20 @@ class TileHighlightPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (intensity <= 0) return;
 
-    final radius = TileBaseLayout.cornerRadius(size);
+    final radius = premium
+        ? PremiumTileLayout.cornerRadius(size)
+        : (casual
+              ? CasualTileLayout.cornerRadius(size)
+              : TileBaseLayout.cornerRadius(size));
     final body = RRect.fromRectAndRadius(
       Offset.zero & size,
       Radius.circular(radius),
     );
-    final face = TileBaseLayout.faceRectOf(size);
+    final face = premium
+        ? PremiumTileLayout.faceRectOf(size)
+        : (casual
+              ? CasualTileLayout.faceRectOf(size)
+              : TileBaseLayout.faceRectOf(size));
     final faceRRect = RRect.fromRectAndRadius(face, Radius.circular(radius));
     final glow = intensity.clamp(0.0, 1.0);
     final pad = size.shortestSide * 0.22;
@@ -389,7 +497,9 @@ class TileHighlightPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant TileHighlightPainter oldDelegate) {
-    return oldDelegate.intensity != intensity;
+    return oldDelegate.intensity != intensity ||
+        oldDelegate.casual != casual ||
+        oldDelegate.premium != premium;
   }
 }
 

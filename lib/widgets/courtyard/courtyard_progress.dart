@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import '../../models/levels.dart';
 import '../../models/plot_kind.dart';
 import '../../services/progress_store.dart';
-import 'courtyard_lot_build.dart';
 
 /// Визуальное состояние участка: чистая функция прогресса кампании.
 class CourtyardSnapshot {
@@ -311,69 +310,6 @@ class CourtyardSnapshot {
   ]);
 }
 
-const pathStagePhrases = houseEraPhrasesEn;
-const pondStagePhrases = pondEraPhrasesEn;
-const petsStagePhrases = petsEraPhrasesEn;
-const guestStagePhrases = guestEraPhrasesEn;
-
-const pathWarmPhrases = <String>[
-  'Another step along the path.',
-  'The plot is yours now.',
-  'The house is a little closer.',
-];
-
-const pondWarmPhrases = <String>[
-  'The water rose a little.',
-  'The pond is more yours now.',
-  'The banks sit closer.',
-];
-
-const petsWarmPhrases = <String>[
-  'The pet house grew a little.',
-  'The yard is more theirs now.',
-  'The kennel sits closer.',
-];
-
-const guestWarmPhrases = <String>[
-  'The signal grew a little.',
-  'The yard is more connected.',
-  'The line sits closer.',
-];
-
-const pathLifePhrase = 'The house feels warmer.';
-const pondLifePhrase = 'The pond feels alive.';
-const petsLifePhrase = 'The pet house feels warmer.';
-const guestLifePhrase = 'The yard hums a little.';
-
-/// Первая победа: двор в диалоге — не обои, а смысл кампании.
-const firstHomePhrase = 'This house grows as you play.';
-const firstPondPhrase = 'This pond fills as you play.';
-const firstPetsPhrase = 'This pet house grows as you play.';
-const firstGuestPhrase = 'This yard comes online as you play.';
-
-List<String> stagePhrasesFor(PlotKind kind) => eraPhrasesFor(kind, ru: false);
-
-List<String> warmPhrasesFor(PlotKind kind) => switch (kind) {
-  PlotKind.house => pathWarmPhrases,
-  PlotKind.pond => pondWarmPhrases,
-  PlotKind.pets => petsWarmPhrases,
-  PlotKind.guest => guestWarmPhrases,
-};
-
-String lifePhraseFor(PlotKind kind) => switch (kind) {
-  PlotKind.house => pathLifePhrase,
-  PlotKind.pond => pondLifePhrase,
-  PlotKind.pets => petsLifePhrase,
-  PlotKind.guest => guestLifePhrase,
-};
-
-String firstPhraseFor(PlotKind kind) => switch (kind) {
-  PlotKind.house => firstHomePhrase,
-  PlotKind.pond => firstPondPhrase,
-  PlotKind.pets => firstPetsPhrase,
-  PlotKind.guest => firstGuestPhrase,
-};
-
 /// 0 = старт, 1–6 = этапы по 4 уровня внутри цикла из 24.
 int pathBand(double step) {
   if (step <= 0) return 0;
@@ -383,30 +319,4 @@ int pathBand(double step) {
   if (step <= 16) return 4;
   if (step <= 20) return 5;
   return 6;
-}
-
-String pathPhraseForHome(CourtyardSnapshot snapshot, {double? stage}) {
-  final phrases = stagePhrasesFor(snapshot.plotKind);
-  final era = CourtyardLotBuild.eraIndex(stage ?? snapshot.step);
-  return phrases[era];
-}
-
-String pathPhraseForWin({
-  required CourtyardSnapshot from,
-  required CourtyardSnapshot to,
-  double? fromStage,
-  double? toStage,
-}) {
-  final phrases = stagePhrasesFor(to.plotKind);
-  final warm = warmPhrasesFor(to.plotKind);
-  final a = fromStage ?? from.step;
-  final b = toStage ?? to.step;
-  final fromEra = CourtyardLotBuild.eraIndex(a);
-  final toEra = CourtyardLotBuild.eraIndex(b);
-  if (toEra > fromEra) return phrases[toEra];
-  if (b > a + 0.01) {
-    return warm[b.floor() % warm.length];
-  }
-  if (to.totalStars > from.totalStars) return lifePhraseFor(to.plotKind);
-  return warm.first;
 }

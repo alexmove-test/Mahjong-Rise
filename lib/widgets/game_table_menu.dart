@@ -9,9 +9,10 @@ import '../l10n/l10n.dart';
 import '../services/haptic_controller.dart';
 import '../services/locked_tile_dim_controller.dart';
 import '../services/music_controller.dart';
-import '../services/q_mode_controller.dart';
 import '../services/sfx_controller.dart';
+import '../services/table_look_controller.dart';
 import 'app_settings.dart';
+import 'privacy_options_tile.dart';
 import 'table_theme.dart';
 
 Future<void> showGameTableMenu(
@@ -21,12 +22,12 @@ Future<void> showGameTableMenu(
   required VoidCallback onHowToPlay,
   required ValueChanged<String> onLinkFailed,
 }) {
-  final l10n = L10n.of(context);
+  final l10n = AppLocalizations.of(context);
   final haptic = HapticScope.maybeOf(context);
   final sfx = SfxScope.maybeOf(context);
   final music = MusicScope.maybeOf(context);
-  final qMode = QModeScope.maybeOf(context);
   final lockedDim = LockedTileDimScope.maybeOf(context);
+  final tableLook = TableLookScope.maybeOf(context);
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -40,8 +41,8 @@ Future<void> showGameTableMenu(
           ?haptic,
           ?sfx,
           ?music,
-          ?qMode,
           ?lockedDim,
+          ?tableLook,
         ]),
         builder: (_, _) => SingleChildScrollView(
           child: Column(
@@ -90,7 +91,7 @@ Future<void> showGameTableMenu(
               MusicSwitchTile(controller: music, l10n: l10n),
               HapticSwitchTile(controller: haptic, l10n: l10n),
               LockedTileDimSwitchTile(controller: lockedDim, l10n: l10n),
-              QModeSwitchTile(controller: qMode, l10n: l10n),
+              TableLookSection(controller: tableLook, l10n: l10n),
               ListTile(
                 leading: const Icon(
                   Icons.language_rounded,
@@ -104,6 +105,11 @@ Future<void> showGameTableMenu(
                   Navigator.pop(ctx);
                   unawaited(showLanguagePicker(context));
                 },
+              ),
+              PrivacyOptionsTile(
+                iconColor: TableUi.ivory,
+                textColor: TableUi.ivory,
+                onMessage: onLinkFailed,
               ),
               ListTile(
                 leading: const Icon(
@@ -145,7 +151,7 @@ Future<void> _openPrivacy(
   final uri = Uri.parse(AppLinks.privacyPolicy);
   final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
   if (!opened && context.mounted) {
-    onLinkFailed(L10n.of(context).couldNotOpenLink);
+    onLinkFailed(AppLocalizations.of(context).couldNotOpenLink);
   }
 }
 
@@ -163,7 +169,7 @@ Future<void> showAboutGameDialog(BuildContext context) {
           ),
         ),
         title: Text(
-          L10n.of(dialogContext).aboutGame,
+          AppLocalizations.of(dialogContext).aboutGame,
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: TableUi.goldSoft,
@@ -192,7 +198,7 @@ Future<void> showAboutGameDialog(BuildContext context) {
             ),
             const SizedBox(height: 2),
             Text(
-              L10n.of(dialogContext).builtAt(appBuildTime),
+              AppLocalizations.of(dialogContext).builtAt(appBuildTime),
               style: TextStyle(
                 color: TableUi.ivory.withValues(alpha: 0.55),
                 fontWeight: FontWeight.w500,
@@ -206,7 +212,7 @@ Future<void> showAboutGameDialog(BuildContext context) {
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: Text(
-              L10n.of(dialogContext).close,
+              AppLocalizations.of(dialogContext).close,
               style: const TextStyle(
                 color: TableUi.goldSoft,
                 fontWeight: FontWeight.w700,

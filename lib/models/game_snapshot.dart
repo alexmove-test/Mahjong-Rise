@@ -1,4 +1,5 @@
 import 'board.dart';
+import 'level_challenge.dart';
 import 'tile.dart';
 
 /// Один слот незавершённой партии. [levelId] 0 — ежедневный стол.
@@ -14,6 +15,8 @@ class GameSnapshot {
     required this.magnets,
     required this.tiles,
     required this.trayIds,
+    this.challenge = LevelChallenge.none,
+    this.targetTileIds = const [],
   });
 
   static const dailyLevelId = 0;
@@ -28,6 +31,8 @@ class GameSnapshot {
   final int magnets;
   final List<TileSnapshot> tiles;
   final List<int> trayIds;
+  final LevelChallenge challenge;
+  final List<int> targetTileIds;
 
   factory GameSnapshot.fromBoard({
     required int levelId,
@@ -47,6 +52,7 @@ class GameSnapshot {
           x: tile.x,
           y: tile.y,
           layer: tile.layer,
+          // Полёт не сериализуется: иначе после двора кость пропадает.
           removed: tile.removed || tile.removing,
           inTray: tile.inTray && !tile.removing && !tile.removed,
         ),
@@ -66,6 +72,8 @@ class GameSnapshot {
       magnets: magnets,
       tiles: tiles,
       trayIds: trayIds,
+      challenge: board.challenge,
+      targetTileIds: board.targetTileIds.toList(),
     );
   }
 
@@ -84,6 +92,14 @@ class GameSnapshot {
     ];
     final byId = {for (final tile in restored) tile.id: tile};
     final board = Board(tiles: restored, layoutName: layoutName);
+    board.challenge = challenge;
+    final targets = targetTileIds.toSet();
+    if (targets.length == 2 && targets.every(byId.containsKey)) {
+      board.targetTileIds.addAll(targets);
+    } else if (challenge == LevelChallenge.specialPair) {
+      // Invalid target data falls back to an ordinary full-board game.
+      board.challenge = LevelChallenge.none;
+    }
     for (final id in trayIds) {
       final tile = byId[id];
       if (tile == null || !tile.inTray) continue;
@@ -103,6 +119,8 @@ class GameSnapshot {
     'magnets': magnets,
     'tiles': [for (final tile in tiles) tile.toJson()],
     'trayIds': trayIds,
+    'challenge': challenge.name,
+    'targetTileIds': targetTileIds,
   };
 
   factory GameSnapshot.fromJson(Map<String, Object?> json) {
@@ -117,10 +135,20 @@ class GameSnapshot {
       hints: json['hints'] as int? ?? 0,
       undos: json['undos'] as int? ?? 0,
       magnets: json['magnets'] as int? ?? 0,
+      challenge: LevelChallenge.values.firstWhere(
+        (value) => value.name == json['challenge'],
+        orElse: () => LevelChallenge.none,
+      ),
+      targetTileIds: [
+        if (json['targetTileIds'] is List)
+          for (final id in json['targetTileIds'] as List)
+            if (id is int) id,
+      ],
       tiles: [
         if (rawTiles is List)
           for (final item in rawTiles)
-            if (item is Map<String, Object?>) TileSnapshot.fromJson(item)
+            if (item is Map<String, Object?>)
+              TileSnapshot.fromJson(item)
             else if (item is Map)
               TileSnapshot.fromJson(item.cast<String, Object?>()),
       ],

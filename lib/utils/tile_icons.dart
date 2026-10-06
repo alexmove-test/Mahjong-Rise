@@ -5382,11 +5382,11 @@ class TileIcons {
         lower.endsWith('.webp');
   }
 
-  /// `fruit-01` → `assets/titles/fruit/01.svg`
+  /// `fruit-01` → PNG в ярком матче, прежний SVG в классике.
   /// `soft-01` → `assets/titles/soft/01.png`
   /// `set1-bamboo-03` → `assets/titles/1/Bamboo 3.png`
   /// `tile-02-05` → `assets/titles/tile/02/05.svg`
-  static String assetFor(String symbol) {
+  static String assetFor(String symbol, {bool casual = true}) {
     final mapped = _set1Assets[symbol];
     if (mapped != null) return mapped;
     final dash = symbol.indexOf('-');
@@ -5396,7 +5396,11 @@ class TileIcons {
     final folder = symbol.substring(0, dash);
     final rest = symbol.substring(dash + 1);
     if (folder == 'soft') {
-      return '$assetRoot/soft/$rest.png';
+      return '$assetRoot/$folder/$rest.png';
+    }
+    if (folder == 'fruit') {
+      if (casual) return '$assetRoot/$folder/$rest.png';
+      return '$assetRoot/$folder/$rest.svg';
     }
     if (folder == 'tile') {
       final parts = rest.split('-');
@@ -5405,5 +5409,16 @@ class TileIcons {
       }
     }
     return '$assetRoot/$folder/$rest.svg';
+  }
+
+  /// SVG, если PNG лица не загрузился.
+  /// Только яркий матч: классика уже берёт SVG из [assetFor].
+  static String? vectorFallbackFor(String symbol, {bool casual = true}) {
+    if (!casual) return null;
+    final dash = symbol.indexOf('-');
+    if (dash <= 0 || dash == symbol.length - 1) return null;
+    final folder = symbol.substring(0, dash);
+    if (folder != 'fruit') return null;
+    return '$assetRoot/fruit/${symbol.substring(dash + 1)}.svg';
   }
 }

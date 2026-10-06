@@ -10,16 +10,24 @@ class BoardVignetteOverlay extends StatelessWidget {
     this.center = const Alignment(0, -0.06),
     this.intensity = 1.0,
     this.dark = false,
+    this.edgeColor,
+    this.midColor,
   });
 
   final Alignment center;
   final double intensity;
   final bool dark;
 
+  /// Переопределение цвета виньетки (например, тёплый для темы «Новая»).
+  final Color? edgeColor;
+  final Color? midColor;
+
   @override
   Widget build(BuildContext context) {
-    final edge = dark ? const Color(0xFF010807) : const Color(0xFF1A3D2E);
-    final mid = dark ? const Color(0xFF021B18) : const Color(0xFF4A7A62);
+    final edge =
+        edgeColor ?? (dark ? const Color(0xFF010807) : const Color(0xFF1A3D2E));
+    final mid =
+        midColor ?? (dark ? const Color(0xFF021B18) : const Color(0xFF4A7A62));
     final i = intensity.clamp(0.0, 1.5);
 
     return Stack(

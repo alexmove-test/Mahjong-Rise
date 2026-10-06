@@ -75,6 +75,7 @@ class TileGlyph {
     Rect rect, {
     required String symbol,
     double opacity = 1,
+    bool premium = false,
   }) {
     if (rect.isEmpty) return;
     final kind = kindOf(symbol);
@@ -92,20 +93,19 @@ class TileGlyph {
       case TileSuit.plum:
         _plum(canvas, rect, kind.rank);
       case TileSuit.bamboo:
-        _bamboo(canvas, rect, kind.rank);
+        _bamboo(canvas, rect, kind.rank, premium: premium);
       case TileSuit.character:
-        _character(canvas, rect, kind.rank);
+        _character(canvas, rect, kind.rank, premium: premium);
       case TileSuit.dots:
-        _dots(canvas, rect, kind.rank);
+        _dots(canvas, rect, kind.rank, premium: premium);
       case TileSuit.dragon:
         _dragon(canvas, rect, kind.rank);
       case TileSuit.wind:
-        _text(
-          canvas,
-          rect,
-          const ['東', '南', '西', '北'][kind.rank - 1],
-          navy,
-        );
+        if (premium) {
+          _windStrokes(canvas, rect, kind.rank);
+        } else {
+          _text(canvas, rect, const ['東', '南', '西', '北'][kind.rank - 1], navy);
+        }
       case TileSuit.bonus:
         break;
     }
@@ -156,7 +156,12 @@ class TileGlyph {
     );
   }
 
-  static void _bamboo(Canvas canvas, Rect rect, int count) {
+  static void _bamboo(
+    Canvas canvas,
+    Rect rect,
+    int count, {
+    bool premium = false,
+  }) {
     final layout = _bambooLayout(count);
     final cols = layout.fold<int>(0, (m, p) => math.max(m, p.$1 + 1));
     final rows = layout.fold<int>(0, (m, p) => math.max(m, p.$2 + 1));
@@ -169,7 +174,24 @@ class TileGlyph {
         cellW * 0.76,
         cellH * 0.88,
       );
-      _bambooStick(canvas, slot, red ? bambooRed : bambooGreen);
+      if (premium) {
+        // Плотные печатные штрихи без мелких бликов и узлов.
+        final width = math.min(slot.width * 0.62, slot.height * 0.38);
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromCenter(
+              center: slot.center,
+              width: width,
+              height: slot.height * 0.92,
+            ),
+            Radius.circular(width * 0.14),
+          ),
+          Paint()
+            ..color = red ? const Color(0xFFAA2026) : const Color(0xFF16516C),
+        );
+      } else {
+        _bambooStick(canvas, slot, red ? bambooRed : bambooGreen);
+      }
     }
   }
 
@@ -253,11 +275,16 @@ class TileGlyph {
     canvas.drawRRect(
       body,
       Paint()
-        ..shader = ui.Gradient.linear(Offset(cx - w, top), Offset(cx + w, bot), [
-          Color.lerp(color, Colors.white, 0.22)!,
-          color,
-          Color.lerp(color, Colors.black, 0.18)!,
-        ], const [0.0, 0.45, 1.0]),
+        ..shader = ui.Gradient.linear(
+          Offset(cx - w, top),
+          Offset(cx + w, bot),
+          [
+            Color.lerp(color, Colors.white, 0.22)!,
+            color,
+            Color.lerp(color, Colors.black, 0.18)!,
+          ],
+          const [0.0, 0.45, 1.0],
+        ),
     );
     canvas.drawRRect(
       body,
@@ -284,9 +311,18 @@ class TileGlyph {
 
   static const _chars = ['一', '二', '三', '四', '伍', '六', '七', '八', '九'];
 
-  static void _character(Canvas canvas, Rect rect, int rank) {
+  static void _character(
+    Canvas canvas,
+    Rect rect,
+    int rank, {
+    bool premium = false,
+  }) {
     if (rank <= 3) {
       _wanStrokes(canvas, rect, rank);
+      return;
+    }
+    if (premium) {
+      _characterStrokes(canvas, rect, rank);
       return;
     }
     _text(canvas, rect, _chars[rank - 1], navy);
@@ -306,6 +342,182 @@ class TileGlyph {
       final y = bars == 1 ? rect.center.dy : start + i * step;
       canvas.drawLine(Offset(left, y), Offset(right, y), paint);
     }
+  }
+
+  // --- premium: рисованные иероглифы 四–九 и ветра, без системного шрифта.
+
+  static void _characterStrokes(Canvas canvas, Rect rect, int rank) {
+    switch (rank) {
+      case 4:
+        _si(canvas, rect);
+      case 5:
+        _wu(canvas, rect);
+      case 6:
+        _liu(canvas, rect);
+      case 7:
+        _qi(canvas, rect);
+      case 8:
+        _ba(canvas, rect);
+      default:
+        _jiu(canvas, rect);
+    }
+  }
+
+  static Paint _ink(Rect rect, {double width = 0.12}) {
+    return Paint()
+      ..color = navy
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = math.max(2.2, rect.shortestSide * width)
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+  }
+
+  static Offset _u(Rect r, double x, double y) =>
+      Offset(r.left + r.width * x, r.top + r.height * y);
+
+  static void _line(
+    Canvas canvas,
+    Rect r,
+    double x1,
+    double y1,
+    double x2,
+    double y2,
+    Paint paint,
+  ) {
+    canvas.drawLine(_u(r, x1, y1), _u(r, x2, y2), paint);
+  }
+
+  /// 四 — рамка с крестом внутри (симметрично, чтобы не путаться с 西).
+  static void _si(Canvas canvas, Rect rect) {
+    final paint = _ink(rect, width: 0.10);
+    _line(canvas, rect, 0.18, 0.14, 0.82, 0.14, paint);
+    _line(canvas, rect, 0.18, 0.14, 0.18, 0.86, paint);
+    _line(canvas, rect, 0.82, 0.14, 0.82, 0.86, paint);
+    _line(canvas, rect, 0.18, 0.86, 0.82, 0.86, paint);
+    _line(canvas, rect, 0.30, 0.30, 0.70, 0.70, paint);
+    _line(canvas, rect, 0.70, 0.30, 0.30, 0.70, paint);
+  }
+
+  /// 五
+  static void _wu(Canvas canvas, Rect rect) {
+    final paint = _ink(rect, width: 0.12);
+    _line(canvas, rect, 0.16, 0.18, 0.84, 0.18, paint);
+    _line(canvas, rect, 0.50, 0.18, 0.50, 0.48, paint);
+    _line(canvas, rect, 0.22, 0.48, 0.78, 0.48, paint);
+    _line(canvas, rect, 0.22, 0.48, 0.18, 0.84, paint);
+    _line(canvas, rect, 0.18, 0.84, 0.84, 0.84, paint);
+    _line(canvas, rect, 0.72, 0.48, 0.78, 0.78, paint);
+  }
+
+  /// 六
+  static void _liu(Canvas canvas, Rect rect) {
+    final paint = _ink(rect, width: 0.12);
+    _line(canvas, rect, 0.50, 0.12, 0.50, 0.30, paint);
+    _line(canvas, rect, 0.22, 0.34, 0.78, 0.34, paint);
+    _line(canvas, rect, 0.34, 0.34, 0.16, 0.86, paint);
+    _line(canvas, rect, 0.66, 0.34, 0.84, 0.86, paint);
+  }
+
+  /// 七 — широкий верх и один диагональный штрих (чисто, без лишнего крючка,
+  /// чтобы не сливаться визуально с 九).
+  static void _qi(Canvas canvas, Rect rect) {
+    final paint = _ink(rect, width: 0.14);
+    _line(canvas, rect, 0.14, 0.24, 0.86, 0.24, paint);
+    _line(canvas, rect, 0.58, 0.24, 0.30, 0.88, paint);
+  }
+
+  /// 八
+  static void _ba(Canvas canvas, Rect rect) {
+    final paint = _ink(rect, width: 0.14);
+    _line(canvas, rect, 0.38, 0.16, 0.14, 0.88, paint);
+    _line(canvas, rect, 0.62, 0.16, 0.86, 0.88, paint);
+  }
+
+  /// 九 — короткий росчерк сверху и большой крюк-петля справа-снизу.
+  static void _jiu(Canvas canvas, Rect rect) {
+    final paint = _ink(rect, width: 0.13);
+    _line(canvas, rect, 0.30, 0.20, 0.50, 0.34, paint);
+    final hook = Path()
+      ..moveTo(_u(rect, 0.64, 0.16).dx, _u(rect, 0.64, 0.16).dy)
+      ..lineTo(_u(rect, 0.68, 0.58).dx, _u(rect, 0.68, 0.58).dy)
+      ..cubicTo(
+        _u(rect, 0.70, 0.80).dx,
+        _u(rect, 0.70, 0.80).dy,
+        _u(rect, 0.60, 0.90).dx,
+        _u(rect, 0.60, 0.90).dy,
+        _u(rect, 0.32, 0.84).dx,
+        _u(rect, 0.32, 0.84).dy,
+      );
+    canvas.drawPath(hook, paint);
+  }
+
+  static void _windStrokes(Canvas canvas, Rect rect, int rank) {
+    switch (rank) {
+      case 1:
+        _dong(canvas, rect);
+      case 2:
+        _nan(canvas, rect);
+      case 3:
+        _xi(canvas, rect);
+      default:
+        _bei(canvas, rect);
+    }
+  }
+
+  /// 東
+  static void _dong(Canvas canvas, Rect rect) {
+    final paint = _ink(rect, width: 0.10);
+    _line(canvas, rect, 0.50, 0.08, 0.50, 0.92, paint);
+    _line(canvas, rect, 0.22, 0.22, 0.78, 0.22, paint);
+    _line(canvas, rect, 0.28, 0.22, 0.28, 0.58, paint);
+    _line(canvas, rect, 0.72, 0.22, 0.72, 0.58, paint);
+    _line(canvas, rect, 0.28, 0.40, 0.72, 0.40, paint);
+    _line(canvas, rect, 0.28, 0.58, 0.72, 0.58, paint);
+    _line(canvas, rect, 0.22, 0.72, 0.78, 0.72, paint);
+    _line(canvas, rect, 0.28, 0.72, 0.12, 0.92, paint);
+    _line(canvas, rect, 0.72, 0.72, 0.88, 0.92, paint);
+  }
+
+  /// 南
+  static void _nan(Canvas canvas, Rect rect) {
+    final paint = _ink(rect, width: 0.10);
+    _line(canvas, rect, 0.22, 0.12, 0.78, 0.12, paint);
+    _line(canvas, rect, 0.50, 0.12, 0.50, 0.28, paint);
+    _line(canvas, rect, 0.24, 0.30, 0.76, 0.30, paint);
+    _line(canvas, rect, 0.24, 0.30, 0.24, 0.90, paint);
+    _line(canvas, rect, 0.76, 0.30, 0.76, 0.90, paint);
+    _line(canvas, rect, 0.24, 0.90, 0.76, 0.90, paint);
+    _line(canvas, rect, 0.38, 0.42, 0.62, 0.42, paint);
+    _line(canvas, rect, 0.38, 0.42, 0.38, 0.68, paint);
+    _line(canvas, rect, 0.62, 0.42, 0.62, 0.68, paint);
+    _line(canvas, rect, 0.38, 0.68, 0.62, 0.68, paint);
+    _line(canvas, rect, 0.50, 0.42, 0.50, 0.68, paint);
+  }
+
+  /// 西 — колпачок сверху и рамка с одной вертикальной перегородкой:
+  /// силуэт заметно отличается от крестообразного «四».
+  static void _xi(Canvas canvas, Rect rect) {
+    final paint = _ink(rect, width: 0.10);
+    _line(canvas, rect, 0.24, 0.12, 0.76, 0.12, paint);
+    _line(canvas, rect, 0.50, 0.12, 0.50, 0.24, paint);
+    _line(canvas, rect, 0.20, 0.28, 0.80, 0.28, paint);
+    _line(canvas, rect, 0.20, 0.28, 0.20, 0.86, paint);
+    _line(canvas, rect, 0.80, 0.28, 0.80, 0.86, paint);
+    _line(canvas, rect, 0.20, 0.86, 0.80, 0.86, paint);
+    _line(canvas, rect, 0.50, 0.34, 0.50, 0.80, paint);
+    _line(canvas, rect, 0.20, 0.58, 0.80, 0.58, paint);
+  }
+
+  /// 北
+  static void _bei(Canvas canvas, Rect rect) {
+    final paint = _ink(rect, width: 0.11);
+    _line(canvas, rect, 0.32, 0.12, 0.32, 0.88, paint);
+    _line(canvas, rect, 0.32, 0.42, 0.14, 0.62, paint);
+    _line(canvas, rect, 0.18, 0.88, 0.42, 0.88, paint);
+    _line(canvas, rect, 0.58, 0.18, 0.58, 0.78, paint);
+    _line(canvas, rect, 0.58, 0.42, 0.84, 0.42, paint);
+    _line(canvas, rect, 0.84, 0.42, 0.84, 0.88, paint);
+    _line(canvas, rect, 0.70, 0.88, 0.92, 0.88, paint);
   }
 
   static void _text(Canvas canvas, Rect rect, String char, Color color) {
@@ -343,7 +555,12 @@ class TileGlyph {
     );
   }
 
-  static void _dots(Canvas canvas, Rect rect, int count) {
+  static void _dots(
+    Canvas canvas,
+    Rect rect,
+    int count, {
+    bool premium = false,
+  }) {
     final spots = _dotLayout(count);
     final maxX = spots.fold<double>(0, (m, p) => math.max(m, p.$1));
     final maxY = spots.fold<double>(0, (m, p) => math.max(m, p.$2));
@@ -353,7 +570,25 @@ class TileGlyph {
         rect.left + rect.width * ((nx + 0.5) / (maxX + 1)),
         rect.top + rect.height * ((ny + 0.5) / (maxY + 1)),
       );
-      _pip(canvas, c, r, red: red);
+      if (premium) {
+        final cell = math.min(
+          rect.width / (maxX + 1),
+          rect.height / (maxY + 1),
+        );
+        final radius = cell * 0.40;
+        // Одноцветное кольцо: цвет различим и на маленькой плитке.
+        final ring = Path()
+          ..fillType = PathFillType.evenOdd
+          ..addOval(Rect.fromCircle(center: c, radius: radius))
+          ..addOval(Rect.fromCircle(center: c, radius: radius * 0.34));
+        canvas.drawPath(
+          ring,
+          Paint()
+            ..color = red ? const Color(0xFFAA2026) : const Color(0xFF14634D),
+        );
+      } else {
+        _pip(canvas, c, r, red: red);
+      }
     }
   }
 
@@ -435,11 +670,7 @@ class TileGlyph {
         ..strokeWidth = math.max(1.6, r * 0.34)
         ..color = ringBlue,
     );
-    canvas.drawCircle(
-      c,
-      r * 0.38,
-      Paint()..color = red ? bambooRed : ringBlue,
-    );
+    canvas.drawCircle(c, r * 0.38, Paint()..color = red ? bambooRed : ringBlue);
   }
 
   static void _dragon(Canvas canvas, Rect rect, int rank) {

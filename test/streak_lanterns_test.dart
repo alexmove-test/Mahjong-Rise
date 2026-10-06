@@ -3,13 +3,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mahjong/models/weekly_quests.dart';
 import 'package:mahjong/widgets/liveops/weekly_quests_strip.dart';
 import 'package:mahjong/widgets/streak_lanterns.dart';
+import 'package:mahjong/l10n/app_localizations.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('daily lanterns render the three-night ritual', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: StreakLanterns(
             litCount: 2,
@@ -31,6 +34,8 @@ void main() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: WeeklyQuestsStrip(
             quests: [

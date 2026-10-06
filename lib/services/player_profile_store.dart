@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'display_name_filter.dart';
 import 'guest_name.dart';
 
 /// Имя игрока для таблицы рейтинга.
@@ -28,11 +29,14 @@ class PlayerProfileStore {
   /// Своё имя, если игрок его задал, иначе случайное гостевое.
   String get displayName {
     final custom = _customName;
-    if (custom != null) return GuestName.clamp(custom);
+    if (custom != null) return _visible(custom);
     final guest = _prefs.getString(_kGuestName)?.trim();
-    if (guest != null && guest.isNotEmpty) return GuestName.clamp(guest);
+    if (guest != null && guest.isNotEmpty) return _visible(guest);
     return 'You';
   }
+
+  String _visible(String raw) =>
+      DisplayNameFilter.publicName(GuestName.clamp(raw));
 
   bool get hasCustomName => _customName != null;
 
@@ -48,15 +52,19 @@ class PlayerProfileStore {
 
   String get lastSyncedWeekId => _prefs.getString(_kLastSyncedWeekId) ?? '';
 
-  int get lastSyncedWeeklyRating => _prefs.getInt(_kLastSyncedWeeklyRating) ?? 0;
+  int get lastSyncedWeeklyRating =>
+      _prefs.getInt(_kLastSyncedWeeklyRating) ?? 0;
 
-  Future<void> setDisplayName(String name) async {
+  /// Empty name restores the guest label. Returns false if the name is blocked.
+  Future<bool> setDisplayName(String name) async {
     final trimmed = name.trim();
     if (trimmed.isEmpty) {
       await _prefs.remove(_kDisplayName);
-      return;
+      return true;
     }
+    if (!DisplayNameFilter.isAllowed(trimmed)) return false;
     await _prefs.setString(_kDisplayName, GuestName.clamp(trimmed));
+    return true;
   }
 
   Future<void> markSynced({required int rating, required String name}) async {
@@ -85,19 +93,22 @@ class PlayerProfileStore {
     }
     await _prefs.setString(
       _kGuestName,
-      GuestName.generate(isRu: _preferRussian),
+      GuestName.generate(language: _guestLanguage),
     );
   }
 
-  bool get _preferRussian {
+  String get _guestLanguage {
     switch (_prefs.getString(_kLanguagePref)) {
       case 'ru':
-        return true;
+      case 'uk':
       case 'en':
-        return false;
+      case 'th':
+        return _prefs.getString(_kLanguagePref)!;
       default:
-        return PlatformDispatcher.instance.locale.languageCode.toLowerCase() ==
-            'ru';
+        final code = PlatformDispatcher.instance.locale.languageCode
+            .toLowerCase();
+        if (code == 'ru' || code == 'uk' || code == 'th') return code;
+        return 'en';
     }
   }
 }

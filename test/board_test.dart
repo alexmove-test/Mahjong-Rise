@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -285,7 +286,7 @@ void main() {
       expect(board.findHint(), isNull);
     });
 
-    test('prefers a covered pair over an obvious free pair on top', () {
+    test('prefers an obvious free pair on top over a covered pair', () {
       final board = Board(
         tiles: [
           Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0),
@@ -303,10 +304,10 @@ void main() {
 
       final hint = board.findHint();
       expect(hint, isNotNull);
-      expect({hint!.boardTile.id, hint.match.id}, {0, 2});
+      expect({hint!.boardTile.id, hint.match.id}, {4, 5});
     });
 
-    test('prefers a covered tray match over a free board pair', () {
+    test('prefers a free board pair over a covered tray match', () {
       final tray = Tile(id: 0, symbol: 'A', layer: 0, x: 0, y: 0, inTray: true);
       final buried = Tile(id: 1, symbol: 'A', layer: 0, x: 4, y: 0);
       final cover = Tile(id: 2, symbol: 'B', layer: 1, x: 4, y: 0);
@@ -319,8 +320,7 @@ void main() {
 
       final hint = board.findHint();
       expect(hint, isNotNull);
-      expect(hint!.boardTile.id, 1);
-      expect(hint.match.id, 0);
+      expect({hint!.boardTile.id, hint.match.id}, {3, 4});
     });
 
     test('prefers the covered layer nearer the top over a deeper pair', () {
@@ -544,11 +544,11 @@ void main() {
       expect(Levels.cycleCount, greaterThan(10));
       final first = Levels.byId(1);
       final later = Levels.byId(97);
-      expect(first.title, PlotKind.house.titleEn);
-      expect(Levels.byId(25).title, PlotKind.pond.titleEn);
-      expect(Levels.byId(49).title, PlotKind.guest.titleEn);
-      expect(Levels.byId(73).title, PlotKind.pets.titleEn);
-      expect(later.title, PlotKind.house.titleEn);
+      expect(first.title, PlotKind.house.name);
+      expect(Levels.byId(25).title, PlotKind.pond.name);
+      expect(Levels.byId(49).title, PlotKind.guest.name);
+      expect(Levels.byId(73).title, PlotKind.pets.name);
+      expect(later.title, PlotKind.house.name);
       expect(first.storyId, later.storyId);
       expect(later.layout, isNot(first.layout));
       expect(later.shuffles, lessThan(first.shuffles));
@@ -569,11 +569,11 @@ void main() {
       expect(Levels.cycleStartId(1), 25);
       expect(Levels.cycleEndId(0), 24);
       expect(Levels.cycleLevels(0), hasLength(24));
-      expect(Levels.cycleLevels(0).first.title, Levels.plotKindOf(1).titleEn);
-      expect(Levels.plotLabel(0), 'House');
-      expect(Levels.plotLabel(1), 'Pond');
-      expect(Levels.plotLabel(2), 'Guest house');
-      expect(Levels.plotLabel(3), 'Pets');
+      expect(Levels.cycleLevels(0).first.title, Levels.plotKindOf(1).name);
+      expect(Levels.plotLabel(0), 'house');
+      expect(Levels.plotLabel(1), 'pond');
+      expect(Levels.plotLabel(2), 'guest');
+      expect(Levels.plotLabel(3), 'pets');
     });
 
     test('daily table picks a story layout for the local calendar day', () {
@@ -787,9 +787,29 @@ void main() {
     expect(TileIcons.idsForStyle('classic'), equals(TileIcons.mahjongIds));
     expect(TileIcons.assetFor('soft-01'), 'assets/titles/soft/01.png');
     expect(TileIcons.assetFor('soft-32'), 'assets/titles/soft/32.png');
-    expect(TileIcons.assetFor('fruit-01'), 'assets/titles/fruit/01.svg');
-    expect(TileIcons.assetFor('fruit-12'), 'assets/titles/fruit/12.svg');
-    expect(TileIcons.assetFor('fruit-20'), 'assets/titles/fruit/20.svg');
+    for (var n = 1; n <= 20; n++) {
+      final id = n.toString().padLeft(2, '0');
+      expect(TileIcons.assetFor('fruit-$id'), 'assets/titles/fruit/$id.png');
+      expect(
+        File('assets/titles/fruit/$id.png').existsSync(),
+        isTrue,
+        reason: 'casual fruit $id needs PNG artwork',
+      );
+    }
+    expect(
+      TileIcons.assetFor('fruit-01', casual: false),
+      'assets/titles/fruit/01.svg',
+    );
+    expect(
+      TileIcons.assetFor('fruit-12', casual: false),
+      'assets/titles/fruit/12.svg',
+    );
+    expect(TileIcons.vectorFallbackFor('fruit-01', casual: false), isNull);
+    expect(
+      TileIcons.vectorFallbackFor('fruit-12'),
+      'assets/titles/fruit/12.svg',
+    );
+    expect(TileIcons.vectorFallbackFor('soft-01'), isNull);
     expect(TileIcons.assetFor('shape-01'), 'assets/titles/shape/01.svg');
     expect(TileIcons.assetFor('number-05'), 'assets/titles/number/05.svg');
     expect(

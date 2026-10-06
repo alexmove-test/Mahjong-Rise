@@ -1,4 +1,6 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mahjong/l10n/l10n.dart';
 import 'package:mahjong/models/plot_kind.dart';
 import 'package:mahjong/widgets/courtyard/courtyard_progress.dart';
 
@@ -57,18 +59,20 @@ void main() {
   });
 
   group('path phrases', () {
+    final en = lookupAppLocalizations(const Locale('en'));
+
     test('home uses the current era line', () {
       final start = CourtyardSnapshot.fromStep(step: 0, totalStars: 0);
       final shack = CourtyardSnapshot.fromStep(step: 12, totalStars: 10);
-      expect(pathPhraseForHome(start), 'A house will stand here.');
-      expect(pathPhraseForHome(shack), 'A shack leans on the plot.');
+      expect(en.homePathPhrase(start), 'A house will stand here.');
+      expect(en.homePathPhrase(shack), 'A shack leans on the plot.');
     });
 
     test('win uses an era line when crossing into a new era', () {
       final from = CourtyardSnapshot.fromStep(step: 8, totalStars: 6);
       final to = CourtyardSnapshot.fromStep(step: 9, totalStars: 8);
       expect(
-        pathPhraseForWin(from: from, to: to),
+        en.winPathPhrase(from: from, to: to),
         'A shack leans on the plot.',
       );
     });
@@ -76,11 +80,11 @@ void main() {
     test('more stars without a new step only warm the house', () {
       final from = CourtyardSnapshot.fromStep(step: 8, totalStars: 10);
       final to = CourtyardSnapshot.fromStep(step: 8, totalStars: 14);
-      expect(pathPhraseForWin(from: from, to: to), pathLifePhrase);
+      expect(en.winPathPhrase(from: from, to: to), en.pathLifePhrase);
     });
 
-    test('first win teaches that the house grows', () {
-      expect(firstHomePhrase, 'This house grows as you play.');
+    test('the house changes when the next look is bought', () {
+      expect(en.firstHomePhrase, 'The next house look is bought with points.');
     });
   });
 

@@ -7,14 +7,18 @@ import 'package:mahjong/models/game_snapshot.dart';
 import 'package:mahjong/models/levels.dart';
 import 'package:mahjong/models/tile.dart';
 import 'package:mahjong/screens/game_screen.dart';
+import 'package:mahjong/models/table_look.dart';
 import 'package:mahjong/services/locked_tile_dim_controller.dart';
 import 'package:mahjong/services/locked_tile_dim_store.dart';
+import 'package:mahjong/services/table_look_controller.dart';
+import 'package:mahjong/services/table_look_store.dart';
 import 'package:mahjong/services/progress_store.dart';
 import 'package:mahjong/utils/layouts.dart';
 import 'package:mahjong/utils/tile_pyramid_position.dart';
 import 'package:mahjong/widgets/game_action_bar.dart';
 import 'package:mahjong/widgets/game_board.dart';
 import 'package:mahjong/widgets/game_hud.dart';
+import 'package:mahjong/widgets/table_theme.dart';
 import 'package:mahjong/widgets/tile_canvas.dart';
 import 'package:mahjong/widgets/tile_glyph.dart';
 import 'package:mahjong/widgets/tile_flight.dart';
@@ -22,6 +26,7 @@ import 'package:mahjong/widgets/tile_painter.dart';
 import 'package:mahjong/widgets/tile_symbol_image.dart';
 import 'package:mahjong/widgets/tile_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mahjong/l10n/app_localizations.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -98,6 +103,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: SizedBox(
             width: 400,
@@ -129,6 +136,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: SizedBox(
             width: 400,
@@ -156,6 +165,8 @@ void main() {
       final board = Board.fromLayout(layout, random: Random(1));
       await tester.pumpWidget(
         MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: SizedBox(
               width: 400,
@@ -183,6 +194,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: SizedBox(
             width: 400,
@@ -221,6 +234,8 @@ void main() {
     final board = Board.fromLayout('petal', random: Random(1));
 
     Widget app() => MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: SizedBox(
           width: 400,
@@ -266,8 +281,276 @@ void main() {
     expect(GameBoard.trayBarH, greaterThan(GameBoard.traySlotH));
   });
 
+  test('casual tiles are square squircles with a solid white face', () {
+    expect(CasualTileLayout.aspect, 1.0);
+    expect(GameBoard.tileAspectOf(true), 1.0);
+    expect(GameBoard.tileGapFactorOf(false), GameBoard.tileGapFactor);
+    expect(GameBoard.tileGapFactorOf(true), GameBoard.casualTileGapFactor);
+    expect(GameBoard.casualTileGapFactor, lessThan(GameBoard.tileGapFactor));
+    expect(GameBoard.casualTileScale, 1.3);
+    expect(GameBoard.casualTileSpacingBoost, 1.2);
+    expect(GameBoard.traySlotHeightOf(true), GameBoard.traySlotW);
+    expect(
+      CasualTileLayout.cornerRadius(const Size(80, 80)),
+      closeTo(19.2, 0.05),
+    );
+    expect(TableUi.tileFace, const Color(0xFFFFFFFF));
+    expect(TableUi.tileFaceLo, const Color(0xFFFFFFFF));
+  });
+
+  test('casual symbol window sits inside the squircle, classic stays 3:4', () {
+    const casualSize = Size(80, 80);
+    final casualSymbol = CasualTileLayout.symbolRectOf(casualSize);
+    expect(casualSymbol.width / casualSymbol.height, closeTo(1.0, 0.001));
+    expect(CasualTileLayout.symbolInsetX, 0.22);
+    expect(CasualTileLayout.symbolInsetX, greaterThan(TileCanvas.symbolInset));
+    expect(
+      CasualTileLayout.containsPoint(casualSize, casualSymbol.topLeft),
+      isTrue,
+    );
+    expect(
+      CasualTileLayout.containsPoint(casualSize, casualSymbol.topRight),
+      isTrue,
+    );
+    expect(
+      CasualTileLayout.containsPoint(casualSize, casualSymbol.bottomLeft),
+      isTrue,
+    );
+    expect(
+      CasualTileLayout.containsPoint(casualSize, casualSymbol.bottomRight),
+      isTrue,
+    );
+
+    final classicSize = Size(80, 80 * TileBaseLayout.spriteAspect);
+    final classicSymbol = TileCanvas.symbolRectOf(classicSize);
+    expect(
+      classicSymbol.width / classicSymbol.height,
+      closeTo(TileFaceArt.widthOverHeight, 0.01),
+    );
+    expect(TileCanvas.symbolInset, 0.14);
+    expect(
+      TileCanvas.containsFacePoint(classicSize, classicSymbol.topLeft),
+      isTrue,
+    );
+    expect(
+      TileCanvas.containsFacePoint(classicSize, classicSymbol.topRight),
+      isTrue,
+    );
+    expect(
+      TileCanvas.containsFacePoint(classicSize, classicSymbol.bottomLeft),
+      isTrue,
+    );
+    expect(
+      TileCanvas.containsFacePoint(classicSize, classicSymbol.bottomRight),
+      isTrue,
+    );
+  });
+
+  test('casual 512 fruit with 84% fill stays inside the squircle', () {
+    const size = Size(80, 80);
+    final window = CasualTileLayout.symbolRectOf(size);
+    // fruit/02.png: ~14% side pad, 7% top, 9% bottom, 84% fill height.
+    final content = Rect.fromLTRB(
+      window.left + window.width * 0.14,
+      window.top + window.height * 0.07,
+      window.right - window.width * 0.14,
+      window.bottom - window.height * 0.09,
+    );
+    expect(CasualTileLayout.containsPoint(size, content.topLeft), isTrue);
+    expect(CasualTileLayout.containsPoint(size, content.topRight), isTrue);
+    expect(CasualTileLayout.containsPoint(size, content.bottomLeft), isTrue);
+    expect(CasualTileLayout.containsPoint(size, content.bottomRight), isTrue);
+    expect(content.width / size.width, lessThan(0.52));
+  });
+
+  testWidgets('casual GameBoard tiles are square', (tester) async {
+    final board = Board.fromLayout('garden', random: Random(1));
+    final look = TableLookController(TableLookStore.memory());
+    await look.setLook(TableLook.casual);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: TableLookScope(
+            controller: look,
+            child: SizedBox(
+              width: 400,
+              height: 720,
+              child: GameBoard(
+                board: board,
+                onTileTap: (_, _) {},
+                onTileRemoveComplete: (_) {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final tile = tester.widget<TileWidget>(find.byType(TileWidget).first);
+    expect(tile.height / tile.width, closeTo(1.0, 0.01));
+    // 400×720: +30% давало ~91 px вплотную. Шаг +20% оставляет кость ~79 px.
+    expect(tile.width, closeTo(79.0, 1.5));
+
+    var minLeft = double.infinity;
+    var maxRight = double.negativeInfinity;
+    var minTop = double.infinity;
+    var maxBottom = double.negativeInfinity;
+    for (final widget in tester.widgetList<TileWidget>(
+      find.byType(TileWidget),
+    )) {
+      final rect = tester.getRect(find.byWidget(widget));
+      minLeft = min(minLeft, rect.left);
+      maxRight = max(maxRight, rect.right);
+      minTop = min(minTop, rect.top);
+      maxBottom = max(maxBottom, rect.bottom);
+    }
+    expect(maxRight - minLeft, lessThanOrEqualTo(400.5));
+    expect(maxBottom - minTop, lessThanOrEqualTo(720.5));
+  });
+
+  testWidgets('casual tiles overlap and grow on the same 6x5 field', (
+    tester,
+  ) async {
+    final board = Board.fromLayout('garden', random: Random(1));
+
+    Future<double> widthOf(TableLook look) async {
+      final controller = TableLookController(TableLookStore.memory());
+      await controller.setLook(look);
+      await tester.pumpWidget(
+        MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: TableLookScope(
+              controller: controller,
+              child: SizedBox(
+                width: 400,
+                height: 720,
+                child: GameBoard(
+                  board: board,
+                  onTileTap: (_, _) {},
+                  onTileRemoveComplete: (_) {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      return tester.widget<TileWidget>(find.byType(TileWidget).first).width;
+    }
+
+    final classic = await widthOf(TableLook.classic);
+    final casual = await widthOf(TableLook.casual);
+    expect(casual, greaterThan(classic * 1.05));
+  });
+
+  testWidgets('casual faces stay inside the square tile', (tester) async {
+    final look = TableLookController(TableLookStore.memory());
+    await look.setLook(TableLook.casual);
+    const symbols = [
+      'fruit-01',
+      'fruit-02',
+      'fruit-09',
+      'fruit-20',
+      'soft-01',
+      'shape-01',
+      'number-01',
+      'bamboo-09',
+      'character-05',
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: TableLookScope(
+            controller: look,
+            child: Row(
+              children: [
+                for (var i = 0; i < symbols.length; i++)
+                  TileWidget(
+                    key: Key(symbols[i]),
+                    tile: Tile(id: i, symbol: symbols[i], layer: 0, x: 0, y: 0),
+                    width: 72,
+                    height: 72,
+                    isSelected: false,
+                    isFree: true,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(ClipRRect), findsWidgets);
+    expect(find.byType(ClipRect), findsWidgets);
+    for (final symbol in symbols) {
+      final tile = tester.widget<TileWidget>(find.byKey(Key(symbol)));
+      expect(tile.width, 72);
+      expect(tile.height, 72);
+    }
+  });
+
+  testWidgets('classic image faces clip to the cream face', (tester) async {
+    final look = TableLookController(TableLookStore.memory());
+    await look.setLook(TableLook.classic);
+    const symbols = ['fruit-01', 'shape-01', 'number-01'];
+    final height = 72 * TileBaseLayout.spriteAspect;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: TableLookScope(
+            controller: look,
+            child: Row(
+              children: [
+                for (var i = 0; i < symbols.length; i++)
+                  TileWidget(
+                    key: Key(symbols[i]),
+                    tile: Tile(id: i, symbol: symbols[i], layer: 0, x: 0, y: 0),
+                    width: 72,
+                    height: height,
+                    isSelected: false,
+                    isFree: true,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(ClipRRect), findsWidgets);
+    for (final symbol in symbols) {
+      final tile = tester.widget<TileWidget>(find.byKey(Key(symbol)));
+      expect(tile.width, 72);
+      expect(
+        tile.height / tile.width,
+        closeTo(TileBaseLayout.spriteAspect, 0.01),
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(Key(symbol)),
+          matching: find.byType(ClipRRect),
+        ),
+        findsWidgets,
+      );
+    }
+  });
+
   test('symbol sits on the ceramic face, not the ice rim', () {
-    const size = Size(80, 92);
+    final size = Size(80, 80 * TileBaseLayout.spriteAspect);
     final face = TileBaseLayout.faceRectOf(size);
     final symbol = TileBaseLayout.symbolRectOf(size);
     expect(face.right, lessThan(size.width));
@@ -279,22 +562,38 @@ void main() {
   });
 
   test('drawTile layout matches the screenshot proportions', () {
-    const size = Size(80, 92);
+    final size = Size(80, 80 * TileBaseLayout.spriteAspect);
     expect(TileCanvas.cornerRadius(size), closeTo(9.6, 0.05));
     expect(TileCanvas.strokeWidthFactor * size.width, closeTo(1.12, 0.05));
 
     final face = TileCanvas.faceRectOf(size);
     expect(face.width / size.width, closeTo(0.93, 0.01));
-    expect(face.height / size.height, closeTo(0.925, 0.01));
+    expect(face.height / size.height, closeTo(0.922, 0.01));
 
     final symbol = TileCanvas.symbolRectOf(size);
     expect(
-      symbol.width / face.width,
-      closeTo(TileCanvas.symbolFaceFraction, 0.01),
+      symbol.width / symbol.height,
+      closeTo(TileFaceArt.widthOverHeight, 0.01),
     );
     expect(symbol.center.dx, closeTo(face.center.dx, 0.01));
+    expect(symbol.center.dy, closeTo(face.center.dy, 0.5));
     expect((size.width * TileCanvas.shadowOffsetXFactor), closeTo(4.4, 0.1));
     expect(TileCanvas.shadowOpacity, closeTo(0.34, 0.001));
+  });
+
+  test('face art source is 3:4 and matches the symbol slot', () {
+    expect(TileFaceArt.widthPx, 384);
+    expect(TileFaceArt.heightPx, 512);
+    expect(TileFaceArt.widthOverHeight, closeTo(3 / 4, 0.001));
+    const bone = Size(
+      TileBaseLayout.spriteWidthPx,
+      TileBaseLayout.spriteHeightPx,
+    );
+    final symbol = TileBaseLayout.symbolRectOf(bone);
+    expect(
+      symbol.width / symbol.height,
+      closeTo(TileFaceArt.widthOverHeight, 0.01),
+    );
   });
 
   test('flower and season faces are special tiles', () {
@@ -331,6 +630,8 @@ void main() {
 
     Widget row() {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: LockedTileDimScope(
             controller: dim,
@@ -380,6 +681,71 @@ void main() {
     expect(faceOf(const Key('locked')).locked, isTrue);
   });
 
+  testWidgets('casual look dims covered tiles even when dimming is off', (
+    tester,
+  ) async {
+    final free = Tile(id: 1, symbol: 'soft-01', layer: 1, x: 0, y: 0);
+    final locked = Tile(id: 2, symbol: 'soft-01', layer: 0, x: 2, y: 0);
+    final dim = LockedTileDimController(LockedTileDimStore.memory());
+    final look = TableLookController(TableLookStore.memory());
+    await look.setLook(TableLook.casual);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: TableLookScope(
+            controller: look,
+            child: LockedTileDimScope(
+              controller: dim,
+              child: Row(
+                children: [
+                  TileWidget(
+                    key: const Key('free'),
+                    tile: free,
+                    width: 64,
+                    height: 74,
+                    isSelected: false,
+                    isFree: true,
+                  ),
+                  TileWidget(
+                    key: const Key('locked'),
+                    tile: locked,
+                    width: 64,
+                    height: 74,
+                    isSelected: false,
+                    isFree: false,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    TileBodySprite faceOf(Key key) {
+      return tester.widget<TileBodySprite>(
+        find.descendant(
+          of: find.byKey(key),
+          matching: find.byType(TileBodySprite),
+        ),
+      );
+    }
+
+    expect(dim.enabled, isFalse);
+    expect(faceOf(const Key('free')).locked, isFalse);
+    expect(faceOf(const Key('locked')).locked, isTrue);
+    expect(
+      tester
+          .widgetList<CustomPaint>(find.byType(CustomPaint))
+          .where((paint) => paint.painter is TileCasualFacePainter)
+          .length,
+      2,
+    );
+  });
+
   testWidgets('selected and special tiles switch drawTile chrome', (
     tester,
   ) async {
@@ -389,6 +755,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: Row(
             children: [
@@ -459,6 +827,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: Row(
             children: [
@@ -518,6 +888,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: TileWidget(
             key: const Key('free'),
@@ -558,6 +930,8 @@ void main() {
     final tile = Tile(id: 1, symbol: 'soft-01', layer: 0, x: 0, y: 0);
 
     Widget app({required bool removing}) => MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: TileWidget(
           tile: tile,
@@ -607,7 +981,18 @@ void main() {
     expect(locked.baseOffset, free.baseOffset);
   });
 
-  test('shuffle stagger stays inside the play window', () {
+  test('shuffle gather peaks in the centre then returns', () {
+    expect(TileWidget.shuffleGatherAmount(0), 0);
+    expect(TileWidget.shuffleGatherAmount(1), 0);
+    expect(TileWidget.shuffleGatherAmount(0.5), 1);
+    expect(
+      TileWidget.shuffleGatherAmount(0.2),
+      greaterThan(TileWidget.shuffleGatherAmount(0.05)),
+    );
+    expect(
+      TileWidget.shuffleGatherAmount(0.8),
+      greaterThan(TileWidget.shuffleGatherAmount(0.95)),
+    );
     for (var x = 0; x < 16; x++) {
       for (var y = 0; y < 16; y++) {
         for (var z = 0; z < 5; z++) {
@@ -620,12 +1005,15 @@ void main() {
     }
   });
 
-  testWidgets('shuffle token keeps the old face until the flip midpoint', (
+  testWidgets('shuffle token keeps the old face until the gather midpoint', (
     tester,
   ) async {
     final tile = Tile(id: 1, symbol: 'soft-01', layer: 0, x: 0, y: 0);
+    const gather = Offset(48, -36);
 
     Widget app({required int token}) => MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: TileWidget(
           tile: tile,
@@ -634,6 +1022,7 @@ void main() {
           isSelected: false,
           isFree: true,
           shuffleToken: token,
+          shuffleGatherOffset: gather,
         ),
       ),
     );
@@ -647,35 +1036,119 @@ void main() {
     tile.symbol = 'soft-02';
     await tester.pumpWidget(app(token: 1));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 80));
+    await tester.pump(TileWidget.shuffleDuration * 0.2);
     expect(
       tester.widget<TileSymbolImage>(find.byType(TileSymbolImage)).symbol,
       'soft-01',
     );
 
-    await tester.pump(const Duration(milliseconds: 200));
+    Offset translationOf(Transform transform) {
+      final m = transform.transform.storage;
+      return Offset(m[12], m[13]);
+    }
+
+    await tester.pump(TileWidget.shuffleDuration * 0.3);
     expect(
       tester.widget<TileSymbolImage>(find.byType(TileSymbolImage)).symbol,
       'soft-02',
     );
+    final stacked = tester.widget<Transform>(
+      find.byKey(const ValueKey('tile-shuffle-transform')),
+    );
+    expect(translationOf(stacked).dx, closeTo(gather.dx, 0.6));
+    expect(translationOf(stacked).dy, closeTo(gather.dy, 0.6));
+
+    await tester.pumpAndSettle();
+    for (final transform in tester.widgetList<Transform>(
+      find.byKey(const ValueKey('tile-shuffle-transform')),
+    )) {
+      final m = transform.transform.storage;
+      expect(translationOf(transform), Offset.zero);
+      expect(m[0] * m[5] - m[1] * m[4], closeTo(1.0, 0.000001));
+    }
   });
 
-  testWidgets('dark game backdrop uses felt.png under the vignette', (
+  testWidgets('shuffle gathers board tiles into one stack', (tester) async {
+    final board = Board.fromLayout('petal', random: Random(1));
+    var token = 0;
+
+    Widget app() => MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: SizedBox(
+          width: 400,
+          height: 720,
+          child: GameBoard(
+            board: board,
+            onTileTap: (_, _) {},
+            onTileRemoveComplete: (_) {},
+            shuffleToken: token,
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(app());
+    token = 1;
+    await tester.pumpWidget(app());
+    await tester.pump();
+    await tester.pump(TileWidget.shuffleDuration * 0.5);
+
+    final stacked = <Offset>[];
+    for (final tile in board.tiles.where((t) => t.isOnBoard)) {
+      final positioned = tester.widget<AnimatedPositioned>(
+        find.byKey(ValueKey(tile.id)),
+      );
+      final transform = tester.widget<Transform>(
+        find.descendant(
+          of: find.byKey(ValueKey(tile.id)),
+          matching: find.byKey(const ValueKey('tile-shuffle-transform')),
+        ),
+      );
+      final m = transform.transform.storage;
+      stacked.add(Offset(positioned.left! + m[12], positioned.top! + m[13]));
+    }
+
+    final xs = stacked.map((o) => o.dx);
+    final ys = stacked.map((o) => o.dy);
+    expect(xs.reduce(max) - xs.reduce(min), lessThan(2));
+    expect(ys.reduce(max) - ys.reduce(min), lessThan(2));
+  });
+
+  testWidgets('dark game backdrop uses the New table by default', (
     tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(home: MahjongScreenBackdrop(dark: true)),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,home: MahjongScreenBackdrop(dark: true)),
     );
 
-    final felt = tester.widgetList<DecoratedBox>(find.byType(DecoratedBox)).any(
-      (box) {
-        final decoration = box.decoration;
-        if (decoration is! BoxDecoration) return false;
-        final image = decoration.image?.image;
-        return image is AssetImage && image.assetName == 'assets/felt.png';
-      },
+    expect(_backdropUsesFelt(tester), isFalse);
+    expect(
+      tester
+          .widgetList<ColoredBox>(find.byType(ColoredBox))
+          .any((box) => box.color == TableUi.premiumTableDeep),
+      isTrue,
     );
-    expect(felt, isTrue);
+  });
+
+  testWidgets('casual dark backdrop still uses felt.png', (tester) async {
+    final look = TableLookController(TableLookStore.memory());
+    await look.setLook(TableLook.casual);
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: TableLookScope(
+          controller: look,
+          child: const MahjongScreenBackdrop(dark: true),
+        ),
+      ),
+    );
+
+    expect(_backdropUsesFelt(tester), isTrue);
   });
 
   testWidgets('GameHud is a copper row of back and menu', (tester) async {
@@ -683,6 +1156,8 @@ void main() {
     var menu = 0;
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: GameHud(
             onBack: () => back++,
@@ -717,6 +1192,8 @@ void main() {
     var undo = 0;
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: GameActionBar(
             shufflesLeft: 3,
@@ -777,6 +1254,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: GameScreen(level: Levels.byId(1), progress: progress),
       ),
     );
@@ -821,6 +1300,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: GameScreen(level: Levels.byId(1), progress: progress),
       ),
     );
@@ -843,6 +1324,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: GameScreen(level: Levels.byId(1), progress: progress),
       ),
     );
@@ -876,6 +1359,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: GameScreen(level: Levels.byId(2), progress: progress),
       ),
     );
@@ -919,6 +1404,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: GameScreen(level: Levels.byId(1), progress: progress),
       ),
     );
@@ -969,6 +1456,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: GameScreen(level: Levels.byId(1), progress: progress),
       ),
     );
@@ -1015,6 +1504,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: GameScreen(level: Levels.byId(24), progress: progress),
       ),
     );
@@ -1027,7 +1518,49 @@ void main() {
     );
   });
 
-  testWidgets('hint highlights a covered pair instead of a free top pair', (
+  testWidgets('campaign leftover boosts carry into a later level', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'progress.tableCoachDone': true,
+      'tutorial.skipped': true,
+      'tutorial.collect': true,
+      'tutorial.match': true,
+      'tutorial.layers': true,
+      'tutorial.boosts': true,
+      'progress.hintBalance': 4,
+      'progress.shuffleBalance': 3,
+      'progress.magnetBalance': 2,
+      'progress.undoBalance': 5,
+    });
+    final progress = await ProgressStore.open();
+    final lateLevel = Levels.byId(24);
+    expect(lateLevel.hints, 0);
+    expect(lateLevel.shuffles, 0);
+    expect(lateLevel.undos, 0);
+
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: GameScreen(level: lateLevel, progress: progress),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final bar = tester.widget<GameActionBar>(find.byType(GameActionBar));
+    expect(bar.hintsLeft, 4);
+    expect(bar.shufflesLeft, 3);
+    expect(bar.magnetsLeft, 2);
+    expect(bar.undosLeft, 5);
+  });
+
+  testWidgets('hint highlights a free top pair instead of a covered pair', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({
@@ -1069,6 +1602,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: GameScreen(level: Levels.byId(1), progress: progress),
       ),
     );
@@ -1083,7 +1618,7 @@ void main() {
         .where((w) => w.isHinted)
         .map((w) => w.tile.id)
         .toSet();
-    expect(hinted, {0, 2});
+    expect(hinted, {4, 5});
   });
 
   testWidgets('magnet clears a matching pair from the board', (tester) async {
@@ -1116,6 +1651,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: GameScreen(level: Levels.byId(1), progress: progress),
       ),
     );
@@ -1177,6 +1714,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: GameScreen(level: Levels.byId(1), progress: progress),
       ),
     );
@@ -1235,6 +1774,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: GameScreen(level: Levels.byId(1), progress: progress),
       ),
     );
@@ -1263,8 +1804,391 @@ void main() {
     );
   });
 
+  testWidgets('leaving mid-flight keeps the collected tile in the tray', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'progress.tableCoachDone': true,
+      'tutorial.skipped': true,
+      'tutorial.collect': true,
+      'tutorial.match': true,
+      'tutorial.layers': true,
+      'tutorial.boosts': true,
+    });
+    final progress = await ProgressStore.open();
+    await progress.saveSnapshot(
+      GameSnapshot.fromBoard(
+        levelId: 1,
+        board: Board(
+          tiles: [
+            Tile(id: 0, symbol: 'A', layer: 0, x: 4, y: 4),
+            Tile(id: 1, symbol: 'B', layer: 0, x: 6, y: 4),
+            Tile(id: 2, symbol: 'C', layer: 0, x: 8, y: 4),
+          ],
+          layoutName: 'petal',
+        ),
+        score: 40,
+        combo: 1,
+        shuffles: 1,
+        hints: 1,
+        undos: 1,
+        magnets: 1,
+      ),
+    );
+
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: GameScreen(level: Levels.byId(1), progress: progress),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final lastTile = find.byWidgetPredicate(
+      (w) => w is TileWidget && !w.compact && w.tile.id == 0,
+    );
+    expect(lastTile, findsOneWidget);
+    await tester.tap(lastTile);
+    await tester.pump();
+    expect(find.byType(TileFlightOverlay), findsOneWidget);
+
+    await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,home: SizedBox()));
+    await tester.pump();
+
+    final snap = progress.savedSnapshot;
+    expect(snap, isNotNull);
+    final flown = snap!.tiles.firstWhere((tile) => tile.id == 0);
+    expect(flown.removed, isFalse);
+    expect(flown.inTray, isTrue);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: GameScreen(level: Levels.byId(1), progress: progress),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is TileWidget && w.compact && w.tile.id == 0,
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w is TileWidget && !w.compact && w.tile.id == 0 && w.tile.isOnBoard,
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('last matching pair ends the table after flights', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'progress.tableCoachDone': true,
+      'tutorial.skipped': true,
+      'tutorial.collect': true,
+      'tutorial.match': true,
+      'tutorial.layers': true,
+      'tutorial.boosts': true,
+    });
+    final progress = await ProgressStore.open();
+    await progress.saveSnapshot(
+      GameSnapshot.fromBoard(
+        levelId: 1,
+        board: Board(
+          tiles: [
+            Tile(id: 0, symbol: 'A', layer: 0, x: 4, y: 4),
+            Tile(id: 1, symbol: 'A', layer: 0, x: 8, y: 4),
+          ],
+          layoutName: 'petal',
+        ),
+        score: 0,
+        combo: 0,
+        shuffles: 1,
+        hints: 1,
+        undos: 1,
+        magnets: 1,
+      ),
+    );
+
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) =>
+                      GameScreen(level: Levels.byId(1), progress: progress),
+                ),
+              );
+            },
+            child: const Text('play'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('play'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    Future<void> tapBoardTile(int id) async {
+      final tile = find.byWidgetPredicate(
+        (w) => w is TileWidget && !w.compact && w.tile.id == id,
+      );
+      expect(tile, findsOneWidget);
+      await tester.tap(tile);
+      await tester.pump();
+      await tester.pump(TileFlightOverlay.duration);
+      await tester.pump(const Duration(milliseconds: 80));
+    }
+
+    await tapBoardTile(0);
+    await tapBoardTile(1);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(progress.isCompleted(1), isTrue);
+    expect(progress.savedSnapshot, isNull);
+  });
+
+  testWidgets('last matching pair ends even if flight tickers stall', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'progress.tableCoachDone': true,
+      'tutorial.skipped': true,
+      'tutorial.collect': true,
+      'tutorial.match': true,
+      'tutorial.layers': true,
+      'tutorial.boosts': true,
+    });
+    final progress = await ProgressStore.open();
+    await progress.saveSnapshot(
+      GameSnapshot.fromBoard(
+        levelId: 1,
+        board: Board(
+          tiles: [
+            Tile(id: 0, symbol: 'A', layer: 0, x: 4, y: 4),
+            Tile(id: 1, symbol: 'A', layer: 0, x: 8, y: 4),
+          ],
+          layoutName: 'petal',
+        ),
+        score: 0,
+        combo: 0,
+        shuffles: 1,
+        hints: 1,
+        undos: 1,
+        magnets: 1,
+      ),
+    );
+
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => TickerMode(
+                    enabled: false,
+                    child: GameScreen(
+                      level: Levels.byId(1),
+                      progress: progress,
+                    ),
+                  ),
+                ),
+              );
+            },
+            child: const Text('play'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('play'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    Future<void> tapBoardTile(int id) async {
+      final tile = find.byWidgetPredicate(
+        (w) => w is TileWidget && !w.compact && w.tile.id == id,
+      );
+      expect(tile, findsOneWidget);
+      await tester.tap(tile);
+      await tester.pump();
+    }
+
+    await tapBoardTile(0);
+    await tapBoardTile(1);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(progress.isCompleted(1), isTrue);
+    expect(progress.savedSnapshot, isNull);
+  });
+
+  testWidgets('last board tile matching the tray ends without a flight', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'progress.tableCoachDone': true,
+      'tutorial.skipped': true,
+      'tutorial.collect': true,
+      'tutorial.match': true,
+      'tutorial.layers': true,
+      'tutorial.boosts': true,
+    });
+    final progress = await ProgressStore.open();
+    final tray = Tile(id: 0, symbol: 'A', layer: 0, x: 4, y: 4, inTray: true);
+    final last = Tile(id: 1, symbol: 'A', layer: 0, x: 8, y: 4);
+    final board = Board(tiles: [tray, last], layoutName: 'petal')
+      ..tray.add(tray);
+    await progress.saveSnapshot(
+      GameSnapshot.fromBoard(
+        levelId: 1,
+        board: board,
+        score: 0,
+        combo: 0,
+        shuffles: 1,
+        hints: 1,
+        undos: 1,
+        magnets: 1,
+      ),
+    );
+
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => TickerMode(
+                    enabled: false,
+                    child: GameScreen(
+                      level: Levels.byId(1),
+                      progress: progress,
+                    ),
+                  ),
+                ),
+              );
+            },
+            child: const Text('play'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('play'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final tile = find.byWidgetPredicate(
+      (w) => w is TileWidget && !w.compact && w.tile.id == 1,
+    );
+    expect(tile, findsOneWidget);
+    await tester.tap(tile);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(progress.isCompleted(1), isTrue);
+    expect(progress.savedSnapshot, isNull);
+  });
+
+  testWidgets('leaving after the last matching tap still credits the win', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'progress.tableCoachDone': true,
+      'tutorial.skipped': true,
+      'tutorial.collect': true,
+      'tutorial.match': true,
+      'tutorial.layers': true,
+      'tutorial.boosts': true,
+    });
+    final progress = await ProgressStore.open();
+    final tray = Tile(id: 0, symbol: 'A', layer: 0, x: 4, y: 4, inTray: true);
+    final last = Tile(id: 1, symbol: 'A', layer: 0, x: 8, y: 4);
+    final board = Board(tiles: [tray, last], layoutName: 'petal')
+      ..tray.add(tray);
+    await progress.saveSnapshot(
+      GameSnapshot.fromBoard(
+        levelId: 1,
+        board: board,
+        score: 0,
+        combo: 0,
+        shuffles: 1,
+        hints: 1,
+        undos: 1,
+        magnets: 1,
+      ),
+    );
+
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: GameScreen(level: Levels.byId(1), progress: progress),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final tile = find.byWidgetPredicate(
+      (w) => w is TileWidget && !w.compact && w.tile.id == 1,
+    );
+    await tester.tap(tile);
+    await tester.pump();
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump();
+
+    expect(progress.isCompleted(1), isTrue);
+  });
+
   testWidgets('watching a simulated ad grants a hint', (tester) async {
-    SharedPreferences.setMockInitialValues({'progress.tableCoachDone': true});
+    SharedPreferences.setMockInitialValues({
+      'progress.tableCoachDone': true,
+      'tutorial.skipped': true,
+      'tutorial.collect': true,
+      'tutorial.match': true,
+      'tutorial.layers': true,
+      'tutorial.boosts': true,
+    });
     final progress = await ProgressStore.open();
     final board = Board(
       tiles: [
@@ -1293,6 +2217,8 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: GameScreen(level: Levels.byId(1), progress: progress),
       ),
     );
@@ -1300,6 +2226,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     await tester.tap(find.byTooltip('Watch ad → Hint'));
+    await tester.pump();
     await tester.pump();
     expect(find.text('Simulated ad'), findsOneWidget);
 
@@ -1314,6 +2241,19 @@ void main() {
         .map((w) => w.tile.id)
         .toSet();
     expect(hinted, {0, 1});
+  });
+}
+
+bool _backdropUsesFelt(WidgetTester tester) {
+  return tester.widgetList<DecoratedBox>(find.byType(DecoratedBox)).any((box) {
+    final decoration = box.decoration;
+    if (decoration is! BoxDecoration) return false;
+    final image = decoration.image;
+    if (image == null) return false;
+    final provider = image.image;
+    return provider is AssetImage &&
+        provider.assetName == 'assets/felt.png' &&
+        image.opacity == 1.0;
   });
 }
 

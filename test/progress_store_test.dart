@@ -228,6 +228,26 @@ void main() {
     expect(store.hintBalance, 5);
     expect(store.bankedHints, 0);
   });
+
+  test('boost balances survive across campaign levels', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = await ProgressStore.open();
+    expect(store.hasShuffleBalance, isFalse);
+    expect(store.hasMagnetBalance, isFalse);
+    expect(store.hasUndoBalance, isFalse);
+
+    await store.setBoostBalances(hints: 3, shuffles: 4, magnets: 2, undos: 6);
+    expect(store.hintBalance, 3);
+    expect(store.shuffleBalance, 4);
+    expect(store.magnetBalance, 2);
+    expect(store.undoBalance, 6);
+
+    await store.addBankedBoosts(hints: 2, shuffles: 1);
+    expect(store.hintBalance, 5);
+    expect(store.shuffleBalance, 5);
+    expect(store.bankedHints, 0);
+    expect(store.bankedShuffles, 0);
+  });
 }
 
 GameSnapshot _sampleSnap({required int levelId, int score = 50}) {

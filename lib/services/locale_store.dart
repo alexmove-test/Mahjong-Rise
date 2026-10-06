@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum LanguagePref { system, en, ru }
+enum LanguagePref { system, en, ru, th }
 
 /// Saved language choice. [LanguagePref.system] follows the phone language.
 class LocaleStore {
@@ -23,6 +23,11 @@ class LocaleStore {
         return LanguagePref.en;
       case 'ru':
         return LanguagePref.ru;
+      case 'th':
+        return LanguagePref.th;
+      case 'uk':
+        // Ukrainian was saved before it shipped. The interface falls back to English.
+        return LanguagePref.en;
       default:
         return LanguagePref.system;
     }
@@ -41,6 +46,10 @@ class LocaleStore {
   static String resolve(LanguagePref pref, String deviceLanguageCode) {
     if (pref == LanguagePref.ru) return 'ru';
     if (pref == LanguagePref.en) return 'en';
-    return deviceLanguageCode.toLowerCase() == 'ru' ? 'ru' : 'en';
+    if (pref == LanguagePref.th) return 'th';
+    final device = deviceLanguageCode.toLowerCase();
+    if (device == 'ru') return 'ru';
+    if (device == 'th') return 'th';
+    return 'en';
   }
 }

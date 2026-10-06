@@ -28,6 +28,9 @@ class ProgressStore {
   static const _kBankedHints = 'progress.bankedHints';
   static const _kBankedShuffles = 'progress.bankedShuffles';
   static const _kHintBalance = 'progress.hintBalance';
+  static const _kShuffleBalance = 'progress.shuffleBalance';
+  static const _kMagnetBalance = 'progress.magnetBalance';
+  static const _kUndoBalance = 'progress.undoBalance';
   static const _kWeekId = 'progress.weekId';
   static const _kWeeklyStars = 'progress.weeklyStars';
   static const _kWeeklyClears = 'progress.weeklyClears';
@@ -156,8 +159,44 @@ class ProgressStore {
 
   int get hintBalance => _prefs.getInt(_kHintBalance) ?? 0;
 
+  bool get hasShuffleBalance => _prefs.containsKey(_kShuffleBalance);
+
+  int get shuffleBalance => _prefs.getInt(_kShuffleBalance) ?? 0;
+
+  bool get hasMagnetBalance => _prefs.containsKey(_kMagnetBalance);
+
+  int get magnetBalance => _prefs.getInt(_kMagnetBalance) ?? 0;
+
+  bool get hasUndoBalance => _prefs.containsKey(_kUndoBalance);
+
+  int get undoBalance => _prefs.getInt(_kUndoBalance) ?? 0;
+
   Future<void> setHintBalance(int value) async {
     await _prefs.setInt(_kHintBalance, value.clamp(0, 999));
+  }
+
+  Future<void> setShuffleBalance(int value) async {
+    await _prefs.setInt(_kShuffleBalance, value.clamp(0, 999));
+  }
+
+  Future<void> setMagnetBalance(int value) async {
+    await _prefs.setInt(_kMagnetBalance, value.clamp(0, 999));
+  }
+
+  Future<void> setUndoBalance(int value) async {
+    await _prefs.setInt(_kUndoBalance, value.clamp(0, 999));
+  }
+
+  Future<void> setBoostBalances({
+    required int hints,
+    required int shuffles,
+    required int magnets,
+    required int undos,
+  }) async {
+    await setHintBalance(hints);
+    await setShuffleBalance(shuffles);
+    await setMagnetBalance(magnets);
+    await setUndoBalance(undos);
   }
 
   bool isDailyCompletedOn(DateTime date) => lastDailyDate == dateKey(date);
@@ -221,7 +260,11 @@ class ProgressStore {
       }
     }
     if (shuffles != 0) {
-      await _prefs.setInt(_kBankedShuffles, bankedShuffles + shuffles);
+      if (hasShuffleBalance) {
+        await setShuffleBalance(shuffleBalance + shuffles);
+      } else {
+        await _prefs.setInt(_kBankedShuffles, bankedShuffles + shuffles);
+      }
     }
   }
 
