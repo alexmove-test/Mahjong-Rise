@@ -19,7 +19,8 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.2+216
 
 environment:
-  sdk: ^3.12.2
+  sdk: ^3.13.7
+  flutter: ">=3.47.8"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -39,12 +40,12 @@ dependencies:
   flutter_svg: ^2.3.0
   audioplayers: ^6.8.1
   shared_preferences: ^2.5.5
-  firebase_core: ^4.13.0
-  cloud_firestore: ^6.8.0
-  firebase_auth: ^6.5.7
+  firebase_core: ^4.15.2
+  cloud_firestore: ^6.10.2
+  firebase_auth: ^6.7.1
   google_mobile_ads: ^9.1.0
   url_launcher: ^6.3.2
-  firebase_analytics: ^12.4.6
+  firebase_analytics: ^12.6.1
   flutter_local_notifications: ^22.3.0
   timezone: ^0.11.1
   flutter_timezone: ^5.1.0
